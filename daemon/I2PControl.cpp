@@ -257,10 +257,13 @@ namespace client
 						return; // TODO:
 					}
 					std::streamoff rem = contentLength + ss.tellg () - bytes_transferred; // more bytes to read
-					if (rem > 0)
+					while (rem > 0) // read in chunks to prevent buffer overflow
 					{
-						bytes_transferred = boost::asio::read (*socket, boost::asio::buffer (buf->data (), rem));
+						size_t toRead = std::min ((size_t)rem, buf->size ()); // don't exceed buffer size
+						bytes_transferred = boost::asio::read (*socket, boost::asio::buffer (buf->data (), toRead));
+						if (bytes_transferred == 0) break;
 						ss.write (buf->data (), bytes_transferred);
+						rem -= bytes_transferred;
 					}
 				}
 				std::ostringstream response;
