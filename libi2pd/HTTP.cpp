@@ -372,7 +372,7 @@ namespace http
 	void HTTPReq::UpdateHeader (const std::string& name, const std::string& value)
 	{
 		for (auto& it : headers)
-			if (it.first == name)
+			if (boost::iequals(it.first, name))
 			{
 				it.second = value;
 				break;
@@ -383,7 +383,7 @@ namespace http
 	{
 		for (auto it = headers.begin (); it != headers.end ();)
 		{
-			if (!it->first.compare(0, name.length (), name) && it->first != exempt)
+			if (boost::istarts_with(it->first, name) && !boost::iequals(it->first, exempt))
 				it = headers.erase (it);
 			else
 				it++;
@@ -393,7 +393,7 @@ namespace http
 	std::string HTTPReq::GetHeader (std::string_view name) const
 	{
 		for (auto& it : headers)
-			if (it.first == name)
+			if (boost::iequals(it.first, name))
 				return it.second;
 		return "";
 	}
@@ -402,7 +402,7 @@ namespace http
 	{
 		size_t num = 0;
 		for (auto& it : headers)
-			if (it.first == name) num++;
+			if (boost::iequals(it.first, name)) num++;
 		return num;
 	}
 
