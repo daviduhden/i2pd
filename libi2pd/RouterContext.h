@@ -37,7 +37,7 @@ namespace garlic
 	const int ROUTER_INFO_CONFIRMATION_TIMEOUT = 1600; // in milliseconds
 	const int ROUTER_INFO_MAX_PUBLISH_EXCLUDED_FLOODFILLS = 15;
 	const int ROUTER_INFO_CONGESTION_UPDATE_INTERVAL = 11*60; // in seconds
-	const int ROUTER_INFO_CONGESTION_UPDATE_INTERVAL_VARIANCE = 130; // in seconds 
+	const int ROUTER_INFO_CONGESTION_UPDATE_INTERVAL_VARIANCE = 130; // in seconds
 	const int ROUTER_INFO_CLEANUP_INTERVAL = 102; // in seconds
 
 	enum RouterStatus
@@ -97,14 +97,14 @@ namespace garlic
 					void Start () { StartIOService (); };
 					void Stop () { StopIOService (); };
 			};
-			
+
 		public:
 
 			RouterContext ();
 			void Init ();
 			void Start ();
 			void Stop ();
-			
+
 			const i2p::data::PrivateKeys& GetPrivateKeys () const { return m_Keys; };
 			i2p::data::LocalRouterInfo& GetRouterInfo () { return m_RouterInfo; };
 			std::shared_ptr<i2p::data::RouterInfo> GetSharedRouterInfo ()
@@ -118,7 +118,7 @@ namespace garlic
 					[](i2p::garlic::GarlicDestination *) {});
 			}
 			std::shared_ptr<i2p::data::RouterInfo::Buffer> CopyRouterInfoBuffer () const;
-			
+
 			const uint8_t * GetNTCP2StaticPublicKey () const { return m_NTCP2Keys ? m_NTCP2Keys->staticPublicKey : nullptr; };
 			const uint8_t * GetNTCP2StaticPrivateKey () const { return m_NTCP2Keys ? m_NTCP2Keys->staticPrivateKey : nullptr; };
 			const uint8_t * GetNTCP2IV () const { return m_NTCP2Keys ? m_NTCP2Keys->iv : nullptr; };
@@ -222,6 +222,8 @@ namespace garlic
 			void Sign (const uint8_t * buf, int len, uint8_t * signature) const { m_Keys.Sign (buf, len, signature); };
 			uint16_t SelectRandomPort () const;
 			void PublishNTCP2Address (std::shared_ptr<i2p::data::RouterInfo::Address> address, int port, bool publish) const;
+            void UpdateSSU2AddressCapsIntroducer (std::shared_ptr<i2p::data::RouterInfo::Address> address, bool isIntroducer) const;
+            void UpdateSSU2AddressCapsTesting (std::shared_ptr<i2p::data::RouterInfo::Address> address, bool isTesting) const;
 
 			bool DecryptECIESTunnelBuildRecord (const uint8_t * encrypted, uint8_t * data, size_t clearTextSize);
 			void PostGarlicMessage (std::shared_ptr<I2NPMessage> msg);
@@ -239,7 +241,7 @@ namespace garlic
 			void UpdateCongestion ();
 			void ScheduleCleanupTimer ();
 			void HandleCleanupTimer (const boost::system::error_code& ecode);
-			
+
 		private:
 
 			i2p::data::LocalRouterInfo m_RouterInfo;
