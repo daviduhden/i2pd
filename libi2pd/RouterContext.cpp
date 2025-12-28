@@ -774,7 +774,7 @@ namespace i2p
 				if (addr && addr->ssu && ((v4 && addr->IsV4 ()) || (v6 && addr->IsV6 ())))
 				{
 					addr->published = false;
-					addr->caps &= ~i2p::data::RouterInfo::eSSUIntroducer; // can't be introducer
+					UpdateSSU2AddressCapsIntroducer (addr, false); // can't be introducer
 					addr->ssu->introducers.clear ();
 					port = addr->port;
 				}
@@ -810,7 +810,7 @@ namespace i2p
 				if (addr && addr->ssu && isSSU2Published && ((v4 && addr->IsV4 ()) || (v6 && addr->IsV6 ())))
 				{
 					addr->published = true;
-					addr->caps |= i2p::data::RouterInfo::eSSUIntroducer;
+					UpdateSSU2AddressCapsIntroducer (addr, !m_IsFloodfill);
 					addr->ssu->introducers.clear ();
 					if (addr->port) port = addr->port;
 				}
