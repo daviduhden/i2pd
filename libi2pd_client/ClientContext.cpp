@@ -270,10 +270,10 @@ namespace client
 	{
 #if __cplusplus >= 202002L // C++20
 		if (filename.starts_with ("transient"))
-#else		
+#else
 		std::string_view transient("transient");
 		if (!filename.compare (0, transient.length (), transient)) // starts with transient
-#endif			
+#endif
 		{
 			keys = i2p::data::PrivateKeys::CreateRandomKeys (sigType, cryptoType, true);
 			LogPrint (eLogInfo, "Clients: New transient keys address ", m_AddressBook.ToAddress(keys.GetPublic ()->GetIdentHash ()), " created");
@@ -359,7 +359,7 @@ namespace client
 		return localDestination;
 	}
 
-	std::shared_ptr<ClientDestination> ClientContext::CreateNewMatchedTunnelDestination(const i2p::data::PrivateKeys &keys, 
+	std::shared_ptr<ClientDestination> ClientContext::CreateNewMatchedTunnelDestination(const i2p::data::PrivateKeys &keys,
 		const std::string & name, const i2p::util::Mapping * params)
 	{
 		auto localDestination = std::make_shared<MatchedTunnelDestination>(keys, name, params);
@@ -424,7 +424,7 @@ namespace client
 		i2p::util::Mapping params;
 		ReadI2CPOptionsFromConfig ("shareddest.", params);
 		params.Insert (I2CP_PARAM_OUTBOUND_NICKNAME, "SharedDest");
-		
+
 		m_SharedLocalDestination = CreateNewLocalDestination (false, i2p::data::SIGNING_KEY_TYPE_EDDSA_SHA512_ED25519,
 			i2p::data::CRYPTO_KEY_TYPE_ELGAMAL, &params); // non-public, EDDSA
 		m_SharedLocalDestination->Acquire ();
@@ -451,7 +451,7 @@ namespace client
 	}
 
 	template<typename Section>
-	void ClientContext::ReadI2CPOptionsGroup (const Section& section, const std::string& group, 
+	void ClientContext::ReadI2CPOptionsGroup (const Section& section, const std::string& group,
 		i2p::util::Mapping& options) const
 	{
 		for (auto it: section.second)
@@ -477,6 +477,7 @@ namespace client
 		options.Insert (I2CP_PARAM_STREAMING_MAX_OUTBOUND_SPEED, GetI2CPOption(section, I2CP_PARAM_STREAMING_MAX_OUTBOUND_SPEED, DEFAULT_MAX_OUTBOUND_SPEED));
 		options.Insert (I2CP_PARAM_STREAMING_MAX_INBOUND_SPEED, GetI2CPOption(section, I2CP_PARAM_STREAMING_MAX_INBOUND_SPEED, DEFAULT_MAX_INBOUND_SPEED));
 		options.Insert (I2CP_PARAM_STREAMING_MAX_CONCURRENT_STREAMS, GetI2CPOption(section, I2CP_PARAM_STREAMING_MAX_CONCURRENT_STREAMS, DEFAULT_MAX_CONCURRENT_STREAMS));
+		options.Insert (I2CP_PARAM_STREAMING_MAX_CONNS_PER_MINUTE, GetI2CPOption(section, I2CP_PARAM_STREAMING_MAX_CONNS_PER_MINUTE, DEFAULT_MAX_CONNS_PER_MINUTE));
 		options.Insert (I2CP_PARAM_STREAMING_ANSWER_PINGS, GetI2CPOption(section, I2CP_PARAM_STREAMING_ANSWER_PINGS, isServer ? DEFAULT_ANSWER_PINGS : false));
 		options.Insert (I2CP_PARAM_STREAMING_DONT_SIGN, GetI2CPOption(section, I2CP_PARAM_STREAMING_DONT_SIGN, DEFAULT_DONT_SIGN));
 		options.Insert (I2CP_PARAM_STREAMING_PROFILE, GetI2CPOption(section, I2CP_PARAM_STREAMING_PROFILE, DEFAULT_STREAMING_PROFILE));
@@ -484,9 +485,9 @@ namespace client
 		options.Insert (I2CP_PARAM_LEASESET_TYPE, GetI2CPOption(section, I2CP_PARAM_LEASESET_TYPE, DEFAULT_LEASESET_TYPE));
 #if OPENSSL_PQ
 		std::string encType = GetI2CPStringOption(section, I2CP_PARAM_LEASESET_ENCRYPTION_TYPE, isServer ? "6,4" : "6,4,0");
-#else		
+#else
 		std::string encType = GetI2CPStringOption(section, I2CP_PARAM_LEASESET_ENCRYPTION_TYPE, isServer ? "4" : "4,0");
-#endif		
+#endif
 		if (encType.length () > 0) options.Insert (I2CP_PARAM_LEASESET_ENCRYPTION_TYPE, encType);
 		std::string privKey = GetI2CPStringOption(section, I2CP_PARAM_LEASESET_PRIV_KEY, "");
 		if (privKey.length () > 0) options.Insert (I2CP_PARAM_LEASESET_PRIV_KEY, privKey);
@@ -559,9 +560,9 @@ namespace client
 				{
 #if __cplusplus >= 202002L // C++20
 					if (!it.ends_with (".conf")) continue;
-#else					
+#else
 					if (it.substr(it.size() - 5) != ".conf") continue; // skip files which not ends with ".conf"
-#endif					
+#endif
 					LogPrint(eLogDebug, "Clients: Tunnels extra config file: ", it);
 					ReadTunnels (it, numClientTunnels, numServerTunnels);
 				}
@@ -608,7 +609,7 @@ namespace client
 					i2p::data::SigningKeyType sigType = section.second.get (I2P_CLIENT_TUNNEL_SIGNATURE_TYPE, i2p::data::SIGNING_KEY_TYPE_EDDSA_SHA512_ED25519);
 #if !OPENSSL_PQ
 					if (sigType >= i2p::data::SIGNING_KEY_TYPE_MLDSA44) sigType = i2p::data::SIGNING_KEY_TYPE_EDDSA_SHA512_ED25519;
-#endif				
+#endif
 					i2p::data::CryptoKeyType cryptoType = section.second.get (I2P_CLIENT_TUNNEL_CRYPTO_TYPE, i2p::data::CRYPTO_KEY_TYPE_ELGAMAL);
 					// I2CP
 					i2p::util::Mapping options;
@@ -645,7 +646,7 @@ namespace client
 						}
 					}
 
-					if (type == I2P_TUNNELS_SECTION_TYPE_UDPCLIENT) 
+					if (type == I2P_TUNNELS_SECTION_TYPE_UDPCLIENT)
 					{
 						// udp client
 						// TODO: hostnames
@@ -655,7 +656,7 @@ namespace client
 
 						bool gzip = section.second.get (I2P_CLIENT_TUNNEL_GZIP, true);
 						int datagramVersion = (i2p::datagram::DatagramVersion)section.second.get (UDP_CLIENT_TUNNEL_DATAGRAM_VERSION, (int)i2p::datagram::eDatagramV3);
-						auto clientTunnel = std::make_shared<I2PUDPClientTunnel> (name, dest, end, 
+						auto clientTunnel = std::make_shared<I2PUDPClientTunnel> (name, dest, end,
 							localDestination, destinationPort, gzip, (i2p::datagram::DatagramVersion)datagramVersion);
 
 						auto ins = m_ClientForwards.insert (std::make_pair (end, clientTunnel));
@@ -678,8 +679,8 @@ namespace client
 							LogPrint(eLogError, "Clients: I2P Client forward for endpoint ", end, " already exists");
 						}
 
-					} 
-					else 
+					}
+					else
 					{
 						boost::asio::ip::tcp::endpoint clientEndpoint;
 						std::shared_ptr<I2PService> clientTunnel;
@@ -788,7 +789,7 @@ namespace client
 					if (keys == "shareddest")
 						localDestination = m_SharedLocalDestination;
 					else
-					{	
+					{
 						auto it = destinations.find (keys);
 						if (it != destinations.end ())
 						{
@@ -809,7 +810,7 @@ namespace client
 							else
 								localDestination->SetPublic (true);
 						}
-					}	
+					}
 					if (type == I2P_TUNNELS_SECTION_TYPE_UDPSERVER)
 					{
 						// udp server tunnel
@@ -849,16 +850,16 @@ namespace client
 
 					std::shared_ptr<I2PServerTunnel> serverTunnel;
 					if (type == I2P_TUNNELS_SECTION_TYPE_HTTP)
-					{	
+					{
 						std::string hostOverride = section.second.get<std::string> (I2P_SERVER_TUNNEL_HOST_OVERRIDE, "");
 						bool i2pheaders = section.second.get (I2P_SERVER_TUNNEL_I2P_HEADERS, true);
 						serverTunnel = std::make_shared<I2PServerTunnelHTTP> (name, host, port, localDestination, hostOverride, inPort, gzip, i2pheaders);
-					}	
+					}
 					else if (type == I2P_TUNNELS_SECTION_TYPE_IRC)
 					{
 						std::string webircpass = section.second.get<std::string> (I2P_SERVER_TUNNEL_WEBIRC_PASSWORD, "");
 						serverTunnel = std::make_shared<I2PServerTunnelIRC> (name, host, port, localDestination, webircpass, inPort, gzip);
-					}	
+					}
 					else // regular server tunnel by default
 						serverTunnel = std::make_shared<I2PServerTunnel> (name, host, port, localDestination, inPort, gzip);
 
@@ -937,7 +938,7 @@ namespace client
 			i2p::data::SigningKeyType sigType; i2p::config::GetOption("httpproxy.signaturetype", sigType);
 #if !OPENSSL_PQ
 			if (sigType >= i2p::data::SIGNING_KEY_TYPE_MLDSA44) sigType = i2p::data::SIGNING_KEY_TYPE_EDDSA_SHA512_ED25519;
-#endif			
+#endif
 			LogPrint(eLogInfo, "Clients: Starting HTTP Proxy at ", httpProxyAddr, ":", httpProxyPort);
 			if (httpProxyKeys == "shareddest")
 			{
@@ -989,7 +990,7 @@ namespace client
 			i2p::data::SigningKeyType sigType; i2p::config::GetOption("socksproxy.signaturetype",    sigType);
 #if !OPENSSL_PQ
 			if (sigType >= i2p::data::SIGNING_KEY_TYPE_MLDSA44) sigType = i2p::data::SIGNING_KEY_TYPE_EDDSA_SHA512_ED25519;
-#endif			
+#endif
 			LogPrint(eLogInfo, "Clients: Starting SOCKS Proxy at ", socksProxyAddr, ":", socksProxyPort);
 			if (socksProxyKeys == "shareddest")
 			{

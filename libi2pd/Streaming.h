@@ -52,11 +52,11 @@ namespace stream
 
 	const size_t STREAMING_MTU = 1730;
 	const size_t STREAMING_MTU_RATCHETS = 1812;
-#if OPENSSL_PQ	
+#if OPENSSL_PQ
 	const size_t MAX_PACKET_SIZE = 8192;
 #else
 	const size_t MAX_PACKET_SIZE = 4096;
-#endif	
+#endif
 	const size_t COMPRESSION_THRESHOLD_SIZE = 66;
 	const int MAX_NUM_RESEND_ATTEMPTS = 10;
 	const int INITIAL_WINDOW_SIZE = 10;
@@ -80,11 +80,11 @@ namespace stream
 	const uint16_t DELAY_CHOKING_2 = 65535; // in milliseconds
 	const uint64_t SEND_INTERVAL = 10000; // in microseconds
 	const uint64_t SEND_INTERVAL_VARIANCE = 2000; // in microseconds
-	const uint64_t REQUEST_IMMEDIATE_ACK_INTERVAL = 7500; // in milliseconds 
-	const uint64_t REQUEST_IMMEDIATE_ACK_INTERVAL_VARIANCE = 3200; // in milliseconds 	
+	const uint64_t REQUEST_IMMEDIATE_ACK_INTERVAL = 7500; // in milliseconds
+	const uint64_t REQUEST_IMMEDIATE_ACK_INTERVAL_VARIANCE = 3200; // in milliseconds
 	const bool LOSS_BASED_CONTROL_ENABLED = 0; // 0/1
 	const uint64_t STREAMING_DESTINATION_POOLS_CLEANUP_INTERVAL = 646; // in seconds
-	
+
 	struct Packet
 	{
 		size_t len, offset;
@@ -262,7 +262,7 @@ namespace stream
 			void ProcessWindowDrop ();
 			void ResetWindowSize ();
 			void CancelRemoteLeaseChange ();
-			
+
 		private:
 
 			boost::asio::io_context& m_Service;
@@ -333,7 +333,7 @@ namespace stream
 			std::shared_ptr<Stream> AcceptStream (int timeout = 0); // sync
 			void SetPongHandler (const PongHandler& handler);
 			void ResetPongHandler ();
-			
+
 			std::shared_ptr<i2p::client::ClientDestination> GetOwner () const { return m_Owner; };
 			void SetOwner (std::shared_ptr<i2p::client::ClientDestination> owner) { m_Owner = owner; };
 			uint16_t GetLocalPort () const { return m_LocalPort; };
@@ -351,7 +351,12 @@ namespace stream
 			std::shared_ptr<Stream> CreateNewIncomingStream (uint32_t receiveStreamID);
 			void HandlePendingIncomingTimer (const boost::system::error_code& ecode);
 
+            void CleanupExpiredNumConnectionsPerSecond (std::list<uint64_t>& numConnectionsList, uint64_t ts);
+
 		private:
+
+            i2p::util::MemoryPool<Packet> m_PacketsPool;
+			i2p::util::MemoryPool<I2NPMessageBuffer<I2NP_MAX_SHORT_MESSAGE_SIZE> > m_I2NPMsgsPool;
 
 			std::shared_ptr<i2p::client::ClientDestination> m_Owner;
 			uint16_t m_LocalPort;
@@ -366,10 +371,9 @@ namespace stream
 			boost::asio::deadline_timer m_PendingIncomingTimer;
 			std::unordered_map<uint32_t, std::list<Packet *> > m_SavedPackets; // receiveStreamID->packets, arrived before SYN
 
-			i2p::util::MemoryPool<Packet> m_PacketsPool;
-			i2p::util::MemoryPool<I2NPMessageBuffer<I2NP_MAX_SHORT_MESSAGE_SIZE> > m_I2NPMsgsPool;
 			uint64_t m_LastCleanupTime; // in seconds
-			
+			std::unordered_map<i2p::data::IdentHash, std::list<uint64_t> > m_NumIncomingConnectionsPerSecond; // dest-> list of timestamps in seconds
+
 		public:
 
 			i2p::data::GzipInflator m_Inflator;

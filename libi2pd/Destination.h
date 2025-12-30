@@ -101,10 +101,12 @@ namespace client
 	const int DEFAULT_STREAMING_PROFILE = STREAMING_PROFILE_BULK;
 	const char I2CP_PARAM_STREAMING_MAX_CONCURRENT_STREAMS[] = "i2p.streaming.maxConcurrentStreams";
 	const int DEFAULT_MAX_CONCURRENT_STREAMS = 2048;
+	const char I2CP_PARAM_STREAMING_MAX_CONNS_PER_MINUTE[] ="i2p.streaming.maxConnsPerMinute"; // per dest
+	const int DEFAULT_MAX_CONNS_PER_MINUTE = 0; // unlimited
 	const char I2CP_PARAM_STREAMING_MAX_WINDOW_SIZE[] = "i2p.streaming.maxWindowSize";
 	const char I2CP_PARAM_STREAMING_DONT_SIGN[] = "i2p.streaming.dontSign";
 	const int DEFAULT_DONT_SIGN = false;
-	
+
 	typedef std::function<void (std::shared_ptr<i2p::stream::Stream> stream)> StreamRequestComplete;
 
 	class LeaseSetDestination: public i2p::garlic::GarlicDestination,
@@ -169,7 +171,7 @@ namespace client
 
 			// implements GarlicDestination
 			void HandleI2NPMessage (const uint8_t * buf, size_t len) override;
-			bool HandleCloveI2NPMessage (I2NPMessageType typeID, const uint8_t * payload, 
+			bool HandleCloveI2NPMessage (I2NPMessageType typeID, const uint8_t * payload,
 				size_t len, uint32_t msgID, i2p::garlic::ECIESX25519AEADRatchetSession * from) override;
 
 			void SetLeaseSet (std::shared_ptr<const i2p::data::LocalLeaseSet> newLeaseSet);
@@ -181,7 +183,7 @@ namespace client
 			// I2CP
 			virtual void HandleDataMessage (const uint8_t * buf, size_t len, i2p::garlic::ECIESX25519AEADRatchetSession * from) = 0;
 			virtual void CreateNewLeaseSet (const std::vector<std::shared_ptr<i2p::tunnel::InboundTunnel> >& tunnels) = 0;
-			
+
 		private:
 
 			void UpdateLeaseSet ();
@@ -210,7 +212,7 @@ namespace client
 
 			std::list<std::shared_ptr<I2NPMessage> > m_IncomingMsgsQueue;
 			mutable std::mutex m_IncomingMsgsQueueMutex;
-			
+
 			std::shared_ptr<i2p::tunnel::TunnelPool> m_Pool;
 			std::mutex m_LeaseSetMutex;
 			std::shared_ptr<const i2p::data::LocalLeaseSet> m_LeaseSet;
@@ -273,6 +275,7 @@ namespace client
 			int GetStreamingOutboundSpeed () const { return m_StreamingOutboundSpeed; }
 			int GetStreamingInboundSpeed () const { return m_StreamingInboundSpeed; }
 			int GetStreamingMaxConcurrentStreams () const { return m_StreamingMaxConcurrentStreams; }
+			int GetStreamingMaxConnsPerMinute () const { return m_StreamingMaxConnsPerMinute; }
 			bool IsStreamingAnswerPings () const { return m_IsStreamingAnswerPings; }
 			bool IsStreamingDontSign () const { return m_IsStreamingDontSign; }
 			int GetStreamingMaxWindowSize () const { return m_StreamingMaxWindowSize; }
@@ -298,7 +301,7 @@ namespace client
 			// I2CP
 			void HandleDataMessage (const uint8_t * buf, size_t len, i2p::garlic::ECIESX25519AEADRatchetSession * from) override;
 			void CreateNewLeaseSet (const std::vector<std::shared_ptr<i2p::tunnel::InboundTunnel> >& tunnels) override;
-						
+
 		private:
 
 			std::shared_ptr<ClientDestination> GetSharedFromThis () {
@@ -315,8 +318,9 @@ namespace client
 			i2p::data::PrivateKeys m_Keys;
 			std::map<i2p::data::CryptoKeyType, std::shared_ptr<i2p::crypto::LocalEncryptionKey> > m_EncryptionKeys; // last is most preferable
 			i2p::data::CryptoKeyType m_PreferredCryptoType;
-			
-			int m_StreamingAckDelay,m_StreamingOutboundSpeed, m_StreamingInboundSpeed, m_StreamingMaxConcurrentStreams, m_StreamingMaxWindowSize;
+
+			int m_StreamingAckDelay,m_StreamingOutboundSpeed, m_StreamingInboundSpeed,
+                m_StreamingMaxConcurrentStreams, m_StreamingMaxConnsPerMinute, m_StreamingMaxWindowSize;
 			bool m_IsStreamingAnswerPings, m_IsStreamingDontSign;
 			std::shared_ptr<i2p::stream::StreamingDestination> m_StreamingDestination; // default
 			std::map<uint16_t, std::shared_ptr<i2p::stream::StreamingDestination> > m_StreamingDestinationsByPorts;
