@@ -2127,10 +2127,24 @@ namespace stream
 				}
 				if (m_Owner->GetStreamingMaxConcurrentStreams () > 0 && (int)m_Streams.size () > m_Owner->GetStreamingMaxConcurrentStreams ())
 				{
-					LogPrint(eLogWarning, "Streaming: Number of streams exceeds ", m_Owner->GetStreamingMaxConcurrentStreams ());
+					LogPrint(eLogInfo, "Streaming: Number of streams exceeds ", m_Owner->GetStreamingMaxConcurrentStreams ());
 					DeletePacket (packet);
 					return;
 				}
+                if (m_Owner->GetStreamingMaxConnsPerMinute () > 0 && packet->from)
+                {
+                    auto ts = i2p::util::GetSecondsSinceEpoch ();
+                    auto& numConnectionsList = m_NumIncomingConnectionsPerSecond[packet->from->GetRemoteStaticKey ()]; // find or create new
+                    CleanupExpiredNumConnectionsPerSecond (numConnectionsList, ts);
+                    if ((int)numConnectionsList.size () >= m_Owner->GetStreamingMaxConnsPerMinute ())
+                    {
+                        LogPrint (eLogInfo, "Streaming: Number of incoming streams exceeds ", m_Owner->GetStreamingMaxConnsPerMinute (), " streams per minute");
+                        DeletePacket (packet);
+                        return;
+                    }
+                    else
+                        numConnectionsList.emplace_back (ts);
+                }
 				auto incomingStream = CreateNewIncomingStream (receiveStreamID);
 				incomingStream->HandleNextPacket (packet); // SYN
 				if (!incomingStream->GetRemoteLeaseSet ())
@@ -2139,25 +2153,6 @@ namespace stream
 					incomingStream->Terminate (); // can't send FIN anyway
 					return;
 				}
-                if (m_Owner->GetStreamingMaxConnsPerMinute () > 0)
-                {
-                    auto ts = i2p::util::GetSecondsSinceEpoch ();
-                    auto ident = incomingStream->GetRemoteIdentity ();
-                    if (ident)
-                    {
-                        auto& numConnectionsList = m_NumIncomingConnectionsPerSecond[ident->GetIdentHash ()]; // find or create new
-                        CleanupExpiredNumConnectionsPerSecond (numConnectionsList, ts);
-                        if ((int)numConnectionsList.size () >= m_Owner->GetStreamingMaxConnsPerMinute ())
-                        {
-                            LogPrint (eLogWarning, "Streaming: Number of incoming streams from ",ident->GetIdentHash ().ToBase32 (),
-                                " exceeds ", m_Owner->GetStreamingMaxConnsPerMinute (), " streams per minute");
-                            incomingStream->Terminate ();
-                            return;
-                        }
-                        else
-                            numConnectionsList.emplace_back (ts);
-                    }
-                }
 
 				// handle saved packets if any
 				{
@@ -2270,19 +2265,9 @@ namespace stream
 			m_I2NPMsgsPool.CleanUp ();
 			if (!m_NumIncomingConnectionsPerSecond.empty ())
 			{
-                if (stream)
-                {
-                    auto ident = stream->GetRemoteIdentity ();
-                    if (ident)
-                    {
-                        auto it = m_NumIncomingConnectionsPerSecond.find (ident->GetIdentHash ());
-                        if (it != m_NumIncomingConnectionsPerSecond.end ())
-                            CleanupExpiredNumConnectionsPerSecond (it->second, ts);
-                    }
-                }
                 for (auto it = m_NumIncomingConnectionsPerSecond.begin (); it != m_NumIncomingConnectionsPerSecond.end ();)
                 {
-                    if (it->second.empty ())
+                    if (it->second.empty () || it->second.back () + 60 < ts) // newest is too old
                         it = m_NumIncomingConnectionsPerSecond.erase (it);
                     else
                         it++;

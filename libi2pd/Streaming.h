@@ -372,7 +372,7 @@ namespace stream
 			std::unordered_map<uint32_t, std::list<Packet *> > m_SavedPackets; // receiveStreamID->packets, arrived before SYN
 
 			uint64_t m_LastCleanupTime; // in seconds
-			std::unordered_map<i2p::data::IdentHash, std::list<uint64_t> > m_NumIncomingConnectionsPerSecond; // dest-> list of timestamps in seconds
+			std::unordered_map<i2p::data::Tag<32>, std::list<uint64_t> > m_NumIncomingConnectionsPerSecond; // static key -> list of timestamps in seconds
 
 		public:
 
