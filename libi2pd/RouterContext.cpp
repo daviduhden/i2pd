@@ -1495,7 +1495,8 @@ namespace i2p
 				};
 			if (i2p::transport::transports.IsConnected (floodfill->GetIdentHash ()) || // already connected
 				(floodfill->IsReachableFrom (i2p::context.GetRouterInfo ()) && // are we able to connect
-				 !i2p::transport::transports.RoutesRestricted ())) // and routes not restricted
+				!IsLimitedConnectivity () && // and not limited connectivity
+                !i2p::transport::transports.RoutesRestricted ())) // and routes not restricted
 			{
 				// send directly
 				auto msg = CreateDatabaseStoreMsg (i2p::context.GetSharedRouterInfo (), replyToken);
