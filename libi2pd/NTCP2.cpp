@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -285,14 +285,25 @@ namespace transport
 		return true;
 	}
 
-	bool NTCP2Establisher::ProcessSessionRequestMessage (uint16_t& paddingLen, bool& clockSkew)
+	bool NTCP2Establisher::ProcessSessionRequestMessage (uint16_t& paddingLen, bool& clockSkew, bool& pq, bool decryptX)
 	{
 		clockSkew = false;
-		// decrypt X
-		i2p::crypto::CBCDecryption decryption;
-		decryption.SetKey (i2p::context.GetIdentHash ());
-		decryption.Decrypt (m_SessionRequestBuffer, 32, i2p::context.GetNTCP2IV (), GetRemotePub ());
-		memcpy (m_IV, m_SessionRequestBuffer + 16, 16); // save last block as IV for SessionCreated
+		pq = false;
+		if (decryptX)
+		{
+            // decrypt X
+            auto x = GetRemotePub ();
+            i2p::crypto::CBCDecryption decryption;
+            decryption.SetKey (i2p::context.GetIdentHash ());
+            decryption.Decrypt (m_SessionRequestBuffer, 32, i2p::context.GetNTCP2IV (), x);
+            memcpy (m_IV, m_SessionRequestBuffer + 16, 16); // save last block as IV for SessionCreated
+            if (x[31] & 0x80)
+            {
+                pq = true;
+                LogPrint (eLogWarning, "NTCP2: SessionRequest ML-KEM requested but not supported");
+                return false;
+            }
+		}
 		// decryption key for next block
 		if (!KDF1Bob ())
 		{
@@ -615,8 +626,13 @@ namespace transport
 		}
 		else
 		{
-			// we receive first 64 bytes (32 Y, and 32 ChaCha/Poly frame) first
-			boost::asio::async_read (m_Socket, boost::asio::buffer(m_Establisher->m_SessionCreatedBuffer, 64), boost::asio::transfer_all (),
+			// we receive first 64 bytes (32 Y, and 32 ChaCha/Poly frame) first and ML-KEM frame if post quantum
+			size_t len = 64;
+#if OPENSSL_PQ			
+			if (m_Establisher->m_CryptoType > i2p::data::CRYPTO_KEY_TYPE_ECIES_X25519_AEAD)
+                len += i2p::crypto::GetMLKEMCipherTextLen (m_Establisher->m_CryptoType) + 16;
+#endif                
+			boost::asio::async_read (m_Socket, boost::asio::buffer(m_Establisher->m_SessionCreatedBuffer, len), boost::asio::transfer_all (),
 				std::bind(&NTCP2Session::HandleSessionCreatedReceived, shared_from_this (), std::placeholders::_1, std::placeholders::_2));
 		}
 	}
@@ -643,8 +659,8 @@ namespace transport
 	{
 		LogPrint (eLogDebug, "NTCP2: SessionRequest received ", len);
 		uint16_t paddingLen = 0;
-		bool clockSkew = false;
-		if (m_Establisher->ProcessSessionRequestMessage (paddingLen, clockSkew))
+		bool clockSkew = false, pq = false;
+		if (m_Establisher->ProcessSessionRequestMessage (paddingLen, clockSkew, pq, true))
 		{
 			if (clockSkew)
 			{

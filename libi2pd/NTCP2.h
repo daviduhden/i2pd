@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -91,8 +91,8 @@ namespace transport
 		void SetVersion (int version);
 
 		const uint8_t * GetPub () const { return m_EphemeralKeys->GetPublicKey (); };
-		const uint8_t * GetRemotePub () const { return m_RemoteEphemeralPublicKey; }; // Y for Alice and X for Bob
-		uint8_t * GetRemotePub () { return m_RemoteEphemeralPublicKey; }; // to set
+		const uint8_t * GetRemotePub () const { return m_RemoteEphemeralPublicKey; }; // Y for Alice
+		uint8_t * GetRemotePub () { return m_RemoteEphemeralPublicKey; }; // to set or X for Bob
 
 		const uint8_t * GetCK () const { return m_CK; };
 		const uint8_t * GetH () const { return m_H; };
@@ -114,7 +114,7 @@ namespace transport
 		bool CreateSessionConfirmedMessagePart1 ();
 		bool CreateSessionConfirmedMessagePart2 ();
 
-		bool ProcessSessionRequestMessage (uint16_t& paddingLen, bool& clockSkew);
+		bool ProcessSessionRequestMessage (uint16_t& paddingLen, bool& clockSkew, bool& pq, bool decryptX = true);
 		bool ProcessSessionCreatedMessage (uint16_t& paddingLen);
 		bool ProcessSessionConfirmedMessagePart1 ();
 		bool ProcessSessionConfirmedMessagePart2 (uint8_t * m3p2Buf);
