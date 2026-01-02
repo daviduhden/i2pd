@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -590,7 +590,8 @@ namespace tunnel
 			start++;
 		}
 		else if (i2p::transport::transports.GetNumPeers () > 100 ||
-			(inbound && i2p::transport::transports.GetNumPeers () > 25))
+			(inbound && (i2p::transport::transports.GetNumPeers () > 25 ||
+            (i2p::context.IsLimitedConnectivity () && i2p::transport::transports.GetNumPeers () > 0))))
 		{
 			auto r = i2p::transport::transports.GetRandomPeer (m_IsHighBandwidth && !i2p::context.IsLimitedConnectivity ());
 			if (r && r->IsECIES () && (!r->HasProfile () || !r->GetProfile ()->IsBad ()) &&
