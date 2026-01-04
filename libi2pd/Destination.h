@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -104,6 +104,7 @@ namespace client
 	const char I2CP_PARAM_STREAMING_MAX_CONNS_PER_MINUTE[] ="i2p.streaming.maxConnsPerMinute"; // per dest
 	const int DEFAULT_MAX_CONNS_PER_MINUTE = 0; // unlimited
 	const char I2CP_PARAM_STREAMING_MAX_WINDOW_SIZE[] = "i2p.streaming.maxWindowSize";
+	const char I2CP_PARAM_STREAMING_MAX_RESENDS[] = "i2p.streaming.maxResends";
 	const char I2CP_PARAM_STREAMING_DONT_SIGN[] = "i2p.streaming.dontSign";
 	const int DEFAULT_DONT_SIGN = false;
 
@@ -279,6 +280,7 @@ namespace client
 			bool IsStreamingAnswerPings () const { return m_IsStreamingAnswerPings; }
 			bool IsStreamingDontSign () const { return m_IsStreamingDontSign; }
 			int GetStreamingMaxWindowSize () const { return m_StreamingMaxWindowSize; }
+            int GetStreamingMaxResends () const { return m_StreamingMaxResends; }
 
 			// datagram
 			i2p::datagram::DatagramDestination * GetDatagramDestination () const { return m_DatagramDestination; };
@@ -320,7 +322,8 @@ namespace client
 			i2p::data::CryptoKeyType m_PreferredCryptoType;
 
 			int m_StreamingAckDelay,m_StreamingOutboundSpeed, m_StreamingInboundSpeed,
-                m_StreamingMaxConcurrentStreams, m_StreamingMaxConnsPerMinute, m_StreamingMaxWindowSize;
+                m_StreamingMaxConcurrentStreams, m_StreamingMaxConnsPerMinute, m_StreamingMaxWindowSize,
+                m_StreamingMaxResends;
 			bool m_IsStreamingAnswerPings, m_IsStreamingDontSign;
 			std::shared_ptr<i2p::stream::StreamingDestination> m_StreamingDestination; // default
 			std::map<uint16_t, std::shared_ptr<i2p::stream::StreamingDestination> > m_StreamingDestinationsByPorts;

@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -981,6 +981,7 @@ namespace client
 		m_StreamingMaxConcurrentStreams (DEFAULT_MAX_CONCURRENT_STREAMS),
 		m_StreamingMaxConnsPerMinute (DEFAULT_MAX_CONNS_PER_MINUTE),
 		m_StreamingMaxWindowSize (i2p::stream::MAX_WINDOW_SIZE),
+		m_StreamingMaxResends (i2p::stream::MAX_NUM_RESEND_ATTEMPTS),
 		m_IsStreamingAnswerPings (DEFAULT_ANSWER_PINGS), m_IsStreamingDontSign (DEFAULT_DONT_SIGN),
 		m_LastPort (0), m_DatagramDestination (nullptr), m_RefCounter (0),
 		m_LastPublishedTimestamp (0), m_ReadyChecker(service)
@@ -1059,6 +1060,7 @@ namespace client
 						m_StreamingMaxWindowSize = i2p::stream::MIN_WINDOW_SIZE;
 				params->Get (I2CP_PARAM_STREAMING_ANSWER_PINGS, m_IsStreamingAnswerPings);
 				params->Get (I2CP_PARAM_STREAMING_DONT_SIGN, m_IsStreamingDontSign);
+                params->Get (I2CP_PARAM_STREAMING_MAX_RESENDS, m_StreamingMaxResends);
 
 				if (GetLeaseSetType () == i2p::data::NETDB_STORE_TYPE_ENCRYPTED_LEASESET2)
 				{

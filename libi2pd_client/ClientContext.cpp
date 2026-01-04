@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -483,6 +483,7 @@ namespace client
 		options.Insert (I2CP_PARAM_STREAMING_PROFILE, GetI2CPOption(section, I2CP_PARAM_STREAMING_PROFILE, DEFAULT_STREAMING_PROFILE));
 		options.Insert (I2CP_PARAM_STREAMING_MAX_WINDOW_SIZE, GetI2CPOption(section, I2CP_PARAM_STREAMING_MAX_WINDOW_SIZE, i2p::stream::MAX_WINDOW_SIZE));
 		options.Insert (I2CP_PARAM_LEASESET_TYPE, GetI2CPOption(section, I2CP_PARAM_LEASESET_TYPE, DEFAULT_LEASESET_TYPE));
+		options.Insert (I2CP_PARAM_STREAMING_MAX_RESENDS, GetI2CPOption(section, I2CP_PARAM_STREAMING_MAX_RESENDS, i2p::stream::MAX_NUM_RESEND_ATTEMPTS));
 #if OPENSSL_PQ
 		std::string encType = GetI2CPStringOption(section, I2CP_PARAM_LEASESET_ENCRYPTION_TYPE, isServer ? "6,4" : "6,4,0");
 #else
@@ -535,6 +536,8 @@ namespace client
 			options.Insert (I2CP_PARAM_STREAMING_PROFILE, value);
 		if (i2p::config::GetOption(prefix + I2CP_PARAM_STREAMING_MAX_WINDOW_SIZE, value))
 			options.Insert (I2CP_PARAM_STREAMING_MAX_WINDOW_SIZE, value);
+		if (i2p::config::GetOption(prefix + I2CP_PARAM_STREAMING_MAX_RESENDS, value))
+			options.Insert (I2CP_PARAM_STREAMING_MAX_RESENDS, value);
 	}
 
 	void ClientContext::ReadTunnels ()

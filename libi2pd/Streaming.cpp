@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -103,6 +103,7 @@ namespace stream
 		m_LastSendTime (0), m_LastACKRecieveTime (0), m_ACKRecieveInterval (local.GetOwner ()->GetStreamingAckDelay ()),
 		m_RemoteLeaseChangeTime (0), m_LastWindowIncTime (0), m_LastACKRequestTime (0), m_LastACKSendTime (0),
 		m_PacketACKInterval (1), m_PacketACKIntervalRem (0), // for limit inbound speed
+		m_MaxNumResendAttempts (local.GetOwner ()->GetStreamingMaxResends ()),
 		m_NumResendAttempts (0), m_NumPacketsToSend (0), m_JitterAccum (0), m_JitterDiv (1), m_MTU (STREAMING_MTU)
 	{
 		RAND_bytes ((uint8_t *)&m_RecvStreamID, 4);
@@ -135,6 +136,7 @@ namespace stream
 		m_LastACKRecieveTime (0), m_ACKRecieveInterval (local.GetOwner ()->GetStreamingAckDelay ()),
 		m_RemoteLeaseChangeTime (0), m_LastWindowIncTime (0), m_LastACKRequestTime (0),
 		m_LastACKSendTime (0), m_PacketACKInterval (1), m_PacketACKIntervalRem (0), // for limit inbound speed
+		m_MaxNumResendAttempts (local.GetOwner ()->GetStreamingMaxResends ()),
 		m_NumResendAttempts (0), m_NumPacketsToSend (0), m_JitterAccum (0), m_JitterDiv (1), m_MTU (STREAMING_MTU)
 	{
 		RAND_bytes ((uint8_t *)&m_RecvStreamID, 4);
@@ -1698,9 +1700,9 @@ namespace stream
 			Close ();
 			return;
 		}
-		if (m_NumResendAttempts >= MAX_NUM_RESEND_ATTEMPTS)
+		if (m_NumResendAttempts >= m_MaxNumResendAttempts)
 		{
-			LogPrint (eLogWarning, "Streaming: packet was not ACKed after ", MAX_NUM_RESEND_ATTEMPTS, " attempts, terminate, rSID=", m_RecvStreamID, ", sSID=", m_SendStreamID);
+			LogPrint (eLogWarning, "Streaming: packet was not ACKed after ", m_MaxNumResendAttempts, " attempts, terminate, rSID=", m_RecvStreamID, ", sSID=", m_SendStreamID);
 			m_Status = eStreamStatusReset;
 			Close ();
 			return;

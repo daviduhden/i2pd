@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -301,7 +301,7 @@ namespace stream
 			uint64_t m_MinPacingTime, m_PacingTime, m_PacingTimeRem, // microseconds
 				m_LastSendTime, m_LastACKRecieveTime, m_ACKRecieveInterval, m_RemoteLeaseChangeTime, m_LastWindowIncTime, m_LastACKRequestTime;	// milliseconds
 			uint64_t m_LastACKSendTime, m_PacketACKInterval, m_PacketACKIntervalRem; // for limit inbound speed
-			int m_NumResendAttempts, m_NumPacketsToSend;
+			int m_MaxNumResendAttempts, m_NumResendAttempts, m_NumPacketsToSend;
 			uint64_t m_JitterAccum;
 			int m_JitterDiv;
 			size_t m_MTU;
