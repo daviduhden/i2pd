@@ -1138,8 +1138,14 @@ namespace http {
 				Terminate (ecode);
 			return;
 		}
-		m_Buffer[bytes_transferred] = '\0';
-		m_BufferLen = bytes_transferred;
+		if (bytes_transferred <= HTTP_CONNECTION_BUFFER_SIZE) {
+			m_Buffer[bytes_transferred] = '\0';
+			m_BufferLen = bytes_transferred;
+		}
+		else {
+			m_Buffer[HTTP_CONNECTION_BUFFER_SIZE] = '\0';
+			m_BufferLen = HTTP_CONNECTION_BUFFER_SIZE;
+		}
 		RunRequest();
 		Receive ();
 	}
