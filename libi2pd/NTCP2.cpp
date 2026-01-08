@@ -254,7 +254,7 @@ namespace transport
 				LogPrint (eLogWarning, "NTCP2: SessionCreated ML-KEM ciphertext section AEAD encryption failed");
 				return false;
 			}
-			MixHash (m_SessionCreatedBuffer + offset, cipherTextLen + 16);
+			MixHash (m_SessionCreatedBuffer + offset, cipherTextLen + 16); // encrypt ML-KEM frame
 			MixKey (sharedSecret);
             offset += cipherTextLen + 16;
         }
@@ -271,10 +271,14 @@ namespace transport
 			LogPrint (eLogWarning, "NTCP2: SessionCreated failed to encrypt options");
 			return false;
 		}
+		MixHash (m_SessionCreatedBuffer + offset, 32);	// encrypted options
 		offset += 32;
         // padding
         if (paddingLen)
+        {
             RAND_bytes (m_SessionCreatedBuffer + offset, paddingLen);
+            MixHash (m_SessionCreatedBuffer + offset, paddingLen);
+        }
         m_SessionCreatedBufferLen = offset + paddingLen;
 		return true;
 	}
@@ -471,26 +475,18 @@ namespace transport
 
 	bool NTCP2Establisher::ProcessSessionConfirmedMessagePart1 ()
 	{
-		// update AD
-		MixHash (m_SessionCreatedBuffer + 32, 32);	// encrypted payload
-		int paddingLength = m_SessionCreatedBufferLen - 64;
-		if (paddingLength > 0)
-			MixHash (m_SessionCreatedBuffer + 64, paddingLength);
-
 		// decrypt S, n = 1
 		if (!Decrypt (m_SessionConfirmedBuffer, m_RemoteStaticKey, 32))
 		{
 			LogPrint (eLogWarning, "NTCP2: SessionConfirmed Part1 AEAD verification failed ");
 			return false;
 		}
+		MixHash (m_SessionConfirmedBuffer, 48);
 		return true;
 	}
 
 	bool NTCP2Establisher::ProcessSessionConfirmedMessagePart2 (uint8_t * m3p2Buf)
 	{
-		// update AD again
-		MixHash (m_SessionConfirmedBuffer, 48);
-
 		if (!KDF3Bob ()) // MixKey, n = 0
 		{
 			LogPrint (eLogWarning, "NTCP2: SessionConfirmed Part2 KDF failed");
