@@ -168,7 +168,6 @@ namespace transport
 #endif
 		memcpy (m_IV, m_SessionRequestBuffer + 16, 16); // save last block as IV for SessionCreated
 		offset += 32;
-
 		// encryption key for next block
 		if (!KDF1Alice ()) return false;
 		size_t maxMsgLength = NTCP2_SESSION_REQUEST_MAX_SIZE;
@@ -234,25 +233,49 @@ namespace transport
 
 	bool NTCP2Establisher::CreateSessionCreatedMessage (std::mt19937& rng)
 	{
-		auto paddingLen = rng () % (NTCP2_SESSION_CREATED_MAX_SIZE - 64);
-		m_SessionCreatedBufferLen = paddingLen + 64;
-		memset (m_SessionCreatedBuffer + 64, 0, paddingLen);
+		size_t offset = 0;
 		// encrypt Y
 		i2p::crypto::CBCEncryption encryption;
 		encryption.SetKey (i2p::context.GetIdentHash ());
 		encryption.Encrypt (GetPub (), 32, m_IV, m_SessionCreatedBuffer); // Y
+		offset += 32;
 		// encryption key for next block (m_K)
 		if (!KDF2Bob ()) return false;
+		size_t maxMsgLength = NTCP2_SESSION_CREATED_MAX_SIZE;
+#if OPENSSL_PQ
+        if (m_PQKeys)
+        {
+            size_t cipherTextLen = i2p::crypto::GetMLKEMCipherTextLen (m_CryptoType);
+			std::vector<uint8_t> kemCiphertext(cipherTextLen);
+			uint8_t sharedSecret[32];
+			m_PQKeys->Encaps (kemCiphertext.data (), sharedSecret);
+			if (!Encrypt (kemCiphertext.data (), m_SessionCreatedBuffer + offset, cipherTextLen))
+			{
+				LogPrint (eLogWarning, "NTCP2: SessionCreated ML-KEM ciphertext section AEAD encryption failed");
+				return false;
+			}
+			MixHash (m_SessionCreatedBuffer + offset, cipherTextLen + 16);
+			MixKey (sharedSecret);
+            offset += cipherTextLen + 16;
+        }
+#endif
+         // calculate padding length
+		auto paddingLen = (offset + 32 < maxMsgLength) ? (rng () % (maxMsgLength - offset - 32)) : 0; // 32 bytes following options block size
 		uint8_t options[16];
 		memset (options, 0, 16);
 		htobe16buf (options + 2, paddingLen); // padLen
 		htobe32buf (options + 8, (i2p::util::GetMillisecondsSinceEpoch () + 500)/1000); // tsB, rounded to seconds
 		// encrypt options
-		if (!Encrypt (options, m_SessionCreatedBuffer + 32, 16))
+		if (!Encrypt (options, m_SessionCreatedBuffer + offset, 16))
 		{
 			LogPrint (eLogWarning, "NTCP2: SessionCreated failed to encrypt options");
 			return false;
 		}
+		offset += 32;
+        // padding
+        if (paddingLen)
+            RAND_bytes (m_SessionCreatedBuffer + offset, paddingLen);
+        m_SessionCreatedBufferLen = offset + paddingLen;
 		return true;
 	}
 
@@ -289,6 +312,7 @@ namespace transport
 	{
 		clockSkew = false;
 		pq = false;
+		size_t offset = 0;
 		if (decryptX)
 		{
             // decrypt X
@@ -299,22 +323,50 @@ namespace transport
             memcpy (m_IV, m_SessionRequestBuffer + 16, 16); // save last block as IV for SessionCreated
             if (x[31] & 0x80)
             {
-                pq = true;
-                LogPrint (eLogWarning, "NTCP2: SessionRequest ML-KEM requested but not supported");
+#if OPENSSL_PQ
+                if (m_CryptoType > i2p::data::CRYPTO_KEY_TYPE_ECIES_X25519_AEAD)
+                {
+                    pq = true;
+                    x[32] &= 0x7F;
+                }
+#endif
+                if (!pq)
+                {
+                    LogPrint (eLogWarning, "NTCP2: SessionRequest ML-KEM requested but not supported");
+                    return false;
+                }
+            }
+            else
+                SetVersion (2); // regular x25519 requested
+            // decryption key for next block
+            if (!KDF1Bob ())
+            {
+                LogPrint (eLogWarning, "NTCP2: SessionRequest KDF failed");
                 return false;
             }
 		}
-		// decryption key for next block
-		if (!KDF1Bob ())
-		{
-			LogPrint (eLogWarning, "NTCP2: SessionRequest KDF failed");
-			return false;
-		}
+		offset += 32;
+#if OPENSSL_PQ
+        if (pq) return true; // we need to read extra ML-KEM block first
+        if (m_CryptoType > i2p::data::CRYPTO_KEY_TYPE_ECIES_X25519_AEAD)
+        {
+            auto keyLen = i2p::crypto::GetMLKEMPublicKeyLen (m_CryptoType);
+            std::vector<uint8_t> encapsKey(keyLen);
+            if (Decrypt (m_SessionRequestBuffer + offset, encapsKey.data (), keyLen))
+            {
+                MixHash (m_SessionRequestBuffer + offset, keyLen + 16);
+                offset += keyLen + 16;
+                m_PQKeys = i2p::crypto::CreateMLKEMKeys (m_CryptoType);
+                m_PQKeys->SetPublicKey (encapsKey.data ());
+            }
+        }
+#endif
 		// verify MAC and decrypt options block (32 bytes)
 		uint8_t options[16];
-		if (Decrypt (m_SessionRequestBuffer + 32, options, 16))
+		if (Decrypt (m_SessionRequestBuffer + offset, options, 16))
 		{
-            MixHash (m_SessionRequestBuffer + 32, 32);
+            MixHash (m_SessionRequestBuffer + offset, 32);
+            offset += 32;
 			// options
 			if (options[0] && options[0] != i2p::context.GetNetID ())
 			{
@@ -324,7 +376,7 @@ namespace transport
 			if (options[1] == 2) // ver is always 2
 			{
 				paddingLen = bufbe16toh (options + 2);
-				m_SessionRequestBufferLen = paddingLen + 64;
+				m_SessionRequestBufferLen = paddingLen + offset;
 				// actual padding is not known yet, apply MixHash later
 				m3p2Len = bufbe16toh (options + 4);
 				if (m3p2Len < 16)
@@ -628,10 +680,10 @@ namespace transport
 		{
 			// we receive first 64 bytes (32 Y, and 32 ChaCha/Poly frame) first and ML-KEM frame if post quantum
 			size_t len = 64;
-#if OPENSSL_PQ			
+#if OPENSSL_PQ
 			if (m_Establisher->m_CryptoType > i2p::data::CRYPTO_KEY_TYPE_ECIES_X25519_AEAD)
                 len += i2p::crypto::GetMLKEMCipherTextLen (m_Establisher->m_CryptoType) + 16;
-#endif                
+#endif
 			boost::asio::async_read (m_Socket, boost::asio::buffer(m_Establisher->m_SessionCreatedBuffer, len), boost::asio::transfer_all (),
 				std::bind(&NTCP2Session::HandleSessionCreatedReceived, shared_from_this (), std::placeholders::_1, std::placeholders::_2));
 		}
@@ -655,12 +707,12 @@ namespace transport
 		}
 	}
 
-	void NTCP2Session::ProcessSessionRequest (size_t len)
+	void NTCP2Session::ProcessSessionRequest (size_t len, bool first)
 	{
-		LogPrint (eLogDebug, "NTCP2: SessionRequest received ", len);
+		LogPrint (eLogDebug, "NTCP2: SessionRequest ", first ? "received " : "updated ", len);
 		uint16_t paddingLen = 0;
 		bool clockSkew = false, pq = false;
-		if (m_Establisher->ProcessSessionRequestMessage (paddingLen, clockSkew, pq, true))
+		if (m_Establisher->ProcessSessionRequestMessage (paddingLen, clockSkew, pq, first))
 		{
 			if (clockSkew)
 			{
@@ -668,11 +720,23 @@ namespace transport
 				SendSessionCreated ();
 				boost::asio::post (m_Server.GetService (), std::bind (&NTCP2Session::Terminate, shared_from_this ()));
 			}
+#if OPENSSL_PQ
+			else if (pq)
+			{
+                auto keyLen = i2p::crypto::GetMLKEMPublicKeyLen (m_Establisher->m_CryptoType);
+                boost::asio::async_read (m_Socket, boost::asio::buffer(m_Establisher->m_SessionRequestBuffer + 64, keyLen + 16), boost::asio::transfer_all (),
+						std::bind(&NTCP2Session::HandleSessionRequestMLKEMReceived, shared_from_this (), std::placeholders::_1, std::placeholders::_2));
+			}
+#endif
 			else if (paddingLen > 0)
 			{
-				if (paddingLen <= NTCP2_SESSION_REQUEST_MAX_SIZE - 64) // session request is 287 bytes max
+#if OPENSSL_PQ
+                if (len + paddingLen <= NTCP2_SESSION_REQUEST_MAX_SIZE + i2p::crypto::MLKEM1024_KEY_LENGTH + 16)
+#else
+				if (len + paddingLen <= NTCP2_SESSION_REQUEST_MAX_SIZE) // session request is 287 bytes max
+#endif
 				{
-					boost::asio::async_read (m_Socket, boost::asio::buffer(m_Establisher->m_SessionRequestBuffer + 64, paddingLen), boost::asio::transfer_all (),
+					boost::asio::async_read (m_Socket, boost::asio::buffer(m_Establisher->m_SessionRequestBuffer + len, paddingLen), boost::asio::transfer_all (),
 						std::bind(&NTCP2Session::HandleSessionRequestPaddingReceived, shared_from_this (), std::placeholders::_1, std::placeholders::_2));
 				}
 				else
@@ -706,6 +770,25 @@ namespace transport
 				});
 		}
 	}
+
+#if OPENSSL_PQ
+    void NTCP2Session::HandleSessionRequestMLKEMReceived (const boost::system::error_code& ecode, std::size_t bytes_transferred)
+    {
+        if (ecode)
+		{
+			LogPrint (eLogWarning, "NTCP2: SessionRequest ML-KEM read error: ", ecode.message ());
+			Terminate ();
+		}
+		else
+		{
+             boost::asio::post (m_Server.GetEstablisherService (),
+				[s = shared_from_this (), bytes_transferred] ()
+				{
+                    s->ProcessSessionRequest (bytes_transferred + 64, false);
+                });
+		}
+    }
+#endif
 
 	void NTCP2Session::SendSessionCreated ()
 	{

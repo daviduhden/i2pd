@@ -185,8 +185,11 @@ namespace transport
 
 			void HandleSessionRequestSent (const boost::system::error_code& ecode, std::size_t bytes_transferred);
 			void HandleSessionRequestReceived (const boost::system::error_code& ecode, std::size_t bytes_transferred);
-			void ProcessSessionRequest (size_t len);
+			void ProcessSessionRequest (size_t len, bool first = true);
 			void HandleSessionRequestPaddingReceived (const boost::system::error_code& ecode, std::size_t bytes_transferred);
+#if OPENSSL_PQ
+            void HandleSessionRequestMLKEMReceived (const boost::system::error_code& ecode, std::size_t bytes_transferred);
+#endif
 			void HandleSessionCreatedSent (const boost::system::error_code& ecode, std::size_t bytes_transferred);
 			void HandleSessionCreatedReceived (const boost::system::error_code& ecode, std::size_t bytes_transferred);
 			void ProcessSessionCreated (size_t len);
