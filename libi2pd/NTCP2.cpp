@@ -1115,8 +1115,9 @@ namespace transport
 			});
 	}
 
-	void NTCP2Session::ServerLogin ()
+	void NTCP2Session::ServerLogin (int version)
 	{
+        if (m_Establisher) m_Establisher->SetVersion (version);
 		SetTerminationTimeout (NTCP2_ESTABLISH_TIMEOUT);
 		SetLastActivityTimestamp (i2p::util::GetSecondsSinceEpoch ());
 		boost::asio::async_read (m_Socket, boost::asio::buffer(m_Establisher->m_SessionRequestBuffer, 64), boost::asio::transfer_all (),
@@ -1675,7 +1676,8 @@ namespace transport
 	NTCP2Server::NTCP2Server ():
 		RunnableServiceWithWork ("NTCP2"), m_TerminationTimer (GetService ()),
 		m_ProxyType(eNoProxy), m_Resolver(GetService ()),
-		m_Rng(i2p::util::GetMonotonicMicroseconds ()%1000000LL)
+		m_Rng(i2p::util::GetMonotonicMicroseconds ()%1000000LL),
+		m_Version (2)
 	{
 	}
 
@@ -1940,7 +1942,7 @@ namespace transport
 					if (m_PendingIncomingSessions.emplace (ep.address (), conn).second)
 					{
 						conn->SetRemoteEndpoint (ep);
-						conn->ServerLogin ();
+						conn->ServerLogin (m_Version);
 						conn = nullptr;
 					}
 					else
@@ -1988,7 +1990,7 @@ namespace transport
 					if (m_PendingIncomingSessions.emplace (ep.address (), conn).second)
 					{
 						conn->SetRemoteEndpoint (ep);
-						conn->ServerLogin ();
+						conn->ServerLogin (i2p::util::net::IsYggdrasilAddress (ep.address ()) ? 2 : m_Version); // yggdrasil is always 2 for now
 						conn = nullptr;
 					}
 					else
@@ -2232,6 +2234,13 @@ namespace transport
 		const uint8_t * ad, size_t adLen, const uint8_t * key, const uint8_t * nonce, uint8_t * buf, size_t len)
 	{
 		return m_Decryptor.Decrypt (msg, msgLen, ad, adLen, key, nonce, buf, len);
+	}
+
+	void NTCP2Server::SetVersion (int version)
+	{
+#if OPENSSL_PQ
+        m_Version = version;
+#endif
 	}
 }
 }

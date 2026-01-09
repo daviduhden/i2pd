@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -406,16 +406,17 @@ namespace i2p
 	}
 
 	void RouterContext::PublishNTCP2Address (std::shared_ptr<i2p::data::RouterInfo::Address> address,
-		int port, bool publish) const
+		int port, bool publish, int version) const
 	{
 		if (!address) return;
 		if (!port && !address->port) port = SelectRandomPort ();
 		if (port) address->port = port;
 		address->published = publish;
+		address->v = version;
 		memcpy (address->i, m_NTCP2Keys->iv, 16);
 	}
 
-	void RouterContext::PublishNTCP2Address (int port, bool publish, bool v4, bool v6, bool ygg)
+	void RouterContext::PublishNTCP2Address (int port, bool publish, bool v4, bool v6, bool ygg, int version)
 	{
 		if (!m_NTCP2Keys) return;
 		auto addresses = m_RouterInfo.GetAddresses ();
@@ -426,7 +427,7 @@ namespace i2p
 			auto addr = (*addresses)[i2p::data::RouterInfo::eNTCP2V4Idx];
 			if (addr && (addr->port != port || addr->published != publish))
 			{
-				PublishNTCP2Address (addr, port, publish);
+				PublishNTCP2Address (addr, port, publish, version);
 				updated = true;
 			}
 		}
@@ -435,7 +436,7 @@ namespace i2p
 			auto addr = (*addresses)[i2p::data::RouterInfo::eNTCP2V6Idx];
 			if (addr && (addr->port != port || addr->published != publish))
 			{
-				PublishNTCP2Address (addr, port, publish);
+				PublishNTCP2Address (addr, port, publish, version);
 				updated = true;
 			}
 		}
@@ -444,7 +445,7 @@ namespace i2p
 			auto addr = (*addresses)[i2p::data::RouterInfo::eNTCP2V6MeshIdx];
 			if (addr && (addr->port != port || addr->published != publish))
 			{
-				PublishNTCP2Address (addr, port, publish);
+				PublishNTCP2Address (addr, port, publish, 2);
 				updated = true;
 			}
 		}
@@ -782,7 +783,13 @@ namespace i2p
 		// unpublish NTCP2 addreeses
 		bool ntcp2; i2p::config::GetOption("ntcp2.enabled", ntcp2);
 		if (ntcp2)
-			PublishNTCP2Address (port, false, v4, v6, false);
+		{
+            int ntcp2version = 2;
+#if OPENSSL_PQ
+            i2p::config::GetOption("ntcp2.version", ntcp2version);
+#endif
+			PublishNTCP2Address (port, false, v4, v6, false, ntcp2version);
+		}
 		// update
 		m_RouterInfo.UpdateSupportedTransports ();
 		UpdateRouterInfo ();
@@ -824,7 +831,11 @@ namespace i2p
 			{
 				uint16_t ntcp2Port; i2p::config::GetOption ("ntcp2.port", ntcp2Port);
 				if (!ntcp2Port) ntcp2Port = port;
-				PublishNTCP2Address (ntcp2Port, true, v4, v6, false);
+                int ntcp2version = 2;
+#if OPENSSL_PQ
+                i2p::config::GetOption("ntcp2.version", ntcp2version);
+#endif
+				PublishNTCP2Address (ntcp2Port, true, v4, v6, false, ntcp2version);
 			}
 		}
 		// update

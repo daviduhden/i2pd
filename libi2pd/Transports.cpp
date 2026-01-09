@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -142,14 +142,14 @@ namespace transport
 	void Peer::UpdateParams (std::shared_ptr<const i2p::data::RouterInfo> router)
 	{
 		if (router)
-		{		
+		{
 			isHighBandwidth = router->IsHighBandwidth ();
 			isEligible =(bool)router->GetCompatibleTransports (true) && // reachable
 				router->GetCongestion () != i2p::data::RouterInfo::eRejectAll && // accepts tunnel
 				router->IsECIES () && router->GetVersion () >= NETDB_MIN_HIGHBANDWIDTH_VERSION; // not too old
-		}	
-	}	
-		
+		}
+	}
+
 	Transports transports;
 
 	Transports::Transports ():
@@ -196,6 +196,10 @@ namespace transport
 		m_IsRunning = true;
 		m_Thread = new std::thread (std::bind (&Transports::Run, this));
 		std::string ntcp2proxy; i2p::config::GetOption("ntcp2.proxy", ntcp2proxy);
+        int ntcp2version = 2;
+#if OPENSSL_PQ
+        i2p::config::GetOption("ntcp2.version", ntcp2version);
+#endif
 		i2p::http::URL proxyurl;
 		// create NTCP2. TODO: move to acceptor
 		if (enableNTCP2 || i2p::context.SupportsMesh ())
@@ -225,6 +229,7 @@ namespace transport
 			}
 			else
 				m_NTCP2Server = new NTCP2Server ();
+			m_NTCP2Server->SetVersion (ntcp2version);
 		}
 
 		// create SSU2 server
@@ -467,9 +472,9 @@ namespace transport
 		return boost::asio::post (*m_Service, boost::asio::use_future ([this, ident, msgs = std::move(msgs)] () mutable
 			{
 				return PostMessages (ident, msgs);
-			}));	
-	}	
-	
+			}));
+	}
+
 	std::shared_ptr<TransportSession> Transports::PostMessages (const i2p::data::IdentHash& ident, std::list<std::shared_ptr<i2p::I2NPMessage> >& msgs)
 	{
 		if (ident == i2p::context.GetRouterInfo ().GetIdentHash ())
@@ -487,7 +492,7 @@ namespace transport
 			auto it = m_Peers.find (ident);
 			if (it != m_Peers.end ())
 				peer = it->second;
-		}	
+		}
 		if (!peer)
 		{
 			// check if not banned
@@ -500,7 +505,7 @@ namespace transport
 				if (r && (r->IsUnreachable () || !r->IsReachableFrom (i2p::context.GetRouterInfo ()))) return nullptr; // router found but non-reachable
 
 				peer = std::make_shared<Peer>(r, i2p::util::GetSecondsSinceEpoch ());
-				{	
+				{
 					std::lock_guard<std::mutex> l(m_PeersMutex);
 					peer = m_Peers.emplace (ident, peer).first->second;
 				}
@@ -513,17 +518,17 @@ namespace transport
 			}
 			if (!connected) return nullptr;
 		}
-		
+
 		if (!peer) return nullptr;
 		if (peer->IsConnected ())
-		{	
-			auto session = peer->sessions.front (); 
+		{
+			auto session = peer->sessions.front ();
 			if (session) session->SendI2NPMessages (msgs);
 			return session;
-		}	
+		}
 		else
 		{
-			auto sz = peer->delayedMessages.size (); 	
+			auto sz = peer->delayedMessages.size ();
 			if (sz < MAX_NUM_DELAYED_MESSAGES)
 			{
 				if (sz < CHECK_PROFILE_NUM_DELAYED_MESSAGES && sz + msgs.size () >= CHECK_PROFILE_NUM_DELAYED_MESSAGES)
@@ -534,16 +539,16 @@ namespace transport
 						std::lock_guard<std::mutex> l(m_PeersMutex);
 						m_Peers.erase (ident);
 						return nullptr;
-					}	
-				}	
+					}
+				}
 				if (sz > MAX_NUM_DELAYED_MESSAGES/2)
-				{	
+				{
 					for (auto& it1: msgs)
 						if (it1->onDrop)
 							it1->Drop (); // drop earlier because we can handle it
 						else
 							peer->delayedMessages.push_back (it1);
-				}	
+				}
 				else
 					peer->delayedMessages.splice (peer->delayedMessages.end (), msgs);
 			}
@@ -561,14 +566,14 @@ namespace transport
 	bool Transports::ConnectToPeer (const i2p::data::IdentHash& ident, std::shared_ptr<Peer> peer)
 	{
 		if (!peer->router) // reconnect
-		{	
+		{
 			auto r = netdb.FindRouter (ident); // try to get new one from netdb
 			if (r)
-			{	
-				peer->SetRouter (r); 
+			{
+				peer->SetRouter (r);
 				r->CancelBufferToDelete ();
-			}	
-		}	
+			}
+		}
 		if (peer->router) // we have RI already
 		{
 			if (peer->priority.empty ())
@@ -680,43 +685,43 @@ namespace transport
 		auto directTransports = compatibleTransports & peer->router->GetPublishedTransports ();
 		peer->numAttempts = 0;
 		peer->priority.clear ();
-		
+
 		std::shared_ptr<RouterProfile> profile;
 		if (peer->router->HasProfile ()) profile = peer->router->GetProfile (); // only if in memory
 		bool ssu2 = false; // NTCP2 by default
 		bool isReal = profile ? profile->IsReal () : true;
-		if (isReal) 
-		{	
+		if (isReal)
+		{
 			ssu2 = m_Rng () & 1; // 1/2
 			if (ssu2 && !profile)
-			{	
+			{
 				profile = peer->router->GetProfile (); // load profile if necessary
-				isReal = profile->IsReal ();  
+				isReal = profile->IsReal ();
 				if (!isReal) ssu2 = false; // try NTCP2 if router is not confirmed real
 			}
-		}	
+		}
 		const auto& priority = ssu2 ? ssu2Priority : ntcp2Priority;
 		if (directTransports)
-		{	
+		{
 			// direct connections have higher priority
 			if (!isReal && (directTransports & (i2p::data::RouterInfo::eNTCP2V4 | i2p::data::RouterInfo::eNTCP2V6)))
 			{
 				// Non-confirmed router and a NTCP2 direct connection is presented
 				compatibleTransports &= ~directTransports; // exclude SSU2 direct connections
 				directTransports &= ~(i2p::data::RouterInfo::eSSU2V4 | i2p::data::RouterInfo::eSSU2V6);
-			}	
+			}
 			for (auto transport: priority)
 				if (transport & directTransports)
 					peer->priority.push_back (transport);
 			compatibleTransports &= ~directTransports;
-		}	
+		}
 		if (compatibleTransports)
-		{	
+		{
 			// then remaining
 			for (auto transport: priority)
 				if (transport & compatibleTransports)
 					peer->priority.push_back (transport);
-		}	
+		}
 		if (peer->priority.empty ())
 		{
 			// try recently connected SSU2 if any
@@ -727,22 +732,22 @@ namespace transport
 			{
 				auto ep = peer->router->GetProfile ()->GetLastEndpoint ();
 				if (!ep.address ().is_unspecified () && ep.port ())
-				{	
+				{
 					if (ep.address ().is_v4 ())
-					{	
+					{
 						if ((supportedTransports & i2p::data::RouterInfo::eSSU2V4) &&
 							m_SSU2Server->IsConnectedRecently (ep, false))
 							peer->priority.push_back (i2p::data::RouterInfo::eSSU2V4);
-					}	
+					}
 					else if (ep.address ().is_v6 ())
 					{
 						if ((supportedTransports & i2p::data::RouterInfo::eSSU2V6) &&
 							m_SSU2Server->IsConnectedRecently (ep))
 							peer->priority.push_back (i2p::data::RouterInfo::eSSU2V6);
 					}
-				}	
-			}	
-		}	
+				}
+			}
+		}
 	}
 
 	void Transports::RequestComplete (std::shared_ptr<const i2p::data::RouterInfo> r, const i2p::data::IdentHash& ident)
@@ -762,9 +767,9 @@ namespace transport
 					peer = it->second;
 				else
 					m_Peers.erase (it);
-			}	
+			}
 		}
-				
+
 		if (peer && !peer->router && r)
 		{
 			LogPrint (eLogDebug, "Transports: RouterInfo for ", ident.ToBase64 (), " found, trying to connect");
@@ -807,16 +812,16 @@ namespace transport
 				if (router)
 				{
 					if (!i2p::context.GetTesting ())
-					{	
+					{
 						i2p::context.SetTesting (true);
-						// send first peer test immediately 
+						// send first peer test immediately
 						m_SSU2Server->StartPeerTest (router, true);
-					}	
+					}
 					else
 					{
 						testDelay += PEER_TEST_DELAY_INTERVAL + m_Rng() % PEER_TEST_DELAY_INTERVAL_VARIANCE;
 						if (m_Service)
-						{	
+						{
 							auto delayTimer = std::make_shared<boost::asio::deadline_timer>(*m_Service);
 							delayTimer->expires_from_now (boost::posix_time::milliseconds (testDelay));
 							delayTimer->async_wait (
@@ -824,9 +829,9 @@ namespace transport
 								{
 									if (ecode != boost::asio::error::operation_aborted)
 										m_SSU2Server->StartPeerTest (router, true);
-								});		
-						}	
-					}	
+								});
+						}
+					}
 					excluded.insert (router->GetIdentHash ());
 				}
 			}
@@ -845,16 +850,16 @@ namespace transport
 				if (router)
 				{
 					if (!i2p::context.GetTestingV6 ())
-					{	
-						i2p::context.SetTestingV6 (true);	
-						// send first peer test immediately 
+					{
+						i2p::context.SetTestingV6 (true);
+						// send first peer test immediately
 						m_SSU2Server->StartPeerTest (router, false);
-					}	
+					}
 					else
 					{
 						testDelay += PEER_TEST_DELAY_INTERVAL + m_Rng() % PEER_TEST_DELAY_INTERVAL_VARIANCE;
 						if (m_Service)
-						{	
+						{
 							auto delayTimer = std::make_shared<boost::asio::deadline_timer>(*m_Service);
 							delayTimer->expires_from_now (boost::posix_time::milliseconds (testDelay));
 							delayTimer->async_wait (
@@ -862,8 +867,8 @@ namespace transport
 								{
 									if (ecode != boost::asio::error::operation_aborted)
 										m_SSU2Server->StartPeerTest (router, false);
-								});		
-						}	
+								});
+						}
 					}
 					excluded.insert (router->GetIdentHash ());
 				}
@@ -903,19 +908,19 @@ namespace transport
 					for (int i = 0; i < numExcluded; i++)
 						transports |= peer->priority[i];
 					i2p::data::netdb.ExcludeReachableTransports (ident, transports);
-				}	
+				}
 				if (peer->router && peer->numAttempts)
-				{	
+				{
 					auto transport = peer->priority[peer->numAttempts-1];
-					if (transport == i2p::data::RouterInfo::eNTCP2V4 || 
+					if (transport == i2p::data::RouterInfo::eNTCP2V4 ||
 						transport == i2p::data::RouterInfo::eNTCP2V6 || transport == i2p::data::RouterInfo::eNTCP2V6Mesh)
 							i2p::data::UpdateRouterProfile (ident,
 								[](std::shared_ptr<i2p::data::RouterProfile> profile)
 								{
 									if (profile) profile->Connected (); // outgoing NTCP2 connection if always real
 								});
-					i2p::data::netdb.SetUnreachable (ident, false); // clear unreachable 
-				}		
+					i2p::data::netdb.SetUnreachable (ident, false); // clear unreachable
+				}
 				peer->numAttempts = 0;
 				peer->router = nullptr; // we don't need RouterInfo after successive connect
 				bool sendDatabaseStore = true;
@@ -946,7 +951,7 @@ namespace transport
 				{
 					std::list<std::shared_ptr<I2NPMessage> > msgs{ CreateDatabaseStoreMsg () };
 					session->SendI2NPMessages (msgs); // send DatabaseStore
-				}	
+				}
 				auto r = i2p::data::netdb.FindRouter (ident); // router should be in netdb after SessionConfirmed
 				i2p::data::UpdateRouterProfile (ident,
 					[](std::shared_ptr<i2p::data::RouterProfile> profile)
@@ -990,7 +995,7 @@ namespace transport
 							std::lock_guard<std::mutex> l(m_PeersMutex);
 							m_Peers.erase (it);
 						}
-						// delete buffer of just disconnected router 
+						// delete buffer of just disconnected router
 						auto r = i2p::data::netdb.FindRouter (ident);
 						if (r && !r->IsUpdated ()) r->ScheduleBufferToDelete ();
 					}
@@ -1004,10 +1009,10 @@ namespace transport
 		std::lock_guard<std::mutex> l(m_PeersMutex);
 #if __cplusplus >= 202002L // C++20
 		return m_Peers.contains (ident);
-#else		
+#else
 		auto it = m_Peers.find (ident);
 		return it != m_Peers.end ();
-#endif		
+#endif
 	}
 
 	void Transports::HandlePeerCleanupTimer (const boost::system::error_code& ecode)
@@ -1025,8 +1030,8 @@ namespace transport
  				if (!it->second->IsConnected () && ts > it->second->creationTime + SESSION_CREATION_TIMEOUT)
 				{
 					LogPrint (eLogWarning, "Transports: Session to peer ", it->first.ToBase64 (), " has not been created in ", SESSION_CREATION_TIMEOUT, " seconds");
-				/*	if (!it->second.router) 
-					{	 
+				/*	if (!it->second.router)
+					{
 						// if router for ident not found mark it unreachable
 						auto profile = i2p::data::GetRouterProfile (it->first);
 						if (profile) profile->Unreachable ();
@@ -1199,7 +1204,7 @@ namespace transport
 			m_TrustedRouters.insert(ri);
 	}
 
-	bool Transports::RoutesRestricted() const 
+	bool Transports::RoutesRestricted() const
 	{
 		{
 			std::lock_guard<std::mutex> routerslock(m_TrustedRoutersMutex);
@@ -1254,15 +1259,15 @@ namespace transport
 		if (m_TrustedRouters.contains (ih))
 #else
 		if (m_TrustedRouters.count (ih) > 0)
-#endif		
+#endif
 			return true;
 		return false;
-	}	
-		
+	}
+
 	bool Transports::IsRestrictedPeer(const i2p::data::IdentHash& ih) const
 	{
 		if (IsTrustedRouter (ih)) return true;
-		
+
 		{
 			std::lock_guard<std::mutex> l(m_FamilyMutex);
 			auto ri = i2p::data::netdb.FindRouter(ih);
@@ -1287,13 +1292,13 @@ namespace transport
 	int Transports::GetLocalDelay () const
 	{
 		return (i2p::context.GetStatus () == eRouterStatusProxy) ? 1000 : 0; // 1 sec for proxy. TODO: implement param
-	}	
-		
-	bool Transports::IsInReservedRange (const boost::asio::ip::address& host) const 
+	}
+
+	bool Transports::IsInReservedRange (const boost::asio::ip::address& host) const
 	{
 		return IsCheckReserved () && i2p::util::net::IsInReservedRange (host);
-	}	
-		
+	}
+
 	void InitAddressFromIface ()
 	{
 		bool ipv6; i2p::config::GetOption("ipv6", ipv6);
@@ -1356,8 +1361,8 @@ namespace transport
 		{
 			LogPrint(eLogWarning, "Transports: Clearnet ipv6 not found. Disabled");
 			ipv6 = false;
-		}	
-		
+		}
+
 		if (!i2p::config::IsDefault("port"))
 		{
 			LogPrint(eLogInfo, "Transports: Accepting incoming connections at port ", port);
@@ -1370,18 +1375,22 @@ namespace transport
 		bool ntcp2; i2p::config::GetOption("ntcp2.enabled", ntcp2);
 		if (ntcp2)
 		{
-			bool published = false; 
+			bool published = false;
 			if (!stan) i2p::config::GetOption("ntcp2.published", published);
 			if (published)
 			{
 				std::string ntcp2proxy; i2p::config::GetOption("ntcp2.proxy", ntcp2proxy);
 				if (!ntcp2proxy.empty ()) published = false;
 			}
+			int ntcp2version = 2;
+#if OPENSSL_PQ
+			i2p::config::GetOption("ntcp2.version", ntcp2version);
+#endif
 			if (published)
 			{
 				uint16_t ntcp2port; i2p::config::GetOption("ntcp2.port", ntcp2port);
 				if (!ntcp2port) ntcp2port = port; // use standard port
-				i2p::context.PublishNTCP2Address (ntcp2port, true, ipv4, ipv6, false); // publish
+				i2p::context.PublishNTCP2Address (ntcp2port, true, ipv4, ipv6, false, ntcp2version); // publish
 				if (ipv6)
 				{
 					std::string ipv6Addr; i2p::config::GetOption("ntcp2.addressv6", ipv6Addr);
@@ -1391,11 +1400,11 @@ namespace transport
 				}
 			}
 			else
-				i2p::context.PublishNTCP2Address (port, false, ipv4, ipv6, false); // unpublish
+				i2p::context.PublishNTCP2Address (port, false, ipv4, ipv6, false, ntcp2version); // unpublish
 		}
 		if (ygg)
 		{
-			i2p::context.PublishNTCP2Address (port, true, false, false, true);
+			i2p::context.PublishNTCP2Address (port, true, false, false, true, 2);
 			i2p::context.UpdateNTCP2V6Address (yggaddr);
 			if (!ipv4 && !ipv6)
 				i2p::context.SetStatus (eRouterStatusMesh);
@@ -1407,7 +1416,7 @@ namespace transport
 		{
 			uint16_t ssu2port; i2p::config::GetOption("ssu2.port", ssu2port);
 			if (!ssu2port && port) ssu2port = port;
-			bool published = false; 
+			bool published = false;
 			if (!stan) i2p::config::GetOption("ssu2.published", published);
 			if (published)
 				i2p::context.PublishSSU2Address (ssu2port, true, ipv4, ipv6); // publish

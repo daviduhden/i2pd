@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -152,7 +152,7 @@ namespace garlic
 
 			void UpdatePort (int port); // called from Daemon
 			void UpdateAddress (const boost::asio::ip::address& host); // called from SSU2 or Daemon
-			void PublishNTCP2Address (int port, bool publish, bool v4, bool v6, bool ygg);
+			void PublishNTCP2Address (int port, bool publish, bool v4, bool v6, bool ygg, int version);
 			void PublishSSU2Address (int port, bool publish, bool v4, bool v6);
 			bool AddSSU2Introducer (const i2p::data::RouterInfo::Introducer& introducer, bool v4);
 			void RemoveSSU2Introducer (const i2p::data::IdentHash& h, bool v4);
@@ -221,7 +221,7 @@ namespace garlic
 			void SaveKeys ();
 			void Sign (const uint8_t * buf, int len, uint8_t * signature) const { m_Keys.Sign (buf, len, signature); };
 			uint16_t SelectRandomPort () const;
-			void PublishNTCP2Address (std::shared_ptr<i2p::data::RouterInfo::Address> address, int port, bool publish) const;
+			void PublishNTCP2Address (std::shared_ptr<i2p::data::RouterInfo::Address> address, int port, bool publish, int version) const;
             void UpdateSSU2AddressCapsIntroducer (std::shared_ptr<i2p::data::RouterInfo::Address> address, bool isIntroducer) const;
             void UpdateSSU2AddressCapsTesting (std::shared_ptr<i2p::data::RouterInfo::Address> address, bool isTesting) const;
 

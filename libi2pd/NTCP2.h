@@ -163,7 +163,7 @@ namespace transport
 			bool IsTerminated () const { return m_IsTerminated; };
 
 			void ClientLogin (); // Alice
-			void ServerLogin (); // Bob
+			void ServerLogin (int version); // Bob
 
 			void SendLocalRouterInfo (bool update) override; // after handshake or by update
 			void SendI2NPMessages (std::list<std::shared_ptr<I2NPMessage> >& msgs) override;
@@ -306,6 +306,7 @@ namespace transport
 			void UseProxy(ProxyType proxy, const std::string& address, uint16_t port, const std::string& user, const std::string& pass);
 
 			void SetLocalAddress (const boost::asio::ip::address& localAddress);
+            void SetVersion (int version);
 
 		private:
 
@@ -337,6 +338,8 @@ namespace transport
 			EstablisherService m_EstablisherService;
 			i2p::crypto::AEADChaCha20Poly1305Encryptor m_Encryptor;
 			i2p::crypto::AEADChaCha20Poly1305Decryptor m_Decryptor;
+
+			int m_Version;
 
 		public:
 

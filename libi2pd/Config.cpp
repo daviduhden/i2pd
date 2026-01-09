@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -80,9 +80,9 @@ namespace config {
 #if defined(__HAIKU__)
 			// Haiku's system default is 512, so we set 4096 explicitly
 			("limits.openfiles", value<uint16_t>()->default_value(4096),		"Maximum number of open files (4096 by default)")
-#else			
+#else
 			("limits.openfiles", value<uint16_t>()->default_value(0),         "Maximum number of open files (0 - use system default)")
-#endif			
+#endif
 			("limits.transittunnels", value<uint32_t>()->default_value(10000), "Maximum active transit tunnels (default:10000)")
 			("limits.zombies", value<double>()->default_value(0),             "Minimum percentage of successfully created tunnels under which tunnel cleanup is paused (default [%]: 0.00)")
 			("limits.ntcpsoft", value<uint16_t>()->default_value(0),          "Ignored")
@@ -128,9 +128,9 @@ namespace config {
 			("httpproxy.i2cp.leaseSetType", value<std::string>()->default_value("3"), "Local destination's LeaseSet type")
 #if OPENSSL_PQ
 			("httpproxy.i2cp.leaseSetEncType", value<std::string>()->default_value("6,4,0"), "Local destination's LeaseSet encryption type")
-#else			
+#else
 			("httpproxy.i2cp.leaseSetEncType", value<std::string>()->default_value("4,0"), "Local destination's LeaseSet encryption type")
-#endif			
+#endif
 			("httpproxy.i2cp.leaseSetPrivKey", value<std::string>()->default_value(""), "LeaseSet private key")
 			("httpproxy.i2p.streaming.maxOutboundSpeed", value<std::string>()->default_value("1730000000"), "Max outbound speed of HTTP proxy stream in bytes/sec")
 			("httpproxy.i2p.streaming.maxInboundSpeed", value<std::string>()->default_value("1730000000"), "Max inbound speed of HTTP proxy stream in bytes/sec")
@@ -160,9 +160,9 @@ namespace config {
 			("socksproxy.i2cp.leaseSetType", value<std::string>()->default_value("3"), "Local destination's LeaseSet type")
 #if OPENSSL_PQ
 			("socksproxy.i2cp.leaseSetEncType", value<std::string>()->default_value("6,4,0"), "Local destination's LeaseSet encryption type")
-#else			
+#else
 			("socksproxy.i2cp.leaseSetEncType", value<std::string>()->default_value("4,0"), "Local destination's LeaseSet encryption type")
-#endif			
+#endif
 			("socksproxy.i2cp.leaseSetPrivKey", value<std::string>()->default_value(""), "LeaseSet private key")
 			("socksproxy.i2p.streaming.maxOutboundSpeed", value<std::string>()->default_value("1730000000"), "Max outbound speed of SOCKS proxy stream in bytes/sec")
 			("socksproxy.i2p.streaming.maxInboundSpeed", value<std::string>()->default_value("1730000000"), "Max inbound speed of SOCKS proxy stream in bytes/sec")
@@ -179,12 +179,12 @@ namespace config {
 			("shareddest.i2cp.leaseSetType", value<std::string>()->default_value("3"), "Shared local destination's LeaseSet type")
 #if OPENSSL_PQ
 			("shareddest.i2cp.leaseSetEncType", value<std::string>()->default_value("6,4,0"), "Shared local destination's LeaseSet encryption type")
-#else			
+#else
 			("shareddest.i2cp.leaseSetEncType", value<std::string>()->default_value("4,0"), "Shared local destination's LeaseSet encryption type")
-#endif			
+#endif
 			("shareddest.i2p.streaming.profile", value<std::string>()->default_value("2"), "Shared local destination bandwidth usage profile. 1 - bulk(high), 2- interactive(low)")
-		;	
-		
+		;
+
 		options_description sam("SAM bridge options");
 		sam.add_options()
 			("sam.enabled", value<bool>()->default_value(true),               "Enable or disable SAM Application bridge")
@@ -261,7 +261,7 @@ namespace config {
 				"https://reseed-pl.i2pd.xyz/,"
 				"https://www2.mk16.de/,"
 			    "https://i2p.novg.net/,"
-            	"https://reseed.stormycloud.org/"                                              
+            	"https://reseed.stormycloud.org/"
 			),                                                            "Reseed URLs, separated by comma")
 			("reseed.yggurls", value<std::string>()->default_value(
 				"http://[324:71e:281a:9ed3::ace]:7070/,"
@@ -313,6 +313,7 @@ namespace config {
 			("ntcp2.port", value<uint16_t>()->default_value(0),            "Port to listen for incoming NTCP2 connections (default: auto)")
 			("ntcp2.addressv6", value<std::string>()->default_value("::"), "Address to publish NTCP2 with")
 			("ntcp2.proxy", value<std::string>()->default_value(""),       "Proxy URL for NTCP2 transport")
+			("ntcp2.version", value<int>()->default_value(2),              "Protocol version. 2 - standard, 3,4,5 - post quantum (default: 2")
 		;
 
 		options_description ssu2("SSU2 Options");
