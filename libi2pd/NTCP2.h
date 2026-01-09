@@ -307,6 +307,7 @@ namespace transport
 
 			void SetLocalAddress (const boost::asio::ip::address& localAddress);
             void SetVersion (int version);
+            int GetVersion () const { return m_Version; }
 
 		private:
 

@@ -528,7 +528,8 @@ namespace transport
 				memcpy (m_Establisher->m_IV, addr->i, 16);
 				m_RemoteEndpoint = boost::asio::ip::tcp::endpoint (addr->host, addr->port);
 #if OPENSSL_PQ
-                //m_Establisher->SetVersion (addr->v);
+                if (m_Server.GetVersion () > 2) // we support post quantum in config
+                    m_Establisher->SetVersion (addr->v);
 #endif
 			}
 			else
