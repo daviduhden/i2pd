@@ -189,6 +189,10 @@ namespace http {
 		// Page language
 		std::string currLang = i2p::client::context.GetLanguage ()->GetLanguage(); // get current used language
 		auto it = i2p::i18n::languages.find(currLang);
+		// fallback to default English, if language is not supported
+		if (it == i2p::i18n::languages.end()) {
+			it = i2p::i18n::languages.find("english");
+		}
 		std::string langCode = it->second.ShortCode;
 
 		// Right to Left language option
