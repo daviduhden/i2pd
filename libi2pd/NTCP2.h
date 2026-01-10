@@ -129,14 +129,12 @@ namespace transport
 
 #if OPENSSL_PQ
         std::unique_ptr<i2p::crypto::MLKEMKeys> m_PQKeys;
-        uint8_t m_SessionRequestBuffer[NTCP2_SESSION_REQUEST_MAX_SIZE + i2p::crypto::MLKEM1024_KEY_LENGTH + 16],
-			m_SessionCreatedBuffer[NTCP2_SESSION_CREATED_MAX_SIZE +  i2p::crypto::MLKEM1024_CIPHER_TEXT_LENGTH + 16],
+        uint8_t m_Buffer[NTCP2_SESSION_REQUEST_MAX_SIZE + i2p::crypto::MLKEM1024_KEY_LENGTH + 16],
 #else
-		uint8_t m_SessionRequestBuffer[NTCP2_SESSION_REQUEST_MAX_SIZE],
-			m_SessionCreatedBuffer[NTCP2_SESSION_CREATED_MAX_SIZE],
+		uint8_t m_Buffer[NTCP2_SESSION_REQUEST_MAX_SIZE], // for SessionRequest and SessionCreated
 #endif
             * m_SessionConfirmedBuffer;
-		size_t m_SessionRequestBufferLen, m_SessionCreatedBufferLen;
+		size_t m_BufferLen;
 
 	};
 
