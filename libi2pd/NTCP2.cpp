@@ -46,7 +46,6 @@ namespace transport
 	void NTCP2Establisher::SetVersion (int version)
 	{
 #if OPENSSL_PQ
-        m_Version = version;
         switch (version)
         {
             case 3:
@@ -60,11 +59,9 @@ namespace transport
             break;
             default:
                 m_CryptoType = i2p::data::CRYPTO_KEY_TYPE_ECIES_X25519_AEAD;
-                m_Version = 2;
         }
 #else
         m_CryptoType = i2p::data::CRYPTO_KEY_TYPE_ECIES_X25519_AEAD;
-        m_Version = 2;
 #endif
 	}
 
@@ -195,7 +192,7 @@ namespace transport
 		uint8_t options[32]; // actual options size is 16 bytes
 		memset (options, 0, 16);
 		options[0] = i2p::context.GetNetID (); // network ID
-		options[1] = m_Version; // ver
+		options[1] = 2; // ver, always 2 regradless actual version
 		htobe16buf (options + 2, paddingLength); // padLen
 		// calculate m3p2Len
 		auto riBuffer = i2p::context.CopyRouterInfoBuffer ();

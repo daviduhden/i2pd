@@ -120,7 +120,6 @@ namespace transport
 		bool ProcessSessionConfirmedMessagePart2 (uint8_t * m3p2Buf);
 
 		std::shared_ptr<i2p::crypto::X25519Keys> m_EphemeralKeys;
-		int m_Version;
 		i2p::data::CryptoKeyType m_CryptoType;
 		uint8_t m_RemoteEphemeralPublicKey[32]; // x25519
 		uint8_t m_RemoteStaticKey[32], m_IV[16];
