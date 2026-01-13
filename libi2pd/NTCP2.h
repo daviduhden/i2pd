@@ -311,8 +311,8 @@ namespace transport
 			void HandleAccept (std::shared_ptr<NTCP2Session> conn, const boost::system::error_code& error);
 			void HandleAcceptV6 (std::shared_ptr<NTCP2Session> conn, const boost::system::error_code& error);
 
-			void HandleConnect (const boost::system::error_code& ecode, std::shared_ptr<NTCP2Session> conn, std::shared_ptr<boost::asio::deadline_timer> timer);
-			void HandleProxyConnect(const boost::system::error_code& ecode, std::shared_ptr<NTCP2Session> conn, std::shared_ptr<boost::asio::deadline_timer> timer);
+			void HandleConnect (const boost::system::error_code& ecode, std::shared_ptr<NTCP2Session> conn, std::shared_ptr<boost::asio::steady_timer> timer);
+			void HandleProxyConnect(const boost::system::error_code& ecode, std::shared_ptr<NTCP2Session> conn, std::shared_ptr<boost::asio::steady_timer> timer);
 
 			// timer
 			void ScheduleTermination ();
@@ -320,7 +320,7 @@ namespace transport
 
 		private:
 
-			boost::asio::deadline_timer m_TerminationTimer;
+			boost::asio::steady_timer m_TerminationTimer;
 			std::unique_ptr<boost::asio::ip::tcp::acceptor> m_NTCP2Acceptor, m_NTCP2V6Acceptor;
 			std::map<i2p::data::IdentHash, std::shared_ptr<NTCP2Session> > m_NTCP2Sessions;
 			std::map<boost::asio::ip::address, std::shared_ptr<NTCP2Session> > m_PendingIncomingSessions;

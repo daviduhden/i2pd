@@ -12,6 +12,7 @@
 #include <openssl/hmac.h>
 #include <stdlib.h>
 #include <vector>
+#include <chrono>
 #include "Log.h"
 #include "I2PEndian.h"
 #include "Crypto.h"
@@ -1869,10 +1870,10 @@ namespace transport
 			{
 				if (this->AddNTCP2Session (conn))
 				{
-					auto timer = std::make_shared<boost::asio::deadline_timer>(GetService ());
+					auto timer = std::make_shared<boost::asio::steady_timer>(GetService ());
 					auto timeout = NTCP2_CONNECT_TIMEOUT * 5;
 					conn->SetTerminationTimeout(timeout * 2);
-					timer->expires_from_now (boost::posix_time::seconds(timeout));
+					timer->expires_after (std::chrono::seconds(timeout));
 					timer->async_wait ([conn, timeout](const boost::system::error_code& ecode)
 					{
 						if (ecode != boost::asio::error::operation_aborted)
@@ -1910,7 +1911,7 @@ namespace transport
 			});
 	}
 
-	void NTCP2Server::HandleConnect (const boost::system::error_code& ecode, std::shared_ptr<NTCP2Session> conn, std::shared_ptr<boost::asio::deadline_timer> timer)
+	void NTCP2Server::HandleConnect (const boost::system::error_code& ecode, std::shared_ptr<NTCP2Session> conn, std::shared_ptr<boost::asio::steady_timer> timer)
 	{
 		timer->cancel ();
 		if (ecode)
@@ -2023,7 +2024,7 @@ namespace transport
 
 	void NTCP2Server::ScheduleTermination ()
 	{
-		m_TerminationTimer.expires_from_now (boost::posix_time::seconds(
+		m_TerminationTimer.expires_after (std::chrono::seconds(
 			NTCP2_TERMINATION_CHECK_TIMEOUT + m_Rng () % NTCP2_TERMINATION_CHECK_TIMEOUT_VARIANCE));
 		m_TerminationTimer.async_wait (std::bind (&NTCP2Server::HandleTerminationTimer,
 			this, std::placeholders::_1));
@@ -2090,10 +2091,10 @@ namespace transport
 		{
 			if (this->AddNTCP2Session (conn))
 			{
-				auto timer = std::make_shared<boost::asio::deadline_timer>(GetService());
+				auto timer = std::make_shared<boost::asio::steady_timer>(GetService());
 				auto timeout = NTCP2_CONNECT_TIMEOUT * 5;
 				conn->SetTerminationTimeout(timeout * 2);
-				timer->expires_from_now (boost::posix_time::seconds(timeout));
+				timer->expires_after (std::chrono::seconds(timeout));
 				timer->async_wait ([conn, timeout](const boost::system::error_code& ecode)
 				{
 					if (ecode != boost::asio::error::operation_aborted)
@@ -2117,7 +2118,7 @@ namespace transport
 			m_ProxyAuthorization = i2p::http::CreateBasicAuthorizationString (user, pass);
 	}
 
-	void NTCP2Server::HandleProxyConnect(const boost::system::error_code& ecode, std::shared_ptr<NTCP2Session> conn, std::shared_ptr<boost::asio::deadline_timer> timer)
+	void NTCP2Server::HandleProxyConnect(const boost::system::error_code& ecode, std::shared_ptr<NTCP2Session> conn, std::shared_ptr<boost::asio::steady_timer> timer)
 	{
 		if (ecode)
 		{
