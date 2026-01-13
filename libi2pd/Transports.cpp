@@ -662,7 +662,7 @@ namespace transport
 
 	void Transports::SetPriority (std::shared_ptr<Peer> peer)
 	{
-		static const std::vector<i2p::data::RouterInfo::SupportedTransports>
+		static constexpr std::array
 			ntcp2Priority =
 		{
 			i2p::data::RouterInfo::eNTCP2V6,
