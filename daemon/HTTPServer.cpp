@@ -239,8 +239,8 @@ namespace http {
 		if (i2p::client::context.GetSAMBridge ())
 			s << "  <a href=\"" << webroot << "?page=" << HTTP_PAGE_SAM_SESSIONS << "\">" << tr("SAM sessions") << "</a><br>\r\n";
 		s <<
-			"</div>\r\n"
-			"<div class=\"content\">";
+			"</div>\r\n\r\n"
+			"<div class=\"content\">\r\n\r\n";
 	}
 
 	static void ShowPageTail (std::stringstream& s)
@@ -505,12 +505,12 @@ namespace http {
 			s << "<div class='slide'><label for='slide-lease'><b>" << tr("LeaseSets") << ":</b> <i>" << dest->GetNumRemoteLeaseSets ()
 			  << "</i></label>\r\n<input type=\"checkbox\" id=\"slide-lease\" />\r\n"
 			  << "<div class=\"slidecontent\">\r\n"
-			  << "<table>\r\n<thead>"
+			  << "<table>\r\n<thead><tr>"
 			  << "<th>" << tr("Address") << "</th>"
 			  << "<th style=\"width:5px;\">&nbsp;</th>" // LeaseSet expiration button column
 			  << "<th>" << tr("Type") << "</th>"
 			  << "<th>" << tr("EncType") << "</th>"
-			  << "</thead>\r\n<tbody class=\"tableitem\">";
+			  << "</tr></thead>\r\n<tbody class=\"tableitem\">";
 			for(auto& it: dest->GetLeaseSets ())
 			{
 				s << "<tr>"
@@ -587,7 +587,7 @@ namespace http {
 			s << "<div class='slide'><label for='slide-tags'>" << tr("Outgoing") << ": <i>" << out_tags << "</i></label>\r\n"
 			  << "<input type=\"checkbox\" id=\"slide-tags\" />\r\n"
 			  << "<div class=\"slidecontent\">\r\n"
-			  << "<table>\r\n<thead><th>" << tr("Destination") << "</th><th>" << tr("Amount") << "</th></thead>\r\n"
+			  << "<table>\r\n<thead><tr><th>" << tr("Destination") << "</th><th>" << tr("Amount") << "</th></tr></thead>\r\n"
 			  << "<tbody class=\"tableitem\">\r\n" << tmp_s.str () << "</tbody>\r\n</table>\r\n"
 			  << "</div>\r\n</div>\r\n";
 		} else
@@ -607,7 +607,7 @@ namespace http {
 				s << "<div class='slide'><label for='slide-ecies-sessions'>" << tr("Tags sessions") << ": <i>" << ecies_sessions << "</i></label>\r\n"
 				  << "<input type=\"checkbox\" id=\"slide-ecies-sessions\" />\r\n"
 				  << "<div class=\"slidecontent\">\r\n"
-				  << "<table>\r\n<thead><th>" << tr("Destination") << "</th><th>" << tr("Status") << "</th></thead>\r\n"
+				  << "<table>\r\n<thead><tr><th>" << tr("Destination") << "</th><th>" << tr("Status") << "</th></tr></thead>\r\n"
 				  << "<tbody class=\"tableitem\">\r\n" << tmp_s.str () << "</tbody>\r\n</table>\r\n"
 				  << "</div>\r\n</div>\r\n";
 			} else
@@ -629,7 +629,7 @@ namespace http {
 
 			// Print table with streams information
 			s << "<table>\r\n<caption>" << tr("Streams") << "</caption>\r\n"
-			  << "<thead>\r\n<tr>"
+			  << "<thead><tr>"
 			  << "<th style=\"width:25px;\">StreamID</th>"
 			  << "<th style=\"width:5px;\">&nbsp;</th>" // Stream closing button column
 			  << "<th class=\"streamdest\">Destination</th>"
@@ -641,7 +641,7 @@ namespace http {
 			  << "<th>RTT</th>"
 			  << "<th>Window</th>"
 			  << "<th>Status</th>"
-			  << "</tr>\r\n</thead>\r\n"
+			  << "</tr></thead>\r\n"
 			  << "<tbody class=\"tableitem\">\r\n";
 
 			for (const auto& it: dest->GetAllStreams ())
@@ -881,8 +881,8 @@ namespace http {
 		{
 			s << "<b>" << tr("Transit Tunnels") << ":</b><br>\r\n";
 			s << "<table>\r\n";
-			s << "<thead><th>&#8658;</th><th>ID</th><th>&#8658;</th><th>" << tr("Amount") << "</th><th>" << tr("Next") << "</th></thead>\r\n";
-			s << "<tbody class=\"tableitem\">";
+			s << "<thead><tr><th>&#8658;</th><th>ID</th><th>&#8658;</th><th>" << tr("Amount") << "</th><th>" << tr("Next") << "</th></tr></thead>\r\n";
+			s << "<tbody class=\"tableitem\">\r\n";
 			for (const auto& it: i2p::tunnel::tunnels.GetTransitTunnels ())
 			{
 				if (std::dynamic_pointer_cast<i2p::tunnel::TransitTunnelGateway>(it))
@@ -957,16 +957,16 @@ namespace http {
 			s << "<div class='slide'><label for='slide_" << boost::algorithm::to_lower_copy(name) << "'><b>" << name
 			  << "</b> ( " << cnt << " )</label>\r\n"
 			  << "<input type=\"checkbox\" id=\"slide_" << boost::algorithm::to_lower_copy(name) << "\" />\r\n"
-			  << "<div class=\"slidecontent list\">"
-			  << tmp_s.str () << "</div>\r\n</div>\r\n";
+			  << "<div class=\"slidecontent list\">\r\n\r\n"
+			  << tmp_s.str () << "</div>\r\n</div>\r\n\r\n";
 		}
 		if (!tmp_s6.str ().empty ())
 		{
 			s << "<div class='slide'><label for='slide_" << boost::algorithm::to_lower_copy(name) << "v6'><b>" << name
 			  << "v6</b> ( " << cnt6 << " )</label>\r\n"
 			  << "<input type=\"checkbox\" id=\"slide_" << boost::algorithm::to_lower_copy(name) << "v6\" />\r\n"
-			  << "<div class=\"slidecontent list\">"
-			  << tmp_s6.str () << "</div>\r\n</div>\r\n";
+			  << "<div class=\"slidecontent list\">\r\n\r\n"
+			  << tmp_s6.str () << "</div>\r\n</div>\r\n\r\n";
 		}
 	}
 
