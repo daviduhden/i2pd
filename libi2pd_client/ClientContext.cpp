@@ -547,8 +547,11 @@ namespace client
 		if (tunConf.empty ())
 			tunConf = i2p::fs::DataDirPath ("tunnels.conf");
 
-		LogPrint(eLogDebug, "Clients: Tunnels config file: ", tunConf);
-		ReadTunnels (tunConf, numClientTunnels, numServerTunnels);
+		if (i2p::fs::Exists (tunConf))
+		{
+            LogPrint(eLogDebug, "Clients: Tunnels config file: ", tunConf);
+            ReadTunnels (tunConf, numClientTunnels, numServerTunnels);
+        }
 
 		std::string tunDir; i2p::config::GetOption("tunnelsdir", tunDir);
 		if (tunDir.empty ())

@@ -425,7 +425,7 @@ namespace i2p
 		if (v4)
 		{
 			auto addr = (*addresses)[i2p::data::RouterInfo::eNTCP2V4Idx];
-			if (addr && (addr->port != port || addr->published != publish))
+			if (addr && (addr->port != port || addr->published != publish || addr->v != version))
 			{
 				PublishNTCP2Address (addr, port, publish, version);
 				updated = true;
@@ -434,7 +434,7 @@ namespace i2p
 		if (v6)
 		{
 			auto addr = (*addresses)[i2p::data::RouterInfo::eNTCP2V6Idx];
-			if (addr && (addr->port != port || addr->published != publish))
+			if (addr && (addr->port != port || addr->published != publish || addr->v != version))
 			{
 				PublishNTCP2Address (addr, port, publish, version);
 				updated = true;
