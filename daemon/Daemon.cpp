@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -188,7 +188,7 @@ namespace util
 		if (bandwidth.length () > 0)
 		{
 			const auto NumBandwithRegex = std::regex(R"(^\d+$)");
-			const auto BandwithRegex = std::regex(R"((\d+)(b|kb|mb|gb))");	
+			const auto BandwithRegex = std::regex(R"((\d+)(b|kb|mb|gb))");
 			std::smatch bandWithMatch;
 
 			if (bandwidth.length () == 1 && ((bandwidth[0] >= 'K' && bandwidth[0] <= 'P') || bandwidth[0] == 'X' ))
@@ -204,7 +204,7 @@ namespace util
 				if (unit == "b")
 				{
 					limit /= 1000;
-				} 
+				}
 				else if(unit == "mb")
 				{
 					limit *= 1000;
@@ -216,7 +216,7 @@ namespace util
 				if (limit < 0)
 				{
 					LogPrint(eLogInfo, "Daemon: Unexpected bandwidth ", bandwidth, ". Set to 'low'");
-					i2p::context.SetBandwidth (i2p::data::CAPS_FLAG_LOW_BANDWIDTH2);					
+					i2p::context.SetBandwidth (i2p::data::CAPS_FLAG_LOW_BANDWIDTH2);
 				} else {
 					i2p::context.SetBandwidth(limit);
 				}
@@ -234,7 +234,7 @@ namespace util
 					LogPrint(eLogInfo, "Daemon: Unexpected bandwidth ", bandwidth, ". Set to 'low'");
 					i2p::context.SetBandwidth (i2p::data::CAPS_FLAG_LOW_BANDWIDTH2);
 				}
-			} 
+			}
 		}
 		else if (isFloodfill)
 		{
@@ -259,35 +259,26 @@ namespace util
 		if (trust)
 		{
 			LogPrint(eLogInfo, "Daemon: Explicit trust enabled");
-			std::string fam; i2p::config::GetOption("trust.family", fam);
+			std::string f; i2p::config::GetOption("trust.family", f); std::string_view fam(f);
 			std::string routers; i2p::config::GetOption("trust.routers", routers);
 			bool restricted = false;
 			if (fam.length() > 0)
 			{
-				std::set<std::string> fams;
+				std::vector<std::string_view> fams;
 				size_t pos = 0, comma;
 				do
 				{
 					comma = fam.find (',', pos);
-					fams.insert (fam.substr (pos, comma != std::string::npos ? comma - pos : std::string::npos));
+					fams.push_back (fam.substr (pos, comma != std::string::npos ? comma - pos : std::string::npos));
 					pos = comma + 1;
 				}
 				while (comma != std::string::npos);
 				i2p::transport::transports.RestrictRoutesToFamilies(fams);
 				restricted = fams.size() > 0;
 			}
-			if (routers.length() > 0) {
-				std::set<i2p::data::IdentHash> idents;
-				size_t pos = 0, comma;
-				do
-				{
-					comma = routers.find (',', pos);
-					i2p::data::IdentHash ident;
-					ident.FromBase64 (routers.substr (pos, comma != std::string::npos ? comma - pos : std::string::npos));
-					idents.insert (ident);
-					pos = comma + 1;
-				}
-				while (comma != std::string::npos);
+			if (!routers.empty ())
+			{
+				auto idents = i2p::data::ExtractIdentHashes (routers);
 				LogPrint(eLogInfo, "Daemon: Setting restricted routes to use ", idents.size(), " trusted routers");
 				i2p::transport::transports.RestrictRoutesToRouters(idents);
 				restricted = idents.size() > 0;
@@ -526,9 +517,9 @@ namespace util
 		s << "Uptime: "; ShowUptime(s, i2p::context.GetUptime ());
 		auto gracefulTimeLeft = Daemon.GetGracefulShutdownInterval ();
 		if (gracefulTimeLeft > 0)
-		{	
+		{
 			s << "Graceful shutdown, time left: "; ShowUptime(s, gracefulTimeLeft);
-		}	
+		}
 		else
 			s << "\n";
 		s << "Inbound: " << i2p::transport::transports.GetInBandwidth() / 1024 << " KiB/s; ";

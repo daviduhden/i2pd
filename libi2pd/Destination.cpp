@@ -62,19 +62,8 @@ namespace client
 				}
 				auto explicitPeersStr = (*params)[I2CP_PARAM_EXPLICIT_PEERS];
 				if (!explicitPeersStr.empty ())
-				{
-					explicitPeers = std::make_shared<std::vector<i2p::data::IdentHash> >();
-					std::string str (explicitPeersStr);
-					std::stringstream ss(str);
-					std::string b64;
-					while (std::getline (ss, b64, ','))
-					{
-						i2p::data::IdentHash ident;
-						ident.FromBase64 (b64);
-						explicitPeers->push_back (ident);
-						LogPrint (eLogInfo, "Destination: Added to explicit peers list: ", b64);
-					}
-				}
+					explicitPeers = std::make_shared<std::vector<i2p::data::IdentHash> > (i2p::data::ExtractIdentHashes (explicitPeersStr));
+
 				m_Nickname = (*params)[I2CP_PARAM_INBOUND_NICKNAME];
 				if (m_Nickname.empty ()) // try outbound
 					m_Nickname = (*params)[I2CP_PARAM_OUTBOUND_NICKNAME];

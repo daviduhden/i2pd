@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -83,11 +83,11 @@ namespace transport
 		Peer (std::shared_ptr<const i2p::data::RouterInfo> r, uint64_t ts):
 			numAttempts (0), router (r), creationTime (ts),
 			nextRouterInfoUpdateTime (ts + PEER_ROUTER_INFO_UPDATE_INTERVAL),
-			lastSelectionTime (0), isHighBandwidth (false), isEligible (false) 
+			lastSelectionTime (0), isHighBandwidth (false), isEligible (false)
 		{
 			UpdateParams (router);
 		}
-			
+
 		void Done ()
 		{
 			for (auto& it: sessions)
@@ -115,7 +115,7 @@ namespace transport
 	const int MAX_NUM_DELAYED_MESSAGES = 150;
 	const int CHECK_PROFILE_NUM_DELAYED_MESSAGES = 15; // check profile after
 	const int NUM_X25519_PRE_GENERATED_KEYS = 25; // pre-generated x25519 keys pairs
-	
+
 	const int TRAFFIC_SAMPLE_COUNT = 301; // seconds
 
 	struct TrafficSample
@@ -142,9 +142,9 @@ namespace transport
 
 			bool IsOnline() const { return m_IsOnline; };
 			void SetOnline (bool online);
-		
+
 			int GetLocalDelay () const; // in millseconds
-			
+
 			auto& GetService () { return *m_Service; };
 			std::shared_ptr<i2p::crypto::X25519Keys> GetNextX25519KeysPair ();
 			void ReuseX25519KeysPair (std::shared_ptr<i2p::crypto::X25519Keys> pair);
@@ -177,9 +177,9 @@ namespace transport
 			/** do we want to use restricted routes? */
 			bool RoutesRestricted() const;
 			/** restrict routes to use only these router families for first hops */
-			void RestrictRoutesToFamilies(const std::set<std::string>& families);
+			void RestrictRoutesToFamilies(const std::vector<std::string_view>& families);
 			/** restrict routes to use only these routers for first hops */
-			void RestrictRoutesToRouters(const std::set<i2p::data::IdentHash>& routers);
+			void RestrictRoutesToRouters(const std::vector<i2p::data::IdentHash>& routers);
 
 			bool IsTrustedRouter (const i2p::data::IdentHash& ih) const;
 			bool IsRestrictedPeer(const i2p::data::IdentHash& ih) const;

@@ -1183,20 +1183,20 @@ namespace transport
 			});
 	}
 
-	void Transports::RestrictRoutesToFamilies(const std::set<std::string>& families)
+	void Transports::RestrictRoutesToFamilies(const std::vector<std::string_view>& families)
 	{
 		std::lock_guard<std::mutex> lock(m_FamilyMutex);
 		m_TrustedFamilies.clear();
-		for (auto fam : families)
+		for (auto f: families)
 		{
-			boost::to_lower (fam);
+            std::string fam(f); boost::to_lower (fam);
 			auto id = i2p::data::netdb.GetFamilies ().GetFamilyID (fam);
 			if (id)
 				m_TrustedFamilies.push_back (id);
 		}
 	}
 
-	void Transports::RestrictRoutesToRouters(const std::set<i2p::data::IdentHash>& routers)
+	void Transports::RestrictRoutesToRouters(const std::vector<i2p::data::IdentHash>& routers)
 	{
 		std::lock_guard<std::mutex> lock(m_TrustedRoutersMutex);
 		m_TrustedRouters.clear();
