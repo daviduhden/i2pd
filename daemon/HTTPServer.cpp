@@ -849,7 +849,7 @@ namespace http {
 		s << "<form method=\"get\" action=\"" << webroot << "\">\r\n";
 		s << "  <input type=\"hidden\" name=\"cmd\" value=\"" << HTTP_COMMAND_LIMITTRANSIT << "\">\r\n";
 		s << "  <input type=\"hidden\" name=\"token\" value=\"" << token << "\">\r\n";
-		s << "  <input type=\"number\" min=\"0\" max=\"" << TRANSIT_TUNNELS_LIMIT <<"\" name=\"limit\" value=\"" << maxTunnels << "\">\r\n";
+		s << "  <input type=\"number\" min=\"2\" max=\"" << TRANSIT_TUNNELS_LIMIT <<"\" name=\"limit\" value=\"" << maxTunnels << "\">\r\n";
 		s << "  <button type=\"submit\">" << tr("Change") << "</button>\r\n";
 		s << "</form>\r\n<br>\r\n";
 
@@ -1475,10 +1475,11 @@ namespace http {
 		else if (cmd == HTTP_COMMAND_LIMITTRANSIT)
 		{
 			uint32_t limit = std::stoul(params["limit"], nullptr);
-			if (limit > 0 && limit <= TRANSIT_TUNNELS_LIMIT)
+			if (limit >= 2 && limit <= TRANSIT_TUNNELS_LIMIT)
 				i2p::tunnel::tunnels.SetMaxNumTransitTunnels (limit);
 			else {
-				s << "<b>" << tr("ERROR") << "</b>:&nbsp;" << tr("Transit tunnels count must not exceed %d", TRANSIT_TUNNELS_LIMIT) << "\r\n<br>\r\n<br>\r\n";
+				s << "<b>" << tr("ERROR") << "</b>:&nbsp;";
+				s << tr("Transit tunnels count must be at least 2 and not exceed %d", TRANSIT_TUNNELS_LIMIT) << "\r\n<br><br>\r\n";
 				s << "<a href=\"" << webroot << "?page=commands\">" << tr("Back to commands list") << "</a>\r\n<br>\r\n";
 				s << "<p>" << tr("You will be redirected in %d seconds", COMMAND_REDIRECT_TIMEOUT) << "</b>";
 				res.add_header("Refresh", redirect.c_str());
