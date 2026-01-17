@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -41,10 +41,10 @@ namespace data
 	const int NETDB_MIN_ROUTERS = 90;
 	const int NETDB_MIN_FLOODFILLS = 5;
 	const int NETDB_MIN_TRANSPORTS = 10 ; // otherwise assume offline
-	const int NETDB_NUM_FLOODFILLS_THRESHOLD = 1800;
+	const int NETDB_NUM_FLOODFILLS_THRESHOLD = 2000;
 	const int NETDB_NUM_ROUTERS_THRESHOLD = 4*NETDB_NUM_FLOODFILLS_THRESHOLD;
 	const int NETDB_TUNNEL_CREATION_RATE_THRESHOLD = 10; // in %
-	const int NETDB_CHECK_FOR_EXPIRATION_UPTIME = 600; // 10 minutes, in seconds  
+	const int NETDB_CHECK_FOR_EXPIRATION_UPTIME = 600; // 10 minutes, in seconds
 	const int NETDB_FLOODFILL_EXPIRATION_TIMEOUT = 60 * 60; // 1 hour, in seconds
 	const int NETDB_MIN_EXPIRATION_TIMEOUT = 90 * 60; // 1.5 hours
 	const int NETDB_MAX_EXPIRATION_TIMEOUT = 27 * 60 * 60; // 27 hours
@@ -88,7 +88,7 @@ namespace data
 			std::shared_ptr<RouterProfile> FindRouterProfile (const IdentHash& ident) const;
 
 			void RequestDestination (const IdentHash& destination, RequestedDestination::RequestComplete requestComplete = nullptr, bool direct = true);
-			
+
 			std::shared_ptr<const RouterInfo> GetRandomRouter () const;
 			std::shared_ptr<const RouterInfo> GetRandomRouter (std::shared_ptr<const RouterInfo> compatibleWith, bool reverse, bool endpoint, bool clientTunnel) const;
 			std::shared_ptr<const RouterInfo> GetHighBandwidthRandomRouter (std::shared_ptr<const RouterInfo> compatibleWith, bool reverse, bool endpoint) const;
@@ -124,9 +124,9 @@ namespace data
 
 			void ClearRouterInfos () { m_RouterInfos.clear (); };
 			template<typename... TArgs>
-			std::shared_ptr<RouterInfo::Buffer> NewRouterInfoBuffer (TArgs&&... args) 
-			{ 
-				return m_RouterInfoBuffersPool.AcquireSharedMt (std::forward<TArgs>(args)...); 
+			std::shared_ptr<RouterInfo::Buffer> NewRouterInfoBuffer (TArgs&&... args)
+			{
+				return m_RouterInfoBuffersPool.AcquireSharedMt (std::forward<TArgs>(args)...);
 			}
 			bool PopulateRouterInfoBuffer (std::shared_ptr<RouterInfo> r);
 			std::shared_ptr<RouterInfo::Address> NewRouterInfoAddress () { return m_RouterInfoAddressesPool.AcquireSharedMt (); };
@@ -146,9 +146,9 @@ namespace data
 			void Load ();
 			bool LoadRouterInfo (const std::string& path, uint64_t ts);
 			void SaveUpdated ();
-			void PersistRouters (std::list<std::pair<std::string, std::shared_ptr<RouterInfo::Buffer> > >&& update, 
+			void PersistRouters (std::list<std::pair<std::string, std::shared_ptr<RouterInfo::Buffer> > >&& update,
 				std::list<std::string>&& remove);
-			void Run (); 
+			void Run ();
 			void Flood (const IdentHash& ident, std::shared_ptr<I2NPMessage> floodMsg, bool andNextDay = false);
 			void ManageRouterInfos ();
 			void ManageLeaseSets ();
