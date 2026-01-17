@@ -3,7 +3,7 @@
 Name:          i2pd-git
 Version:       2.58.0
 Release:       git%{git_hash}%{?dist}
-Summary:       I2P router written in C++
+Summary:       C++ daemon for accessing the I2P network
 Conflicts:     i2pd
 
 License:       BSD
