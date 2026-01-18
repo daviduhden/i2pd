@@ -746,7 +746,7 @@ namespace stream
 				m_FastRTT = rttSample;
 				m_PrevRTTSample = rttSample;
 				m_Jitter = rttSample / 5; // 20%
-				m_Jitter += 3; // for low-latency connections
+				m_Jitter += 5; // for low-latency connections
 				m_JitterAccum = m_Jitter;
 				m_JitterDiv = 1;
 				m_IsFirstRttSample = false;
@@ -767,7 +767,7 @@ namespace stream
 					jitter = m_PrevRTTSample - rttSample;
 				if (jitter)
 				{
-					jitter += 3;	// for low-latency connections
+					jitter += 5;	// for low-latency connections
 					m_JitterAccum += jitter;
 					m_Jitter = m_JitterAccum / m_JitterDiv;
 					m_JitterDiv++;
@@ -779,7 +779,7 @@ namespace stream
 					m_SlowRTT = m_MinRTT + m_Jitter;
 				}
 			}
-			if (m_IsBufferEmpty || m_FastRTT >= m_MinRTT + m_Jitter*3 || m_RTT >= m_MinRTT + m_Jitter*3 || m_SlowRTT >= m_MinRTT + m_Jitter*3 || m_RTT > m_FastRTT)
+			if (m_IsBufferEmpty || m_FastRTT >= m_MinRTT + m_Jitter*4 || m_RTT >= m_MinRTT + m_Jitter*4 || m_SlowRTT >= m_MinRTT + m_Jitter*4 || m_RTT > m_FastRTT)
 			{
 				incCounter = 0;
 				m_WindowIncCounter = 0;
@@ -787,7 +787,7 @@ namespace stream
 			m_WindowIncCounter = m_WindowIncCounter + incCounter;
 			//
 			// delay-based CC
-			if ((m_SlowRTT > m_MinRTT + m_Jitter*6) && !m_IsWinDropped && !m_IsClientChoked) // Drop window if RTT grows too fast
+			if ((m_RTT > m_SlowRTT) && (m_SlowRTT >= m_FastRTT) && (m_FastRTT > m_MinRTT + m_Jitter*8) && (m_SlowRTT > m_MinRTT + m_Jitter*8) && !m_IsWinDropped && !m_IsClientChoked) // Drop window if RTT grows too fast
 			{
 				LogPrint (eLogDebug, "Streaming: Congestion detected, reduce window size");
 				ProcessWindowDrop ();
@@ -796,7 +796,7 @@ namespace stream
 			m_PrevRTTSample = rttSample;
 
 			bool wasInitial = m_RTO == INITIAL_RTO;
-			m_RTO = std::max (MIN_RTO, (int)(m_RTT * 1.3 + m_Jitter + m_ACKRecieveInterval)); // TODO: implement it better
+			m_RTO = std::max (MIN_RTO, (int)(m_RTT + m_Jitter*2 + m_ACKRecieveInterval)); // TODO: implement it better
 
 			if (wasInitial)
 				ScheduleResend ();
@@ -1986,7 +1986,9 @@ namespace stream
 
 	void Stream::UpdatePacingTime ()
 	{
-		double rtt = m_MinRTT + m_Jitter*2;
+		double rtt = m_MinRTT;
+		if (m_IsWinDropped)
+			rtt = m_SlowRTT;
 		if (m_WindowDropTargetSize)
 			m_PacingTime = std::round (rtt*1000/m_WindowDropTargetSize);
 		else
@@ -1998,10 +2000,15 @@ namespace stream
 	void Stream::ProcessWindowDrop ()
 	{
 		if (m_WindowDropTargetSize)
-			m_LastWindowDropSize = m_WindowDropTargetSize * ((m_MinRTT + m_Jitter*4) / m_FastRTT);
+		{
+			m_LastWindowDropSize = m_WindowDropTargetSize * ((m_MinRTT + m_Jitter*6) / m_SlowRTT);
+			m_WindowDropTargetSize = m_LastWindowDropSize * m_MinRTT / m_SlowRTT;	// we start send faster when rtt will decrease
+		}
 		else
-			m_LastWindowDropSize = m_WindowSize * ((m_MinRTT + m_Jitter*4) / m_FastRTT);
-		m_WindowDropTargetSize = m_LastWindowDropSize * 0.5; // -50% to drain queue
+		{
+			m_LastWindowDropSize = m_WindowSize * ((m_MinRTT + m_Jitter*6) / m_SlowRTT);
+			m_WindowDropTargetSize = m_WindowSize * m_MinRTT / m_SlowRTT;	// we start send faster when rtt will decrease
+		}
 		if (m_WindowDropTargetSize < MIN_WINDOW_SIZE)
 			m_WindowDropTargetSize = MIN_WINDOW_SIZE;
 		m_WindowIncCounter = 0; // disable window growth

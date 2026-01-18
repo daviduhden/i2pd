@@ -64,7 +64,7 @@ namespace stream
 	const int MAX_WINDOW_SIZE = 512;
 	const int MAX_WINDOW_SIZE_INC_PER_RTT = 512; // TODO: remove
 	const double RTT_EWMA_ALPHA = 0.1;
-	const double SLOWRTT_EWMA_ALPHA = 0.02;
+	const double SLOWRTT_EWMA_ALPHA = 0.03;
 	const double PREV_SPEED_KEEP_TIME_COEFF = 0.2; // 0.1 - 1 // how long will the window size stay around the previous drop level, less is longer
 	const int MIN_RTO = 20; // in milliseconds
 	const int INITIAL_RTT = 1500; // in milliseconds
