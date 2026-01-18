@@ -503,6 +503,8 @@ namespace client
 		}
 		std::string explicitPeers = GetI2CPStringOption(section, I2CP_PARAM_EXPLICIT_PEERS, "");
 		if (explicitPeers.length () > 0) options.Insert (I2CP_PARAM_EXPLICIT_PEERS, explicitPeers);
+		std::string trustedRouters = GetI2CPStringOption(section, I2CP_PARAM_TRUSTED_ROUTERS, "");
+		if (trustedRouters.length () > 0) options.Insert (I2CP_PARAM_TRUSTED_ROUTERS, trustedRouters);
 		std::string ratchetInboundTags = GetI2CPStringOption(section, I2CP_PARAM_RATCHET_INBOUND_TAGS, "");
 		if (ratchetInboundTags.length () > 0) options.Insert (I2CP_PARAM_RATCHET_INBOUND_TAGS, ratchetInboundTags);
 	}
