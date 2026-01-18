@@ -467,6 +467,7 @@ namespace http {
 
 	static void ShowLeaseSetDestination (std::stringstream& s, std::shared_ptr<const i2p::client::LeaseSetDestination> dest, uint32_t token)
 	{
+		std::string webroot; i2p::config::GetOption("http.webroot", webroot);
 		s << "<b>Base32:</b><br>\r\n<textarea readonly cols=\"80\" rows=\"1\">";
 		s << dest->GetIdentHash ().ToBase32 () << "</textarea><br>\r\n<br>\r\n";
 
@@ -515,7 +516,7 @@ namespace http {
 			{
 				s << "<tr>"
 				  << "<td>" << it.first.ToBase32 () << "</td>"
-				  << "<td><a class=\"button\" href=\"/?cmd=" << HTTP_COMMAND_EXPIRELEASE<< "&b32=" << dest->GetIdentHash ().ToBase32 ()
+				  << "<td><a class=\"button\" href=\"" << webroot << "?cmd=" << HTTP_COMMAND_EXPIRELEASE<< "&b32=" << dest->GetIdentHash ().ToBase32 ()
 				  << "&lease=" << it.first.ToBase32 () << "&token=" << token << "\" title=\"" << tr("Expire LeaseSet") << "\"> &#10008; </a></td>"
 				  << "<td>" << (int)it.second->GetStoreType () << "</td>"
 				  << "<td>" << (int)it.second->GetEncryptionType () <<"</td>"
@@ -618,6 +619,7 @@ namespace http {
 
 	void ShowLocalDestination (std::stringstream& s, const std::string& b32, uint32_t token)
 	{
+		std::string webroot; i2p::config::GetOption("http.webroot", webroot);
 		s << "<b>" << tr("Local Destination") << ":</b><br>\r\n<br>\r\n";
 		i2p::data::IdentHash ident;
 		ident.FromBase32 (b32);
@@ -651,7 +653,7 @@ namespace http {
 				s << "<tr>";
 				s << "<td>" << it->GetRecvStreamID () << "</td>";
 				if (it->GetRecvStreamID ()) {
-					s << "<td><a class=\"button\" href=\"/?cmd=" << HTTP_COMMAND_KILLSTREAM << "&b32=" << b32 << "&streamID="
+					s << "<td><a class=\"button\" href=\"" << webroot << "?cmd=" << HTTP_COMMAND_KILLSTREAM << "&b32=" << b32 << "&streamID="
 					  << it->GetRecvStreamID () << "&token=" << token << "\" title=\"" << tr("Close stream") << "\"> &#10008; </a></td>";
 				}
 				else {
