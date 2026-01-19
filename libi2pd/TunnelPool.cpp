@@ -67,12 +67,12 @@ namespace tunnel
 		DetachTunnels ();
 	}
 
-	void TunnelPool::SetExplicitPeers (std::shared_ptr<std::vector<i2p::data::IdentHash> > explicitPeers)
+	void TunnelPool::SetExplicitPeers (std::vector<i2p::data::IdentHash> explicitPeers)
 	{
-		m_ExplicitPeers = explicitPeers;
-		if (m_ExplicitPeers)
+		m_ExplicitPeers.swap (explicitPeers);
+		int size = m_ExplicitPeers.size ();
+		if (size > 0)
 		{
-			int size = m_ExplicitPeers->size ();
 			if (m_NumInboundHops > size)
 			{
 				m_NumInboundHops = size;
@@ -633,7 +633,7 @@ namespace tunnel
 	bool TunnelPool::SelectPeers (Path& path, bool isInbound)
 	{
 		// explicit peers in use
-		if (m_ExplicitPeers) return SelectExplicitPeers (path, isInbound);
+		if (!m_ExplicitPeers.empty ()) return SelectExplicitPeers (path, isInbound);
 		// calculate num hops
 		int numHops;
 		if (isInbound)
@@ -670,12 +670,12 @@ namespace tunnel
 
 	bool TunnelPool::SelectExplicitPeers (Path& path, bool isInbound)
 	{
-		if (!m_ExplicitPeers->size ()) return false;
+		if (m_ExplicitPeers.empty ()) return false;
 		int numHops = isInbound ? m_NumInboundHops : m_NumOutboundHops;
-		if (numHops > (int)m_ExplicitPeers->size ()) numHops = m_ExplicitPeers->size ();
+		if (numHops > (int)m_ExplicitPeers.size ()) numHops = m_ExplicitPeers.size ();
 		for (int i = 0; i < numHops; i++)
 		{
-			auto& ident = (*m_ExplicitPeers)[i];
+			auto& ident = m_ExplicitPeers[i];
 			auto r = i2p::data::netdb.FindRouter (ident);
 			if (r)
 			{

@@ -66,7 +66,7 @@ namespace tunnel
 
 			std::shared_ptr<i2p::garlic::GarlicDestination> GetLocalDestination () const { return m_LocalDestination; };
 			void SetLocalDestination (std::shared_ptr<i2p::garlic::GarlicDestination> destination) { m_LocalDestination = destination; };
-			void SetExplicitPeers (std::shared_ptr<std::vector<i2p::data::IdentHash> > explicitPeers);
+			void SetExplicitPeers (std::vector<i2p::data::IdentHash> explicitPeers);
 			void SetTrustedRouters (std::vector<i2p::data::IdentHash> routers);
 
 			void CreateTunnels ();
@@ -138,8 +138,7 @@ namespace tunnel
 			std::shared_ptr<i2p::garlic::GarlicDestination> m_LocalDestination;
 			int m_NumInboundHops, m_NumOutboundHops, m_NumInboundTunnels, m_NumOutboundTunnels,
 				m_InboundVariance, m_OutboundVariance;
-			std::shared_ptr<std::vector<i2p::data::IdentHash> > m_ExplicitPeers;
-			std::vector<i2p::data::IdentHash> m_TrustedRouters;
+			std::vector<i2p::data::IdentHash> m_ExplicitPeers, m_TrustedRouters;
 			mutable std::mutex m_InboundTunnelsMutex;
 			std::set<std::shared_ptr<InboundTunnel>, TunnelCreationTimeCmp> m_InboundTunnels; // recent tunnel appears first
 			mutable std::mutex m_OutboundTunnelsMutex;

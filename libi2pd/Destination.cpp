@@ -41,7 +41,7 @@ namespace client
 		int numTags = DEFAULT_TAGS_TO_SEND;
 		bool isHighBandwidth = true;
 		std::shared_ptr<std::vector<i2p::data::IdentHash> > explicitPeers;
-		std::vector<i2p::data::IdentHash> trustedRouters;
+		std::string_view explicitPeersStr, trustedRoutersStr;
 		try
 		{
 			if (params)
@@ -61,13 +61,8 @@ namespace client
 						ratchetsInboundTags = i2p::garlic::ECIESX25519_MIN_NUM_GENERATED_TAGS;
 					SetNumRatchetInboundTags (ratchetsInboundTags);
 				}
-				auto explicitPeersStr = (*params)[I2CP_PARAM_EXPLICIT_PEERS];
-				if (!explicitPeersStr.empty ())
-					explicitPeers = std::make_shared<std::vector<i2p::data::IdentHash> > (i2p::data::ExtractIdentHashes (explicitPeersStr));
-				auto trustedRoutersStr = (*params)[I2CP_PARAM_TRUSTED_ROUTERS];
-				if (!trustedRoutersStr.empty ())
-					trustedRouters = i2p::data::ExtractIdentHashes (trustedRoutersStr);
-
+				explicitPeersStr = (*params)[I2CP_PARAM_EXPLICIT_PEERS];
+				trustedRoutersStr = (*params)[I2CP_PARAM_TRUSTED_ROUTERS];
 				m_Nickname = (*params)[I2CP_PARAM_INBOUND_NICKNAME];
 				if (m_Nickname.empty ()) // try outbound
 					m_Nickname = (*params)[I2CP_PARAM_OUTBOUND_NICKNAME];
@@ -107,10 +102,10 @@ namespace client
 		}
 		SetNumTags (numTags);
 		m_Pool = i2p::tunnel::tunnels.CreateTunnelPool (inLen, outLen, inQty, outQty, inVar, outVar, isHighBandwidth);
-		if (explicitPeers)
-			m_Pool->SetExplicitPeers (explicitPeers);
-		if (!trustedRouters.empty ())
-			m_Pool->SetTrustedRouters (trustedRouters);
+		if (!explicitPeersStr.empty ())
+			m_Pool->SetExplicitPeers (i2p::data::ExtractIdentHashes (explicitPeersStr));
+		if (!trustedRoutersStr.empty ())
+			m_Pool->SetTrustedRouters (i2p::data::ExtractIdentHashes (trustedRoutersStr));
 		if(params)
 		{
 			int maxLatency = 0;
