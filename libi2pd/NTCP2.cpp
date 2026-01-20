@@ -329,7 +329,7 @@ namespace transport
                 if (m_CryptoType > i2p::data::CRYPTO_KEY_TYPE_ECIES_X25519_AEAD)
                 {
                     pq = true;
-                    x[32] &= 0x7F;
+                    x[31] &= 0x7F;
                 }
 #endif
                 if (!pq)
