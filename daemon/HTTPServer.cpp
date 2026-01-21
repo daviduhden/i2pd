@@ -421,7 +421,7 @@ namespace http {
 			s << "<tr><td>" << "SAM"                   << "</td><td class='" << (sam        ? "enabled" : "disabled") << "'>" << (sam        ? tr("Enabled") : tr("Disabled")) << "</td></tr>\r\n";
 			s << "<tr><td>" << "I2CP"                  << "</td><td class='" << (i2cp       ? "enabled" : "disabled") << "'>" << (i2cp       ? tr("Enabled") : tr("Disabled")) << "</td></tr>\r\n";
 			s << "<tr><td>" << "I2PControl"            << "</td><td class='" << (i2pcontrol ? "enabled" : "disabled") << "'>" << (i2pcontrol ? tr("Enabled") : tr("Disabled")) << "</td></tr>\r\n";
-			s << "</tbody>\r\n</table>\r\n";
+			s << "</tbody>\r\n</table>\r\n<br>\r\n";
 		}
 	}
 
@@ -435,7 +435,7 @@ namespace http {
 			s << "<div class=\"listitem\"><a href=\"" << webroot << "?page=" << HTTP_PAGE_LOCAL_DESTINATION << "&b32=" << ident.ToBase32 () << "\">";
 			s << i2p::client::context.GetAddressBook ().ToAddress(ident) << "</a></div>\r\n" << std::endl;
 		}
-		s << "</div>\r\n";
+		s << "</div>\r\n<br>\r\n";
 
 		auto i2cpServer = i2p::client::context.GetI2CPServer ();
 		if (i2cpServer && !(i2cpServer->GetSessions ().empty ()))
@@ -452,7 +452,7 @@ namespace http {
 					s << name << " ]</a> &#8660; " << i2p::client::context.GetAddressBook ().ToAddress(ident) <<"</div>\r\n" << std::endl;
 				}
 			}
-			s << "</div>\r\n";
+			s << "</div>\r\n<br>\r\n";
 		}
 	}
 
@@ -670,7 +670,7 @@ namespace http {
 				s << "<td>" << (int)it->GetStatus () << "</td>";
 				s << "</tr>\r\n";
 			}
-			s << "</tbody>\r\n</table>\r\n";
+			s << "</tbody>\r\n</table>\r\n<br>\r\n";
 		}
 		else
 			ShowError(s, tr("Such destination is not found"));
@@ -741,7 +741,7 @@ namespace http {
 				}
 			);
 			// end for each lease set
-			s << "</div>\r\n";
+			s << "</div>\r\n<br>\r\n";
 		}
 		else if (!i2p::context.IsFloodfill ())
 		{
@@ -803,7 +803,7 @@ namespace http {
 			ShowTunnelDetails(s, it->GetState (), (it->GetTunnelPool () == ExplPool), it->GetNumSentBytes ());
 			s << "</div>\r\n";
 		}
-		s << "</div>\r\n";
+		s << "</div>\r\n<br>\r\n";
 	}
 
 	static void ShowCommands (std::stringstream& s, uint32_t token)
@@ -896,7 +896,7 @@ namespace http {
 				ShowTraffic(s, it->GetNumTransmittedBytes ());
 				s << "</td><td>" << it->GetNextPeerName () << "</td></tr>\r\n";
 			}
-			s << "</tbody>\r\n</table>\r\n";
+			s << "</tbody>\r\n</table>\r\n<br>\r\n";
 		}
 		else
 		{
@@ -960,7 +960,7 @@ namespace http {
 			  << "</b> ( " << cnt << " )</label>\r\n"
 			  << "<input type=\"checkbox\" id=\"slide_" << boost::algorithm::to_lower_copy(name) << "\" />\r\n"
 			  << "<div class=\"slidecontent list\">\r\n\r\n"
-			  << tmp_s.str () << "</div>\r\n</div>\r\n\r\n";
+			  << tmp_s.str () << "</div>\r\n</div>\r\n<br>\r\n\r\n";
 		}
 		if (!tmp_s6.str ().empty ())
 		{
@@ -968,7 +968,7 @@ namespace http {
 			  << "v6</b> ( " << cnt6 << " )</label>\r\n"
 			  << "<input type=\"checkbox\" id=\"slide_" << boost::algorithm::to_lower_copy(name) << "v6\" />\r\n"
 			  << "<div class=\"slidecontent list\">\r\n\r\n"
-			  << tmp_s6.str () << "</div>\r\n</div>\r\n\r\n";
+			  << tmp_s6.str () << "</div>\r\n</div>\r\n<br>\r\n\r\n";
 		}
 	}
 
@@ -1011,7 +1011,7 @@ namespace http {
 				s << "<div class=\"listitem\"><a href=\"" << webroot << "?page=" << HTTP_PAGE_SAM_SESSION << "&sam_id=" << sam_id << "\">";
 				s << name << " (" << it.first << ")</a></div>\r\n" << std::endl;
 			}
-			s << "</div>\r\n";
+			s << "</div>\r\n<br>\r\n";
 		}
 		else
 		{
@@ -1110,7 +1110,7 @@ namespace http {
 				s << i2p::client::context.GetAddressBook ().ToAddress(ident);
 				s << "</div>\r\n"<< std::endl;
 			}
-			s << "</div>\r\n";
+			s << "</div>\r\n<br>\r\n";
 		}
 
 		auto& serverTunnels = i2p::client::context.GetServerTunnels ();
@@ -1125,7 +1125,7 @@ namespace http {
 				s << ":" << it.second->GetLocalPort ();
 				s << "</a></div>\r\n"<< std::endl;
 			}
-			s << "</div>\r\n";
+			s << "</div>\r\n<br>\r\n";
 		}
 
 		auto& clientForwards = i2p::client::context.GetClientForwards ();
@@ -1140,7 +1140,7 @@ namespace http {
 				s << i2p::client::context.GetAddressBook ().ToAddress(ident);
 				s << "</div>\r\n"<< std::endl;
 			}
-			s << "</div>\r\n";
+			s << "</div>\r\n<br>\r\n";
 		}
 		auto& serverForwards = i2p::client::context.GetServerForwards ();
 		if (!serverForwards.empty ())
@@ -1154,7 +1154,7 @@ namespace http {
 				s << i2p::client::context.GetAddressBook ().ToAddress(ident);
 				s << "</div>\r\n"<< std::endl;
 			}
-			s << "</div>\r\n";
+			s << "</div>\r\n<br>\r\n";
 		}
 	}
 
