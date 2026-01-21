@@ -392,7 +392,10 @@ namespace http {
 			}
 			s << "</tbody>\r\n</table>\r\n";
 		}
-		s << "</div>\r\n</div>\r\n";
+		if ((outputFormat == OutputFormatEnum::forWebConsole) || !includeHiddenContent) {
+			s << "</div>\r\n"; // class slidecontent
+		}
+		s << "</div>\r\n"; // class slide
 		if (outputFormat == OutputFormatEnum::forQtUi) {
 			s << "<br>";
 		}
