@@ -971,15 +971,9 @@ namespace data
 	template<typename Filter>
 	std::shared_ptr<const RouterInfo::Address> RouterInfo::GetAddress (Filter filter) const
 	{
-		// TODO: make it more generic using comparator
-#ifdef __cpp_lib_atomic_shared_ptr
-		AddressesPtr addresses = m_Addresses;
-#else
-		auto addresses = boost::atomic_load (&m_Addresses);
-#endif
+		auto addresses = GetAddresses ();
 		for (const auto& address : *addresses)
 			if (address && filter (address)) return address;
-
 		return nullptr;
 	}
 
@@ -1209,6 +1203,21 @@ namespace data
 			case eNTCP2V6Mesh: return "Mesh";
 			default: return "";
 		}
+	}
+
+	bool RouterInfo::IsSameSubnet (const RouterInfo& other) const
+	{
+		auto transports = m_SupportedTransports & other.m_SupportedTransports;
+		if (!transports) return false;
+		auto addresses1 = GetAddresses (), addresses2 = other.GetAddresses ();;
+		for (int i = 0; i < eNumTransports; i++)
+			if (i != eNTCP2V6MeshIdx && (transports & (1 << i)))
+			{
+				auto addr1 = (*addresses1)[i], addr2 = (*addresses2)[i];
+				if (addr1 && addr2 && !addr1->host.is_unspecified () && !addr2->host.is_unspecified ())
+					return addr1->IsSameSubnet (*addr2); // first adddess with IPs
+			}
+		return false;
 	}
 
 	void LocalRouterInfo::CreateBuffer (const PrivateKeys& privateKeys)
