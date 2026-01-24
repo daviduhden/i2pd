@@ -1467,7 +1467,7 @@ namespace i2p
 		if (ecode != boost::asio::error::operation_aborted)
 		{
 			UpdateTimestamp (i2p::util::GetSecondsSinceEpoch ());
-			if (!m_IsHiddenMode)
+			if (!m_IsHiddenMode && !IsLimitedConnectivity ())
 			{
 				m_PublishExcluded.clear ();
 				m_PublishReplyToken = 0;
