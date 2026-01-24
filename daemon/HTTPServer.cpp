@@ -371,18 +371,22 @@ namespace http {
 							s << tr("Unknown");
 					}
 					bool v6 = address->IsV6 ();
-					if (v6)
-					{
-						if (address->IsV4 ()) s << "v4";
-						s << "v6";
+					if (v6) {
+						s << "_v6";
+					}
+					else {
+						s << "_v4";
 					}
 					s << "</td>\r\n";
-					if (address->published)
-						s << "<td>" << (v6 ? "[" : "") << address->host.to_string() << (v6 ? "]:" : ":") << address->port << "</td>\r\n";
+					if (address->published) {
+						s << "<td style=\"padding-left: 0.5em;\">";
+						s << (v6 ? "[" : "") << address->host.to_string() << (v6 ? "]:" : ":");
+						s << address->port << "</td>\r\n";
+					}
 					else
 					{
 						/* tr: Shown when router doesn't publish itself and have "Firewalled" state */ 
-						s << "<td>" << tr("supported");
+						s << "<td style=\"padding-left: 0.5em;\">" << tr("Supported");
 						if (address->port)
 							s << " :" << address->port;
 						s << "</td>\r\n";
