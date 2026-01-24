@@ -181,10 +181,10 @@ namespace http {
 		{
 			LoadExtCSS(theme);
 		}
-		else 
+		else
 		{
 			LoadExtCSS();
-		}		
+		}
 
 		// Page language
 		std::string currLang = i2p::client::context.GetLanguage ()->GetLanguage(); // get current used language
@@ -207,16 +207,16 @@ namespace http {
 			"  <link rel=\"shortcut icon\" href=\"" << itoopieFavicon << "\">\r\n"
 			"  <title>" << tr(/* tr: Webconsole page title */ "Purple I2P Webconsole") << "</title>\r\n";
 		GetStyles(s);
-		if (theme == "black") 
+		if (theme == "black")
 		{
-		s << 
+		s <<
 		"<style>:root {\r\n"
          	"--main-bg-color: #242424;\r\n"
                 "--main-text-color: #17ab5c;\r\n"
                 "--main-link-color: #bf64b7;\r\n"
                 "--main-link-hover-color: #000000;\r\n"
         	"}\r\n</style>";
-		
+
 		}
 		s <<
 			"</head>\r\n"
@@ -300,11 +300,11 @@ namespace http {
 		ShowUptime(s, i2p::context.GetUptime ());
 		s << "<br>\r\n";
 		if (i2p::context.SupportsV4 () || i2p::context.GetStatus () != eRouterStatusUnknown) // don't show Unknown for ipv6-only
-		{	
+		{
 			s << "<b>" << tr("Network status") << ":</b> ";
 			ShowNetworkStatus (s, i2p::context.GetStatus (), i2p::context.GetTesting(), i2p::context.GetError ());
 			s << "<br>\r\n";
-		}	
+		}
 		if (i2p::context.SupportsV6 ())
 		{
 			s << "<b>" << tr("Network status v6") << ":</b> ";
@@ -312,7 +312,7 @@ namespace http {
 			s << "<br>\r\n";
 		}
 		auto remains = Daemon.GetGracefulShutdownInterval ();
-		if (remains > 0) 
+		if (remains > 0)
 		{
 			s << "<b>" << tr("Stopping in") << ":</b> ";
 			ShowUptime(s, remains);
@@ -371,12 +371,13 @@ namespace http {
 							s << tr("Unknown");
 					}
 					bool v6 = address->IsV6 ();
-					if (v6) {
-						s << "_v6";
+					if (v6)
+					{
+						if (address->IsV4 ()) s << "v4";
+						s << "v6";
 					}
-					else {
-						s << "_v4";
-					}
+					else
+						s << "v4";
 					s << "</td>\r\n";
 					if (address->published) {
 						s << "<td style=\"padding-left: 0.5em;\">";
@@ -385,7 +386,7 @@ namespace http {
 					}
 					else
 					{
-						/* tr: Shown when router doesn't publish itself and have "Firewalled" state */ 
+						/* tr: Shown when router doesn't publish itself and have "Firewalled" state */
 						s << "<td style=\"padding-left: 0.5em;\">" << tr("Supported");
 						if (address->port)
 							s << " :" << address->port;
@@ -1031,7 +1032,7 @@ namespace http {
 	void ShowSAMSession (std::stringstream& s, const std::string& id)
 	{
 		auto sam = i2p::client::context.GetSAMBridge ();
-		if (!sam) 
+		if (!sam)
 		{
 			ShowError(s, tr("SAM disabled"));
 			return;
@@ -1040,7 +1041,7 @@ namespace http {
 		{
 			ShowError(s, tr("No sam_id"));
 			return;
-		}		
+		}
 		std::vector<uint8_t> sam_id(id.length ()); // id is in base64
 		size_t l = i2p::data::Base64ToByteStream (id, sam_id.data (), sam_id.size ());
 		if (!l)
@@ -1049,7 +1050,7 @@ namespace http {
 			return;
 		}
 		auto session = sam->FindSession ( { (const char *)sam_id.data (), l });
-		if (!session) 
+		if (!session)
 		{
 			ShowError(s, tr("SAM session not found"));
 			return;
@@ -1073,7 +1074,7 @@ namespace http {
 				case i2p::client::SAMSocketType::eSAMSocketTypeForward  : s << "forward";  break;
 				default: s << "unknown"; break;
 			}
-			if (it->GetSocketType () != i2p::client::SAMSocketType::eSAMSocketTypeTerminated && it->GetSocket ().is_open ())	
+			if (it->GetSocketType () != i2p::client::SAMSocketType::eSAMSocketTypeTerminated && it->GetSocket ().is_open ())
 				s << " [" << it->GetSocket ().remote_endpoint() << "]";
 			s << "</div>\r\n";
 		}
@@ -1552,7 +1553,7 @@ namespace http {
 		else if (cmd == HTTP_COMMAND_RELOAD_CSS)
 		{
 			std::string theme; i2p::config::GetOption("http.theme", theme);
-			
+
 			if (theme != "light" && theme != "black" && theme !="white") LoadExtCSS(theme);
 			else LoadExtCSS();
 		}
