@@ -371,18 +371,22 @@ namespace http {
 							s << tr("Unknown");
 					}
 					bool v6 = address->IsV6 ();
-					if (v6)
-					{
-						if (address->IsV4 ()) s << "v4";
-						s << "v6";
+					if (v6) {
+						s << "_v6";
+					}
+					else {
+						s << "_v4";
 					}
 					s << "</td>\r\n";
-					if (address->published)
-						s << "<td>" << (v6 ? "[" : "") << address->host.to_string() << (v6 ? "]:" : ":") << address->port << "</td>\r\n";
+					if (address->published) {
+						s << "<td style=\"padding-left: 0.5em;\">";
+						s << (v6 ? "[" : "") << address->host.to_string() << (v6 ? "]:" : ":");
+						s << address->port << "</td>\r\n";
+					}
 					else
 					{
 						/* tr: Shown when router doesn't publish itself and have "Firewalled" state */ 
-						s << "<td>" << tr("supported");
+						s << "<td style=\"padding-left: 0.5em;\">" << tr("Supported");
 						if (address->port)
 							s << " :" << address->port;
 						s << "</td>\r\n";
@@ -399,15 +403,15 @@ namespace http {
 		if (outputFormat == OutputFormatEnum::forQtUi) {
 			s << "<br>";
 		}
-		s << "<b>" << tr("Routers") << ":</b> " << i2p::data::netdb.GetNumRouters () << " ";
-		s << "<b>" << tr("Floodfills") << ":</b> " << i2p::data::netdb.GetNumFloodfills () << " ";
+		s << "<b>" << tr("Routers") << ":</b> " << i2p::data::netdb.GetNumRouters () << "&nbsp;&nbsp;&nbsp;";
+		s << "<b>" << tr("Floodfills") << ":</b> " << i2p::data::netdb.GetNumFloodfills () << "&nbsp;&nbsp;&nbsp;";
 		s << "<b>" << tr("LeaseSets") << ":</b> " << i2p::data::netdb.GetNumLeaseSets () << "<br>\r\n";
 
 		size_t clientTunnelCount = i2p::tunnel::tunnels.CountOutboundTunnels();
 		clientTunnelCount += i2p::tunnel::tunnels.CountInboundTunnels();
 		size_t transitTunnelCount = i2p::tunnel::tunnels.CountTransitTunnels();
 
-		s << "<b>" << tr("Client Tunnels") << ":</b> " << std::to_string(clientTunnelCount) << " ";
+		s << "<b>" << tr("Client Tunnels") << ":</b> " << std::to_string(clientTunnelCount) << "&nbsp;&nbsp;&nbsp;";
 		s << "<b>" << tr("Transit Tunnels") << ":</b> " << std::to_string(transitTunnelCount) << "<br>\r\n<br>\r\n";
 
 		if (outputFormat==OutputFormatEnum::forWebConsole) {
