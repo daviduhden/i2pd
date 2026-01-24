@@ -376,8 +376,6 @@ namespace http {
 						if (address->IsV4 ()) s << "v4";
 						s << "v6";
 					}
-					else
-						s << "v4";
 					s << "</td>\r\n";
 					if (address->published) {
 						s << "<td style=\"padding-left: 0.5em;\">";
