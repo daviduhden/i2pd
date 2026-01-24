@@ -28,17 +28,27 @@ namespace config {
 	options_description m_OptionsDesc;
 	variables_map m_Options;
 
+#if defined(_WIN32)
+#define path_to_file(file) "%appdata%\\i2pd\\" #file
+#elif defined(MAC_OSX)
+#define path_to_file(file) "~/Library/Application Support/i2pd/" #file
+#elif defined(__HAIKU__)
+#define path_to_file(file) "~/config/settings/i2pd/" #file
+#else
+#define path_to_file(file) "~/.i2pd/" #file " or /var/lib/i2pd/" #file
+#endif
+
 	void Init()
 	{
 		options_description general("General options");
 		general.add_options()
 			("help",                                                          "Show this message")
 			("version",                                                       "Show i2pd version")
-			("conf", value<std::string>()->default_value(""),                 "Path to main i2pd config file (default: try ~/.i2pd/i2pd.conf or /var/lib/i2pd/i2pd.conf)")
-			("tunconf", value<std::string>()->default_value(""),              "Path to config with tunnels list and options (default: try ~/.i2pd/tunnels.conf or /var/lib/i2pd/tunnels.conf)")
-			("tunnelsdir", value<std::string>()->default_value(""),           "Path to extra tunnels' configs folder (default: ~/.i2pd/tunnels.d or /var/lib/i2pd/tunnels.d")
-			("certsdir", value<std::string>()->default_value(""),             "Path to certificates used for verifying .su3, families (default: ~/.i2pd/certificates or /var/lib/i2pd/certificates")
-			("pidfile", value<std::string>()->default_value(""),              "Path to pidfile (default: ~/i2pd/i2pd.pid or /var/lib/i2pd/i2pd.pid)")
+			("conf", value<std::string>()->default_value(""),                 "Path to main i2pd config file (default: try " path_to_file(i2pd.conf) ")")
+			("tunconf", value<std::string>()->default_value(""),              "Path to config with tunnels list and options (default: try " path_to_file(tunnels.conf) ")")
+			("tunnelsdir", value<std::string>()->default_value(""),           "Path to extra tunnels' configs folder (default: " path_to_file(tunnels.d))
+			("certsdir", value<std::string>()->default_value(""),             "Path to certificates used for verifying .su3, families (default: " path_to_file(certificates))
+			("pidfile", value<std::string>()->default_value(""),              "Path to pidfile (default: " path_to_file(i2pd.pid))
 			("log", value<std::string>()->default_value(""),                  "Logs destination: stdout, file, syslog (stdout if not set)")
 			("logfile", value<std::string>()->default_value(""),              "Path to logfile (stdout if not set, autodetect if daemon)")
 			("loglevel", value<std::string>()->default_value("warn"),         "Set the minimal level of log messages (debug, info, warn, error, none)")
