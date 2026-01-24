@@ -403,15 +403,15 @@ namespace http {
 		if (outputFormat == OutputFormatEnum::forQtUi) {
 			s << "<br>";
 		}
-		s << "<b>" << tr("Routers") << ":</b> " << i2p::data::netdb.GetNumRouters () << " ";
-		s << "<b>" << tr("Floodfills") << ":</b> " << i2p::data::netdb.GetNumFloodfills () << " ";
+		s << "<b>" << tr("Routers") << ":</b> " << i2p::data::netdb.GetNumRouters () << "&nbsp;&nbsp;&nbsp;";
+		s << "<b>" << tr("Floodfills") << ":</b> " << i2p::data::netdb.GetNumFloodfills () << "&nbsp;&nbsp;&nbsp;";
 		s << "<b>" << tr("LeaseSets") << ":</b> " << i2p::data::netdb.GetNumLeaseSets () << "<br>\r\n";
 
 		size_t clientTunnelCount = i2p::tunnel::tunnels.CountOutboundTunnels();
 		clientTunnelCount += i2p::tunnel::tunnels.CountInboundTunnels();
 		size_t transitTunnelCount = i2p::tunnel::tunnels.CountTransitTunnels();
 
-		s << "<b>" << tr("Client Tunnels") << ":</b> " << std::to_string(clientTunnelCount) << " ";
+		s << "<b>" << tr("Client Tunnels") << ":</b> " << std::to_string(clientTunnelCount) << "&nbsp;&nbsp;&nbsp;";
 		s << "<b>" << tr("Transit Tunnels") << ":</b> " << std::to_string(transitTunnelCount) << "<br>\r\n<br>\r\n";
 
 		if (outputFormat==OutputFormatEnum::forWebConsole) {
