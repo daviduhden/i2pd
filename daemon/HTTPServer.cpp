@@ -385,7 +385,7 @@ namespace http {
 					else
 					{
 						/* tr: Shown when router doesn't publish itself and have "Firewalled" state */
-						s << "<td style=\"padding-left: 0.5em;\">" << tr("Supported");
+						s << "<td style=\"padding-left: 0.5em;\">" << tr("supported");
 						if (address->port)
 							s << " :" << address->port;
 						s << "</td>\r\n";
