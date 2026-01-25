@@ -1636,11 +1636,14 @@ namespace transport
 					LogPrint (eLogDebug, "SSU2: RelayTagRequest");
 					if (!m_RelayTag)
 					{
-						auto addr = FindLocalAddress ();
-						if (addr && addr->IsIntroducer ())
+						if (i2p::context.AcceptsTunnels())
 						{
-							RAND_bytes ((uint8_t *)&m_RelayTag, 4);
-							m_Server.AddRelay (m_RelayTag, shared_from_this ());
+							auto addr = FindLocalAddress ();
+							if (addr && addr->IsIntroducer ())
+							{
+								RAND_bytes ((uint8_t *)&m_RelayTag, 4);
+								m_Server.AddRelay (m_RelayTag, shared_from_this ());
+							}
 						}
 					}
 				break;
