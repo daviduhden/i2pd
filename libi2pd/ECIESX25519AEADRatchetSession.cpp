@@ -297,27 +297,21 @@ namespace garlic
 				MixKey (sharedSecret);
 
 				auto keyLen = i2p::crypto::GetMLKEMPublicKeyLen (cryptoType);
-				if (keyLen + 16 > len || !keyLen)
+				if (keyLen + 16 < len && keyLen)
 				{
-					LogPrint (eLogWarning, "Garlic: ML-KEM encaps_key section is too short ", len, ". Expected ", keyLen + 16);
-					return false;
-				}
-				std::vector<uint8_t> encapsKey(keyLen);
-				if (Decrypt (buf, encapsKey.data (), keyLen))
-				{
-					decrypted = true; // encaps section has right hash
-					MixHash (buf, keyLen + 16);
-					buf += keyLen + 16;
-					len -= keyLen + 16;
+					std::vector<uint8_t> encapsKey(keyLen);
+					if (Decrypt (buf, encapsKey.data (), keyLen))
+					{
+						decrypted = true; // encaps section has right hash
+						MixHash (buf, keyLen + 16);
+						buf += keyLen + 16;
+						len -= keyLen + 16;
 
-					m_PQKeys = i2p::crypto::CreateMLKEMKeys (cryptoType);
-					m_PQKeys->SetPublicKey (encapsKey.data ());
+						m_PQKeys = i2p::crypto::CreateMLKEMKeys (cryptoType);
+						m_PQKeys->SetPublicKey (encapsKey.data ());
+					}
 				}
-				else
-				{
-					LogPrint (eLogWarning, "Garlic: Failed to decrypt ML-KEM encaps_key section");
-					return false;
-				}
+				// if PQ failed it's valid situation meaning regular ECIES_X25519(type 4)
 			}
 		}
 #endif
