@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -95,16 +95,16 @@ namespace garlic
 	}
 
 	ReceiveRatchetTagSet::ReceiveRatchetTagSet (std::shared_ptr<ECIESX25519AEADRatchetSession> session, bool isNS):
-		m_Session (session), m_IsNS (isNS) 
+		m_Session (session), m_IsNS (isNS)
 	{
 	}
-		
+
 	ReceiveRatchetTagSet::~ReceiveRatchetTagSet ()
 	{
 		if (m_IsNS && m_Session)
 			m_Session->CleanupReceiveNSRKeys ();
-	}	
-	
+	}
+
 	void ReceiveRatchetTagSet::Expire ()
 	{
 		if (!m_ExpirationTimestamp)
@@ -128,12 +128,12 @@ namespace garlic
 		return session->HandleNextMessage (buf, len, shared_from_this (), index);
 	}
 
-	bool ReceiveRatchetTagSet::IsSessionTerminated () const 
-	{ 
-		return !m_Session || m_Session->IsTerminated (); 
+	bool ReceiveRatchetTagSet::IsSessionTerminated () const
+	{
+		return !m_Session || m_Session->IsTerminated ();
 	}
 
-	
+
 	SymmetricKeyTagSet::SymmetricKeyTagSet (GarlicDestination * destination, const uint8_t * key):
 		ReceiveRatchetTagSet (nullptr), m_Destination (destination)
 	{
@@ -247,9 +247,9 @@ namespace garlic
 			m_AckRequestMsgID = 0;
 			m_AckRequestNumAttempts = 0;
 			ret = true;
-		}	
+		}
 		return ret;
-	}	
+	}
 
 	bool ECIESX25519AEADRatchetSession::CleanupUnconfirmedTags ()
 	{
@@ -257,26 +257,26 @@ namespace garlic
 		{
 			m_AckRequestMsgID = 0;
 			m_AckRequestNumAttempts = 0;
-			return true;	
+			return true;
 		}
 		return false;
-	}	
+	}
 
 	void ECIESX25519AEADRatchetSession::CleanupReceiveNSRKeys ()
 	{
 		m_EphemeralKeys = nullptr;
 #if OPENSSL_PQ
 		m_PQKeys = nullptr;
-#endif	
-	}	
-		
+#endif
+	}
+
 	bool ECIESX25519AEADRatchetSession::HandleNewIncomingSession (const uint8_t * buf, size_t len)
 	{
 		if (!GetOwner ()) return false;
 		// we are Bob
 		// KDF1
-		
-		if (!i2p::crypto::GetElligator ()->Decode (buf, m_Aepk))
+
+		if (len < 32 || !i2p::crypto::GetElligator ()->Decode (buf, m_Aepk))
 		{
 			LogPrint (eLogError, "Garlic: Can't decode elligator");
 			return false;
@@ -297,22 +297,32 @@ namespace garlic
 				MixKey (sharedSecret);
 
 				auto keyLen = i2p::crypto::GetMLKEMPublicKeyLen (cryptoType);
+				if (keyLen + 16 > len || !keyLen)
+				{
+					LogPrint (eLogWarning, "Garlic: ML-KEM encaps_key section is too short ", len, ". Expected ", keyLen + 16);
+					return false;
+				}
 				std::vector<uint8_t> encapsKey(keyLen);
 				if (Decrypt (buf, encapsKey.data (), keyLen))
 				{
-					decrypted = true; // encaps section has right hash 
+					decrypted = true; // encaps section has right hash
 					MixHash (buf, keyLen + 16);
 					buf += keyLen + 16;
 					len -= keyLen + 16;
-					
+
 					m_PQKeys = i2p::crypto::CreateMLKEMKeys (cryptoType);
 					m_PQKeys->SetPublicKey (encapsKey.data ());
 				}
-			}	
-		}	
+				else
+				{
+					LogPrint (eLogWarning, "Garlic: Failed to decrypt ML-KEM encaps_key section");
+					return false;
+				}
+			}
+		}
 #endif
 		if (!decrypted)
-		{	
+		{
 			if (cryptoType == i2p::data::CRYPTO_KEY_TYPE_ECIES_X25519_AEAD ||
 			    GetOwner ()->SupportsEncryptionType (i2p::data::CRYPTO_KEY_TYPE_ECIES_X25519_AEAD))
 			{
@@ -325,16 +335,21 @@ namespace garlic
 					LogPrint (eLogWarning, "Garlic: Incorrect Alice ephemeral key");
 					return false;
 				}
-				MixKey (sharedSecret);	
-			}	
+				MixKey (sharedSecret);
+			}
 			else
 			{
 				LogPrint (eLogWarning, "Garlic: No supported encryption type");
 				return false;
-			}	
-		}	
+			}
+		}
 
 		// decrypt flags/static
+		if (len < 48)
+		{
+			LogPrint (eLogWarning, "Garlic: Static key section is too short ", len);
+			return false;
+		}
 		uint8_t fs[32];
 		if (!Decrypt (buf, fs, 32))
 		{
@@ -348,8 +363,8 @@ namespace garlic
 		bool isStatic = !i2p::data::Tag<32> (fs).IsZero ();
 		if (isStatic)
 		{
-			// static key, fs is apk	
-			SetRemoteStaticKey (cryptoType, fs); 
+			// static key, fs is apk
+			SetRemoteStaticKey (cryptoType, fs);
 			if (!GetOwner ()->Decrypt (fs, sharedSecret, m_RemoteStaticKeyType)) // x25519(bsk, apk)
 			{
 				LogPrint (eLogWarning, "Garlic: Incorrect Alice static key");
@@ -359,6 +374,11 @@ namespace garlic
 		}
 
 		// decrypt payload
+		if (len < 16)
+		{
+			LogPrint (eLogWarning, "Garlic: Payload section is too short ", len);
+			return false;
+		}
 		std::vector<uint8_t> payload (len - 16); // we must save original ciphertext
 		if (!Decrypt (buf, payload.data (), len - 16))
 		{
@@ -509,7 +529,7 @@ namespace garlic
 			GenerateMoreReceiveTags (newTagset, (GetOwner () && GetOwner ()->GetNumRatchetInboundTags () > 0) ?
 				GetOwner ()->GetNumRatchetInboundTags () : ECIESX25519_MAX_NUM_GENERATED_TAGS);
 			receiveTagset->Expire ();
-			
+
 			LogPrint (eLogDebug, "Garlic: Next receive tagset ", tagsetID, " created");
 			m_SendReverseKey = true;
 		}
@@ -548,15 +568,15 @@ namespace garlic
 		offset += 32;
 
 		// KDF1
-#if OPENSSL_PQ		
+#if OPENSSL_PQ
 		if (m_RemoteStaticKeyType >= i2p::data::CRYPTO_KEY_TYPE_ECIES_MLKEM512_X25519_AEAD)
 		{
 			i2p::crypto::InitNoiseIKStateMLKEM (GetNoiseState (), m_RemoteStaticKeyType, m_RemoteStaticKey); // bpk
 			m_PQKeys = i2p::crypto::CreateMLKEMKeys (m_RemoteStaticKeyType);
 			m_PQKeys->GenerateKeys ();
-		}	
-		else	
-#endif			
+		}
+		else
+#endif
 			i2p::crypto::InitNoiseIKState (GetNoiseState (), m_RemoteStaticKey); // bpk
 		MixHash (m_EphemeralKeys->GetPublicKey (), 32); // h = SHA256(h || aepk)
 		uint8_t sharedSecret[32];
@@ -572,7 +592,7 @@ namespace garlic
 			auto keyLen = i2p::crypto::GetMLKEMPublicKeyLen (m_RemoteStaticKeyType);
 			std::vector<uint8_t> encapsKey(keyLen);
 			m_PQKeys->GetPublicKey (encapsKey.data ());
-			// encrypt encapsKey 
+			// encrypt encapsKey
 			if (!Encrypt (encapsKey.data (), out + offset, keyLen))
 			{
 				LogPrint (eLogWarning, "Garlic: ML-KEM encap_key section AEAD encryption failed ");
@@ -580,8 +600,8 @@ namespace garlic
 			}
 			MixHash (out + offset, keyLen + 16); // h = SHA256(h || ciphertext)
 			offset += keyLen + 16;
-		}	
-#endif		
+		}
+#endif
 		// encrypt flags/static key section
 		const uint8_t * fs;
 		if (isStatic)
@@ -591,7 +611,7 @@ namespace garlic
 			memset (out + offset, 0, 32); // all zeros flags section
 			fs = out + offset;
 		}
-		if (!Encrypt (fs, out + offset, 32)) 
+		if (!Encrypt (fs, out + offset, 32))
 		{
 			LogPrint (eLogWarning, "Garlic: Flags/static section AEAD encryption failed ");
 			return false;
@@ -603,7 +623,7 @@ namespace garlic
 		if (isStatic)
 		{
 			GetOwner ()->Decrypt (m_RemoteStaticKey, sharedSecret, m_RemoteStaticKeyType); // x25519 (ask, bpk)
-			MixKey (sharedSecret);	
+			MixKey (sharedSecret);
 		}
 		// encrypt payload
 		if (!Encrypt (payload, out + offset, len))
@@ -644,7 +664,7 @@ namespace garlic
 		}
 		memcpy (m_NSREncodedKey, out + offset, 32); // for possible next NSR
 		memcpy (m_NSRH, m_H, 32);
-		offset += 32;	
+		offset += 32;
 		// KDF for Reply Key Section
 		MixHash ((const uint8_t *)&tag, 8); // h = SHA256(h || tag)
 		MixHash (m_EphemeralKeys->GetPublicKey (), 32); // h = SHA256(h || bepk)
@@ -661,7 +681,7 @@ namespace garlic
 			size_t cipherTextLen = i2p::crypto::GetMLKEMCipherTextLen (m_RemoteStaticKeyType);
 			std::vector<uint8_t> kemCiphertext(cipherTextLen);
 			m_PQKeys->Encaps (kemCiphertext.data (), sharedSecret);
-			
+
 			if (!Encrypt (kemCiphertext.data (), out + offset, cipherTextLen))
 			{
 				LogPrint (eLogWarning, "Garlic: NSR ML-KEM ciphertext section AEAD encryption failed");
@@ -672,8 +692,8 @@ namespace garlic
 			MixHash (out + offset, cipherTextLen + 16);
 			MixKey (sharedSecret);
 			offset += cipherTextLen + 16;
-		}	
-#endif		
+		}
+#endif
 		if (!m_EphemeralKeys->Agree (m_RemoteStaticKey, sharedSecret)) // sharedSecret = x25519(besk, apk)
 		{
 			LogPrint (eLogWarning, "Garlic: Incorrect Alice static key");
@@ -726,11 +746,11 @@ namespace garlic
 		MixHash (m_EphemeralKeys->GetPublicKey (), 32); // h = SHA256(h || bepk)
 		m_N = 0;
 		size_t offset = 40;
-#if OPENSSL_PQ		
+#if OPENSSL_PQ
 		if (m_PQKeys)
-		{	
+		{
 			if (m_NSREncodedPQKey)
-			{	
+			{
 				size_t cipherTextLen = i2p::crypto::GetMLKEMCipherTextLen (m_RemoteStaticKeyType);
 				memcpy (out + offset, m_NSREncodedPQKey->data (), cipherTextLen + 16);
 				MixHash (out + offset, cipherTextLen + 16);
@@ -766,7 +786,7 @@ namespace garlic
 		const uint8_t * tag = buf;
 		buf += 8; len -= 8; // tag
 		uint8_t bepk[32]; // Bob's ephemeral key
-		if (!i2p::crypto::GetElligator ()->Decode (buf, bepk))
+		if (len < 32 || !i2p::crypto::GetElligator ()->Decode (buf, bepk))
 		{
 			LogPrint (eLogError, "Garlic: Can't decode elligator");
 			return false;
@@ -788,6 +808,11 @@ namespace garlic
 		{
 			// decrypt kem_ciphertext section
 			size_t cipherTextLen = i2p::crypto::GetMLKEMCipherTextLen (m_RemoteStaticKeyType);
+			if (cipherTextLen + 16 > len || !cipherTextLen)
+			{
+				LogPrint (eLogWarning, "Garlic: ML-KEM cipher test section is too short ", len, ". Expected ", cipherTextLen + 16);
+				return false;
+			}
 			std::vector<uint8_t> kemCiphertext(cipherTextLen);
 			if (!Decrypt (buf, kemCiphertext.data (), cipherTextLen))
 			{
@@ -801,11 +826,16 @@ namespace garlic
 			m_PQKeys->Decaps (kemCiphertext.data (), sharedSecret);
 			MixKey (sharedSecret);
 		}
-#endif	
+#endif
 		GetOwner ()->Decrypt (bepk, sharedSecret, m_RemoteStaticKeyType); // x25519 (ask, bepk)
 		MixKey (sharedSecret);
-		
+
 		// calculate hash for zero length
+		if (len < 16)
+		{
+			LogPrint (eLogWarning, "Garlic: Zero length section is too short ", len);
+			return false;
+		}
 		if (!Decrypt (buf, sharedSecret/* can be anything */, 0)) // decrypt, DECRYPT(k, n, ZEROLEN, ad) verification only
 		{
 			LogPrint (eLogWarning, "Garlic: Reply key section AEAD decryption failed");
@@ -831,6 +861,11 @@ namespace garlic
 		}
 		i2p::crypto::HKDF (keydata + 32, nullptr, 0, "AttachPayloadKDF", keydata, 32); // k = HKDF(k_ba, ZEROLEN, "AttachPayloadKDF", 32)
 		// decrypt payload
+		if (len < 16)
+		{
+			LogPrint (eLogWarning, "Garlic: Payload section is too short ", len);
+			return false;
+		}
 		uint8_t nonce[12]; memset (nonce, 0, 12); // seqn = 0
 		if (!i2p::crypto::AEADChaCha20Poly1305 (buf, len - 16, m_H, 32, keydata, nonce, buf, len - 16, false)) // decrypt
 		{
@@ -842,7 +877,7 @@ namespace garlic
 		{
 			m_State = eSessionStateEstablished;
 			// don't delete m_EpehemralKey and m_PQKeys because delayed NSR's might come
-			// done in CleanupReceiveNSRKeys called from NSR tagset destructor		
+			// done in CleanupReceiveNSRKeys called from NSR tagset destructor
 			m_SessionCreatedTimestamp = i2p::util::GetSecondsSinceEpoch ();
 			GetOwner ()->AddECIESx25519Session (m_RemoteStaticKey, shared_from_this ());
 		}
@@ -895,14 +930,14 @@ namespace garlic
 		receiveTagset->GetSymmKey (index, key);
 		auto owner = GetOwner ();
 		if (!owner) return true; // drop message
-		
-		if (!owner->AEADChaCha20Poly1305Decrypt (payload, len - 16, buf, 8, key, nonce, payload, len - 16))
+
+		if (len < 16 || !owner->AEADChaCha20Poly1305Decrypt (payload, len - 16, buf, 8, key, nonce, payload, len - 16))
 		{
 			LogPrint (eLogWarning, "Garlic: Payload section AEAD decryption failed");
 			return false;
 		}
 		HandlePayload (payload, len - 16, receiveTagset, index);
-		
+
 		int moreTags = 0;
 		if (owner->GetNumRatchetInboundTags () > 0) // override in settings?
 		{
@@ -938,11 +973,11 @@ namespace garlic
 #if OPENSSL_PQ
 				m_PQKeys = nullptr;
 				m_NSREncodedPQKey = nullptr;
-#endif				
+#endif
 				[[fallthrough]];
 			case eSessionStateEstablished:
 				if (m_SendReverseKey && receiveTagset->GetTagSetID () == m_NextReceiveRatchet->GetReceiveTagSetID ())
-					m_SendReverseKey = false; // tag received on new tagset	
+					m_SendReverseKey = false; // tag received on new tagset
 				if (receiveTagset->IsNS ())
 				{
 					// our of sequence NSR
@@ -976,13 +1011,13 @@ namespace garlic
 	{
 		if (m_State != eSessionStateEstablished)
 			return GarlicRoutingSession::WrapMultipleMessages (msgs);
-		
+
 		std::vector<std::shared_ptr<I2NPMessage> > ret;
 		if (!msgs.empty ())
 		{
 			ret.push_back (WrapSingleMessage (msgs[0]));
 			if (msgs.size () > 1)
-			{	
+			{
 				uint8_t * payload = GetOwner ()->GetPayloadBuffer ();
 				size_t len = 0;
 				auto it = msgs.begin (); it++;
@@ -1003,25 +1038,25 @@ namespace garlic
 					it++;
 				}
 				if (len > 0)
-				{	
+				{
 					auto paddingSize = GetNextPaddingSize (len);
 					if (paddingSize)
 						len += CreatePaddingClove (paddingSize, payload + len, I2NP_MAX_MESSAGE_SIZE - len);
 					ret.push_back (WrapPayload (payload, len));
-				}	
+				}
 			}
 		}
 		return ret;
 	}
-		
+
 	std::shared_ptr<I2NPMessage> ECIESX25519AEADRatchetSession::WrapPayload (const uint8_t * payload, size_t len)
-	{		
+	{
 #if OPENSSL_PQ
 		auto m = NewI2NPMessage (len + (m_State == eSessionStateEstablished ? 28 :
 			i2p::crypto::GetMLKEMPublicKeyLen (m_RemoteStaticKeyType) + 116));
-#else		
+#else
 		auto m = NewI2NPMessage (len + 100); // 96 + 4
-#endif		
+#endif
 		m->Align (12); // in order to get buf aligned to 16 (12 + 4)
 		uint8_t * buf = m->GetPayload () + 4; // 4 bytes for length
 
@@ -1039,7 +1074,7 @@ namespace garlic
 #if OPENSSL_PQ
 				if (m_RemoteStaticKeyType >= i2p::data::CRYPTO_KEY_TYPE_ECIES_MLKEM512_X25519_AEAD)
 					len += i2p::crypto::GetMLKEMPublicKeyLen (m_RemoteStaticKeyType) + 16;
-#endif				
+#endif
 			break;
 			case eSessionStateNewSessionReceived:
 				if (!NewSessionReplyMessage (payload, len, buf, m->maxLen))
@@ -1048,7 +1083,7 @@ namespace garlic
 #if OPENSSL_PQ
 				if (m_RemoteStaticKeyType >= i2p::data::CRYPTO_KEY_TYPE_ECIES_MLKEM512_X25519_AEAD)
 					len += i2p::crypto::GetMLKEMCipherTextLen (m_RemoteStaticKeyType) + 16;
-#endif				
+#endif
 			break;
 			case eSessionStateNewSessionReplySent:
 				if (!NextNewSessionReplyMessage (payload, len, buf, m->maxLen))
@@ -1057,7 +1092,7 @@ namespace garlic
 #if OPENSSL_PQ
 				if (m_RemoteStaticKeyType >= i2p::data::CRYPTO_KEY_TYPE_ECIES_MLKEM512_X25519_AEAD)
 					len += i2p::crypto::GetMLKEMCipherTextLen (m_RemoteStaticKeyType) + 16;
-#endif				
+#endif
 			break;
 			case eSessionStateOneTime:
 				if (!NewOutgoingSessionMessage (payload, len, buf, m->maxLen, false))
@@ -1115,15 +1150,15 @@ namespace garlic
 		if (!sendAckRequest && !first &&
 		    ((!m_AckRequestMsgID && ts > m_LastAckRequestSendTime + m_AckRequestInterval) || // regular request
 		     (m_AckRequestMsgID && ts > m_LastAckRequestSendTime + LEASESET_CONFIRMATION_TIMEOUT))) // previous request failed. try again
-		{	
+		{
 			// not LeaseSet
 			m_AckRequestMsgID = m_SendTagset->GetMsgID ();
 			if (m_AckRequestMsgID)
-			{	
+			{
 				m_AckRequestNumAttempts++;
 				sendAckRequest = true;
-			}	
-		}	
+			}
+		}
 		if (sendAckRequest) payloadLen += 4;
 		if (m_AckRequests.size () > 0)
 			payloadLen += m_AckRequests.size ()*4 + 3;
@@ -1170,7 +1205,7 @@ namespace garlic
 				htobe16buf (payload + offset, 1); offset += 2;
 				payload[offset] = 0; offset++; // flags
 				m_LastAckRequestSendTime = ts;
-			}	
+			}
 			// msg
 			if (msg)
 				offset += CreateGarlicClove (msg, payload + offset, payloadLen - offset);
@@ -1242,9 +1277,9 @@ namespace garlic
 			paddingSize++;
 		}
 		return paddingSize;
-	}	
-		
-	size_t ECIESX25519AEADRatchetSession::CreateGarlicClove (std::shared_ptr<const I2NPMessage> msg, 
+	}
+
+	size_t ECIESX25519AEADRatchetSession::CreateGarlicClove (std::shared_ptr<const I2NPMessage> msg,
 		uint8_t * buf, size_t len, bool alwaysLocal)
 	{
 		if (!msg) return 0;
@@ -1301,8 +1336,8 @@ namespace garlic
 		htobe16buf (buf + 1, paddingSize);
 		memset (buf + 3, 0, paddingSize);
 		return paddingSize + 3;
-	}	
-		
+	}
+
 	void ECIESX25519AEADRatchetSession::GenerateMoreReceiveTags (std::shared_ptr<ReceiveRatchetTagSet> receiveTagset, int numTags)
 	{
 		if (GetOwner ())
@@ -1322,8 +1357,8 @@ namespace garlic
 	bool ECIESX25519AEADRatchetSession::CheckExpired (uint64_t ts)
 	{
 		CleanupUnconfirmedLeaseSet (ts);
-		if (!m_Destination && ts > m_LastActivityTimestamp + ECIESX25519_SESSION_CREATE_TIMEOUT) return true; // m_LastActivityTimestamp is NS receive time 
-		if (m_State != eSessionStateEstablished && m_SessionCreatedTimestamp && ts > m_SessionCreatedTimestamp + ECIESX25519_SESSION_ESTABLISH_TIMEOUT) return true; 
+		if (!m_Destination && ts > m_LastActivityTimestamp + ECIESX25519_SESSION_CREATE_TIMEOUT) return true; // m_LastActivityTimestamp is NS receive time
+		if (m_State != eSessionStateEstablished && m_SessionCreatedTimestamp && ts > m_SessionCreatedTimestamp + ECIESX25519_SESSION_ESTABLISH_TIMEOUT) return true;
 		return ts > m_LastActivityTimestamp + ECIESX25519_RECEIVE_EXPIRATION_TIMEOUT && // seconds
 			ts*1000 > m_LastSentTimestamp + ECIESX25519_SEND_EXPIRATION_TIMEOUT*1000; // milliseconds
 	}
@@ -1473,7 +1508,7 @@ namespace garlic
 			// move onDrop to the wrapping I2NP messages
 			m->onDrop = msg->onDrop;
 			msg->onDrop = nullptr;
-		}	
+		}
 		return m;
 	}
 }
