@@ -663,7 +663,7 @@ namespace http {
 					  << it->GetRecvStreamID () << "&token=" << token << "\" title=\"" << tr("Close stream") << "\"> &#10008; </a></td>";
 				}
 				else {
-					s << "<td> HTML </td>"; // TODO: FIXME: Undefined HTML code
+					s << "<td> !! FIXME !! </td>"; // TODO: FIXME: Undefined HTML code
 				}
 				s << "<td class=\"streamdest\" title=\"" << streamDest << "\">" << streamDestShort << "</td>";
 				s << "<td>" << it->GetNumSentBytes () << "</td>";
@@ -893,14 +893,18 @@ namespace http {
 			s << "<tbody class=\"tableitem\">\r\n";
 			for (const auto& it: i2p::tunnel::tunnels.GetTransitTunnels ())
 			{
+				s << "<tr class=\"tcell_center\">";
 				if (std::dynamic_pointer_cast<i2p::tunnel::TransitTunnelGateway>(it))
-					s << "<tr><td></td><td>" << it->GetTunnelID () << "</td><td>&#8658;</td><td>";
+					s << "<td> &nbsp;</td><td class=\"tcell_right\">" << std::setw(10) << it->GetTunnelID () << "</td><td>&#8658;</td>";
 				else if (std::dynamic_pointer_cast<i2p::tunnel::TransitTunnelEndpoint>(it))
-					s << "<tr><td>&#8658;</td><td>" << it->GetTunnelID () << "</td><td></td><td>";
+					s << "<td>&#8658;</td><td class=\"tcell_right\">" << std::setw(10) << it->GetTunnelID () << "</td><td> &nbsp;</td>";
 				else
-					s << "<tr><td>&#8658;</td><td>" << it->GetTunnelID () << "</td><td>&#8658;</td><td>";
+					s << "<td>&#8658;</td><td class=\"tcell_right\">" << std::setw(10) << it->GetTunnelID () << "</td><td>&#8658;</td>";
+				s << "<td class=\"tcell_right\">";
 				ShowTraffic(s, it->GetNumTransmittedBytes ());
-				s << "</td><td>" << it->GetNextPeerName () << "</td></tr>\r\n";
+				s << "</td>";
+				s << "<td class=\"tcell_left\">&nbsp;" << it->GetNextPeerName () << "</td>";
+				s << "</tr>\r\n";
 			}
 			s << "</tbody>\r\n</table>\r\n<br>\r\n";
 		}
