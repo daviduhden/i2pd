@@ -128,6 +128,38 @@ namespace client
 		return cryptoType >= i2p::data::CRYPTO_KEY_TYPE_ECIES_X25519_AEAD ? cryptoType : 0;
 	}
 
+	void I2CPDestination::ScheduleSessionResponseTimer (std::shared_ptr<i2p::garlic::ECIESX25519AEADRatchetSession> session)
+	{
+		if (!session) return;
+		auto timer = std::make_shared<boost::asio::steady_timer>(GetService ());
+		timer->expires_after (std::chrono::milliseconds(I2CP_RATCHETS_RESPONSE_TIMEOUT));
+		timer->async_wait ([session, s = GetSharedFromThis (), timer](const boost::system::error_code& ecode)
+		{
+			if (ecode != boost::asio::error::operation_aborted &&
+				!session->IsTerminated () && session->IsResponseRequired () && // response still required
+				session->GetDestinationPtr ()) // we know ident hash
+			{
+				auto pool = s->GetTunnelPool ();
+				if (!pool) return;
+				auto ls = s->FindLeaseSet (*session->GetDestinationPtr ());
+				if (!ls) return;
+				auto garlic = session->WrapSingleMessage (nullptr); // no data messages
+				if (!garlic) return;
+				auto leases = ls->GetNonExpiredLeases (false);
+				if (!leases.empty ())
+				{
+					auto remoteLease = leases[s->GetRng ()() % leases.size ()];
+					auto outboundTunnel = pool->GetNextOutboundTunnel ();
+					if (outboundTunnel)
+					{
+						LogPrint (eLogDebug, "I2CP: Sending ratchets session response");
+						s->SendMsg (garlic, outboundTunnel, remoteLease);
+					}
+				}
+			}
+		});
+	}
+
 	void I2CPDestination::HandleDataMessage (const uint8_t * buf, size_t len,
 		i2p::garlic::ECIESX25519AEADRatchetSession * from)
 	{

@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -120,7 +120,7 @@ namespace garlic
 			virtual uint64_t GetLastActivityTimestamp () const { return 0; }; // non-zero for rathets only
 			virtual void SetAckRequestInterval (int interval) {}; // in milliseconds, override in ECIESX25519AEADRatchetSession
 			virtual std::vector<std::shared_ptr<I2NPMessage> > WrapMultipleMessages (const std::vector<std::shared_ptr<const I2NPMessage> >& msgs);
-			
+
 			void SetLeaseSetUpdated ()
 			{
 				if (m_LeaseSetUpdateStatus != eLeaseSetDoNotSend) m_LeaseSetUpdateStatus = eLeaseSetUpdated;
@@ -138,7 +138,7 @@ namespace garlic
 
 			int NumSentPackets () const { return m_NumSentPackets; }
 			void SetNumSentPackets (int numSentPackets) { m_NumSentPackets = numSentPackets; }
-			
+
 			GarlicDestination * GetOwner () const { return m_Owner; }
 			void SetOwner (GarlicDestination * owner) { m_Owner = owner; }
 
@@ -255,11 +255,11 @@ namespace garlic
 			void RemoveDeliveryStatusSession (uint32_t msgID);
 			std::shared_ptr<I2NPMessage> WrapMessageForRouter (std::shared_ptr<const i2p::data::RouterInfo> router,
 				std::shared_ptr<I2NPMessage> msg);
-			
+
 			bool AEADChaCha20Poly1305Encrypt (const uint8_t * msg, size_t msgLen, const uint8_t * ad, size_t adLen,
-				const uint8_t * key, const uint8_t * nonce, uint8_t * buf, size_t len); 
+				const uint8_t * key, const uint8_t * nonce, uint8_t * buf, size_t len);
 			bool AEADChaCha20Poly1305Decrypt (const uint8_t * msg, size_t msgLen, const uint8_t * ad, size_t adLen,
-				const uint8_t * key, const uint8_t * nonce, uint8_t * buf, size_t len); 
+				const uint8_t * key, const uint8_t * nonce, uint8_t * buf, size_t len);
 
 			void AddSessionKey (const uint8_t * key, const uint8_t * tag); // one tag
 			void AddECIESx25519Key (const uint8_t * key, uint64_t tag); // one tag
@@ -278,24 +278,26 @@ namespace garlic
 
 			virtual std::shared_ptr<const i2p::data::LocalLeaseSet> GetLeaseSet () = 0; // TODO
 			virtual std::shared_ptr<i2p::tunnel::TunnelPool> GetTunnelPool () const = 0;
-			virtual i2p::data::CryptoKeyType GetRatchetsHighestCryptoType () const 
+			virtual i2p::data::CryptoKeyType GetRatchetsHighestCryptoType () const
 			{
 				return GetIdentity ()->GetCryptoKeyType () >= i2p::data::CRYPTO_KEY_TYPE_ECIES_X25519_AEAD ? GetIdentity ()->GetCryptoKeyType () : 0;
-			}	
+			}
+
+			virtual void ScheduleSessionResponseTimer (std::shared_ptr<ECIESX25519AEADRatchetSession> session) {};
 
 		protected:
 
 			void AddECIESx25519Key (const uint8_t * key, const uint8_t * tag); // one tag
 			bool HandleECIESx25519TagMessage (uint8_t * buf, size_t len); // return true if found
 			virtual void HandleI2NPMessage (const uint8_t * buf, size_t len) = 0; // called from clove only
-			virtual bool HandleCloveI2NPMessage (I2NPMessageType typeID, const uint8_t * payload, 
+			virtual bool HandleCloveI2NPMessage (I2NPMessageType typeID, const uint8_t * payload,
 				size_t len, uint32_t msgID, ECIESX25519AEADRatchetSession * from) = 0;
 			void HandleGarlicMessage (std::shared_ptr<I2NPMessage> msg);
 			void HandleDeliveryStatusMessage (uint32_t msgID);
 
 			void SaveTags ();
 			void LoadTags ();
-			
+
 		private:
 
 			bool SupportsRatchets () const { return GetRatchetsHighestCryptoType () > 0; }
@@ -323,7 +325,7 @@ namespace garlic
 			// encryption
 			i2p::crypto::AEADChaCha20Poly1305Encryptor m_Encryptor;
 			i2p::crypto::AEADChaCha20Poly1305Decryptor m_Decryptor;
-			
+
 		public:
 
 			// for HTTP only

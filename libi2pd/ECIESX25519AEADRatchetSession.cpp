@@ -459,6 +459,8 @@ namespace garlic
 			}
 			offset += size;
 		}
+		if (IsResponseRequired () && GetOwner ())
+			GetOwner ()->ScheduleSessionResponseTimer (shared_from_this());
 	}
 
 	void ECIESX25519AEADRatchetSession::HandleNextKey (const uint8_t * buf, size_t len, const std::shared_ptr<ReceiveRatchetTagSet>& receiveTagset)

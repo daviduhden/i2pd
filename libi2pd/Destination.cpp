@@ -437,7 +437,9 @@ namespace client
 						{
 							uint8_t pub[32];
 							leaseSet->Encrypt (nullptr, pub);
-							if (memcmp (from->GetRemoteStaticKey (), pub, 32))
+							if (!memcmp (from->GetRemoteStaticKey (), pub, 32))
+								from->SetDestination (leaseSet->GetIdentHash ());
+							else
 							{
 								LogPrint (eLogError, "Destination: Remote LeaseSet static key mismatch");
 								leaseSet = nullptr;
