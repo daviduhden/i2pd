@@ -332,13 +332,13 @@ namespace http {
 		}
 		s << "<b>" << tr("Received") << ":</b> ";
 		ShowTraffic (s, i2p::transport::transports.GetTotalReceivedBytes ());
-		s << " (" << tr(/* tr: Kibibyte/s */ "%.2f KiB/s", (double) i2p::transport::transports.GetInBandwidth15s () / 1024) << ")<br>\r\n";
+		s << " (" << ((double) i2p::transport::transports.GetInBandwidth15s () / 1024) << " KiB/s)" << "<br>\r\n";
 		s << "<b>" << tr("Sent") << ":</b> ";
 		ShowTraffic (s, i2p::transport::transports.GetTotalSentBytes ());
-		s << " (" << tr(/* tr: Kibibyte/s */ "%.2f KiB/s", (double) i2p::transport::transports.GetOutBandwidth15s () / 1024) << ")<br>\r\n";
+		s << " (" << ((double) i2p::transport::transports.GetOutBandwidth15s () / 1024) << " KiB/s)" << "<br>\r\n";
 		s << "<b>" << tr("Transit") << ":</b> ";
 		ShowTraffic (s, i2p::transport::transports.GetTotalTransitTransmittedBytes ());
-		s << " (" << tr(/* tr: Kibibyte/s */ "%.2f KiB/s", (double) i2p::transport::transports.GetTransitBandwidth15s () / 1024) << ")<br>\r\n";
+		s << " (" << ((double) i2p::transport::transports.GetTransitBandwidth15s () / 1024) << " KiB/s)" << "<br>\r\n";
 		s << "<b>" << tr("Data path") << ":</b> " << i2p::fs::GetUTF8DataDir() << "<br>\r\n";
 		s << "<div class='slide'>";
 		if ((outputFormat == OutputFormatEnum::forWebConsole) || !includeHiddenContent) {
