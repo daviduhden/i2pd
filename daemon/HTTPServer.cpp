@@ -131,11 +131,14 @@ namespace http {
 		s << std::fixed << std::setprecision(2);
 		auto numKBytes = (double) bytes / 1024;
 		if (numKBytes < 1024)
-			s << tr(/* tr: Kibibyte */ "%.2f KiB", numKBytes);
+			/* Kibibyte */
+			s << numKBytes << " KiB";
 		else if (numKBytes < 1024 * 1024)
-			s << tr(/* tr: Mebibyte */ "%.2f MiB", numKBytes / 1024);
+			/* Mebibyte */
+			s << (numKBytes / 1024) << " MiB" ;
 		else
-			s << tr(/* tr: Gibibyte */ "%.2f GiB", numKBytes / 1024 / 1024);
+			/* Gibibyte */
+			s << (numKBytes / 1024 / 1024) << " GiB";
 	}
 
 	static void ShowTunnelDetails (std::stringstream& s, enum i2p::tunnel::TunnelState eState, bool explr, int bytes)
