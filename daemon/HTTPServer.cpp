@@ -330,6 +330,8 @@ namespace http {
 		if (isTotalTCSR) {
 			s << "<b>" << tr("Total tunnel creation success rate") << ":</b> " << i2p::tunnel::tunnels.GetTotalTunnelCreationSuccessRate() << "%<br/>\r\n";
 		}
+		s << std::fixed << std::setprecision(2);
+		/* Kibibyte/s */
 		s << "<b>" << tr("Received") << ":</b> ";
 		ShowTraffic (s, i2p::transport::transports.GetTotalReceivedBytes ());
 		s << " (" << ((double) i2p::transport::transports.GetInBandwidth15s () / 1024) << " KiB/s)" << "<br>\r\n";
