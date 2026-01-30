@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -23,6 +23,7 @@
 #include "Identity.h"
 #include "LeaseSet.h"
 #include "Streaming.h"
+#include "Datagram.h"
 #include "Destination.h"
 
 namespace i2p
@@ -35,8 +36,8 @@ namespace client
 	const int SAM_SOCKET_CONNECTION_MAX_IDLE = 3600; // in seconds
 	const int SAM_SESSION_READINESS_CHECK_INTERVAL = 3; // in seconds
 	const size_t SAM_SESSION_MAX_ACCEPT_QUEUE_SIZE = 50;
-	const size_t SAM_SESSION_MAX_ACCEPT_INTERVAL = 3; // in seconds	
-	
+	const size_t SAM_SESSION_MAX_ACCEPT_INTERVAL = 3; // in seconds
+
 	const char SAM_HANDSHAKE[] = "HELLO VERSION";
 	const char SAM_HANDSHAKE_REPLY[] = "HELLO REPLY RESULT=OK VERSION=%s\n";
 	constexpr std::string_view SAM_HANDSHAKE_NOVERSION { "HELLO REPLY RESULT=NOVERSION\n" };
@@ -93,12 +94,12 @@ namespace client
 
 	constexpr std::string_view SAM_PING { "PING" };
 	const char SAM_PONG[] = "PONG %s\n";
-	
+
 	constexpr int MAKE_SAM_VERSION_NUMBER (int major, int minor) { return major*10 + minor; }
 	constexpr int MIN_SAM_VERSION = MAKE_SAM_VERSION_NUMBER (3, 0);
 	constexpr int MAX_SAM_VERSION = MAKE_SAM_VERSION_NUMBER (3, 3);
 	constexpr int SAM_VERSION_33 = MAKE_SAM_VERSION_NUMBER (3, 3); // SAM 3.3
-	
+
 	enum class SAMSocketType
 	{
 		eSAMSocketTypeUnknown,
@@ -145,7 +146,7 @@ namespace client
 			void HandleI2PAccept (std::shared_ptr<i2p::stream::Stream> stream);
 			void HandleI2PForward (std::shared_ptr<i2p::stream::Stream> stream, boost::asio::ip::tcp::endpoint ep);
 			void HandleWriteI2PData (const boost::system::error_code& ecode, size_t sz);
-			void HandleI2PDatagramReceive (const i2p::data::IdentityEx& from, uint16_t fromPort, uint16_t toPort, 
+			void HandleI2PDatagramReceive (const i2p::data::IdentityEx& from, uint16_t fromPort, uint16_t toPort,
 				const uint8_t * buf, size_t len, const i2p::util::Mapping * options);
 			void HandleI2PRawDatagramReceive (uint16_t fromPort, uint16_t toPort, const uint8_t * buf, size_t len);
 
@@ -160,7 +161,7 @@ namespace client
 			void ProcessPing (std::string_view text);
 			void SendReplyWithMessage (const char * reply, const std::string & msg);
 			void SendSessionI2PError(const std::string & msg);
-			void SendStreamI2PError(const std::string & msg);	
+			void SendStreamI2PError(const std::string & msg);
 			void SendStreamCantReachPeer(const std::string & msg);
 			size_t ProcessDatagramSend (char * buf, size_t len, const char * data); // from SAM 1.0
 			static i2p::util::Mapping ExtractParams (std::string_view buf);
@@ -209,9 +210,11 @@ namespace client
 		SAMBridge & m_Bridge;
 		std::string Name;
 		SAMSessionType Type;
+		i2p::datagram::DatagramVersion DatagramVersion;
+
 		std::shared_ptr<boost::asio::ip::udp::endpoint> UDPEndpoint; // TODO: move
 		std::list<std::pair<std::shared_ptr<SAMSocket>, uint64_t> > acceptQueue; // socket, receive time in seconds
-		
+
 		SAMSession (SAMBridge & parent, std::string_view name, SAMSessionType type);
 		virtual ~SAMSession () {};
 
@@ -289,8 +292,8 @@ namespace client
 
 			void ScheduleSessionCleanupTimer (std::shared_ptr<SAMSession> session);
 			void HandleSessionCleanupTimer (const boost::system::error_code& ecode,
-				std::shared_ptr<SAMSession> session, std::shared_ptr<boost::asio::deadline_timer> timer);	                                
-			
+				std::shared_ptr<SAMSession> session, std::shared_ptr<boost::asio::deadline_timer> timer);
+
 		private:
 
 			bool m_IsSingleThread;
