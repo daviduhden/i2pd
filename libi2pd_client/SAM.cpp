@@ -1665,14 +1665,36 @@ namespace client
 							auto datagramDest = localDest ? localDest->GetDatagramDestination () : nullptr;
 							if (datagramDest)
 							{
-								i2p::data::IdentityEx dest;
-								dest.FromBase64 (destination);
-								if (session->Type == SAMSessionType::eSAMSessionTypeDatagram)
-									datagramDest->SendDatagramTo ((uint8_t *)eol, payloadLen, dest.GetIdentHash ());
-								else if (session->Type == SAMSessionType::eSAMSessionTypeRaw)
-									datagramDest->SendRawDatagramTo ((uint8_t *)eol, payloadLen, dest.GetIdentHash ());
+								i2p::data::IdentHash ident; bool isDest = false;
+								if (std::string_view (destination).find(".i2p") != std::string_view::npos)
+								{
+									auto addr = context.GetAddressBook().GetAddress (destination);
+									if (addr && addr->IsValid () && addr->IsIdentHash ())
+									{
+										ident = addr->identHash;
+										isDest = true;
+									}
+								}
 								else
-									LogPrint (eLogError, "SAM: Unexpected session type ", (int)session->Type, "for session ", sessionID);
+								{
+									i2p::data::IdentityEx dest;
+									if (dest.FromBase64 (destination) > 0)
+									{
+										ident = dest.GetIdentHash ();
+										isDest = true;
+									}
+								}
+								if (isDest)
+								{
+									if (session->Type == SAMSessionType::eSAMSessionTypeDatagram)
+										datagramDest->SendDatagramTo ((uint8_t *)eol, payloadLen, ident);
+									else if (session->Type == SAMSessionType::eSAMSessionTypeRaw)
+										datagramDest->SendRawDatagramTo ((uint8_t *)eol, payloadLen, ident);
+									else
+										LogPrint (eLogError, "SAM: Unexpected session type ", (int)session->Type, "for session ", sessionID);
+								}
+								else
+									LogPrint (eLogError, "SAM: Datagram unexpected destination ", destination);
 							}
 							else
 								LogPrint (eLogError, "SAM: Datagram destination is not set for session ", sessionID);
