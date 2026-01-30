@@ -131,11 +131,14 @@ namespace http {
 		s << std::fixed << std::setprecision(2);
 		auto numKBytes = (double) bytes / 1024;
 		if (numKBytes < 1024)
-			s << tr(/* tr: Kibibyte */ "%.2f KiB", numKBytes);
+			/* Kibibyte */
+			s << numKBytes << " KiB";
 		else if (numKBytes < 1024 * 1024)
-			s << tr(/* tr: Mebibyte */ "%.2f MiB", numKBytes / 1024);
+			/* Mebibyte */
+			s << (numKBytes / 1024) << " MiB" ;
 		else
-			s << tr(/* tr: Gibibyte */ "%.2f GiB", numKBytes / 1024 / 1024);
+			/* Gibibyte */
+			s << (numKBytes / 1024 / 1024) << " GiB";
 	}
 
 	static void ShowTunnelDetails (std::stringstream& s, enum i2p::tunnel::TunnelState eState, bool explr, int bytes)
@@ -327,15 +330,17 @@ namespace http {
 		if (isTotalTCSR) {
 			s << "<b>" << tr("Total tunnel creation success rate") << ":</b> " << i2p::tunnel::tunnels.GetTotalTunnelCreationSuccessRate() << "%<br/>\r\n";
 		}
+		s << std::fixed << std::setprecision(2);
+		/* Kibibyte/s */
 		s << "<b>" << tr("Received") << ":</b> ";
 		ShowTraffic (s, i2p::transport::transports.GetTotalReceivedBytes ());
-		s << " (" << tr(/* tr: Kibibyte/s */ "%.2f KiB/s", (double) i2p::transport::transports.GetInBandwidth15s () / 1024) << ")<br>\r\n";
+		s << " (" << ((double) i2p::transport::transports.GetInBandwidth15s () / 1024) << " KiB/s)" << "<br>\r\n";
 		s << "<b>" << tr("Sent") << ":</b> ";
 		ShowTraffic (s, i2p::transport::transports.GetTotalSentBytes ());
-		s << " (" << tr(/* tr: Kibibyte/s */ "%.2f KiB/s", (double) i2p::transport::transports.GetOutBandwidth15s () / 1024) << ")<br>\r\n";
+		s << " (" << ((double) i2p::transport::transports.GetOutBandwidth15s () / 1024) << " KiB/s)" << "<br>\r\n";
 		s << "<b>" << tr("Transit") << ":</b> ";
 		ShowTraffic (s, i2p::transport::transports.GetTotalTransitTransmittedBytes ());
-		s << " (" << tr(/* tr: Kibibyte/s */ "%.2f KiB/s", (double) i2p::transport::transports.GetTransitBandwidth15s () / 1024) << ")<br>\r\n";
+		s << " (" << ((double) i2p::transport::transports.GetTransitBandwidth15s () / 1024) << " KiB/s)" << "<br>\r\n";
 		s << "<b>" << tr("Data path") << ":</b> " << i2p::fs::GetUTF8DataDir() << "<br>\r\n";
 		s << "<div class='slide'>";
 		if ((outputFormat == OutputFormatEnum::forWebConsole) || !includeHiddenContent) {
