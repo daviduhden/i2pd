@@ -293,16 +293,22 @@ namespace datagram
 		}
 		if (from)
 		{
+			std::shared_ptr<const i2p::data::LeaseSet> ls;
 			i2p::data::IdentHash ident(buf);
-			auto ls = m_Owner->FindLeaseSet (ident);
+			auto session = FindSession (ident);
+			if (session) ls = session->GetRemoteLeaseSet ();
+			if (!ls) ls = m_Owner->FindLeaseSet (ident);
 			if (ls)
 			{
 				uint8_t staticKey[32];
 				ls->Encrypt (nullptr, staticKey);
 				if (!memcmp (from->GetRemoteStaticKey (), staticKey, 32))
 				{
-					auto session = ObtainSession (ident);
-					session->SetVersion (eDatagramV3);
+					if (!session)
+					{
+						session = ObtainSession (ident);
+						session->SetVersion (eDatagramV3);
+					}
 					session->SetRemoteLeaseSet (ls);
 					auto r = FindReceiver(toPort);
 					if (r)
@@ -507,6 +513,14 @@ namespace datagram
 		else
 			session = itr->second;
 		return session;
+	}
+
+	std::shared_ptr<DatagramSession> DatagramDestination::FindSession(const i2p::data::IdentHash& ident) const
+	{
+		std::lock_guard<std::mutex> lock(m_SessionsMutex);
+		auto it = m_Sessions.find(ident);
+		if (it != m_Sessions.end()) return it->second;
+		return nullptr;
 	}
 
 	std::shared_ptr<DatagramSession::Info> DatagramDestination::GetInfoForRemote(const i2p::data::IdentHash & remote)
