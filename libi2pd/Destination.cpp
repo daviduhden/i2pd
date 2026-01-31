@@ -1013,13 +1013,20 @@ namespace client
 				}
 			}
 		}
-		// if no param or valid crypto type use from identity
+		// if no encryption type specified use 0,4 or 0,4,6 if post quantum
 		if (encryptionKeyTypes.empty ())
+		{
 			encryptionKeyTypes.insert ( { GetIdentity ()->GetCryptoKeyType (),
 #if OPENSSL_PQ
 				i2p::data::CRYPTO_KEY_TYPE_ECIES_MLKEM768_X25519_AEAD,
 #endif
-				i2p::data::CRYPTO_KEY_TYPE_ECIES_X25519_AEAD }); // usually 0,4 or 0,6,4 if post quantum
+				i2p::data::CRYPTO_KEY_TYPE_ECIES_X25519_AEAD });
+#if OPENSSL_PQ
+			m_PreferredCryptoType = i2p::data::CRYPTO_KEY_TYPE_ECIES_MLKEM768_X25519_AEAD;
+#else
+			m_PreferredCryptoType = i2p::data::CRYPTO_KEY_TYPE_ECIES_X25519_AEAD;
+#endif
+		}
 
 		for (auto& it: encryptionKeyTypes)
 		{
