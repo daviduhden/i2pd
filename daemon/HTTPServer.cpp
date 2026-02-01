@@ -959,11 +959,11 @@ namespace http {
 			{
 				tmp_s6 << "<div class=\"listitem\">\r\n";
 				if (it->IsOutgoing ()) tmp_s6 << " &#8658; ";
-				else tmp_s << " &nbsp; ";
+				else tmp_s6 << " &nbsp; ";
 				tmp_s6 << i2p::data::GetIdentHashAbbreviation (it->GetRemoteIdentity ()->GetIdentHash ()) << ": "
 					<< "[" << endpoint.address ().to_string () << "]:" << endpoint.port ();
 				if (!it->IsOutgoing ()) tmp_s6 << " &#8658; ";
-				else tmp_s << " &nbsp; ";
+				else tmp_s6 << " &nbsp; ";
 				tmp_s6 << " [" << it->GetNumSentBytes () << ":" << it->GetNumReceivedBytes () << "]";
 				if (it->GetRelayTag ())
 					tmp_s6 << " [itag:" << it->GetRelayTag () << "]";
