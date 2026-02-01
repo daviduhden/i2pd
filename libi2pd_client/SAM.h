@@ -66,7 +66,7 @@ namespace client
 	const char SAM_DEST_REPLY_I2P_ERROR[] = "DEST REPLY RESULT=I2P_ERROR\n";
 	const char SAM_NAMING_LOOKUP[] = "NAMING LOOKUP";
 	const char SAM_NAMING_REPLY[] = "NAMING REPLY RESULT=OK NAME=%s VALUE=%s\n";
-	const char SAM_DATAGRAM_RECEIVED[] = "DATAGRAM RECEIVED DESTINATION=%s SIZE=%lu\n";
+	const char SAM_DATAGRAM_RECEIVED[] = "DATAGRAM RECEIVED DESTINATION=%s SIZE=%lu FROM_PORT=%u TO_PORT=%u\n";
 	const char SAM_RAW_RECEIVED[] = "RAW RECEIVED SIZE=%lu\n";
 	const char SAM_NAMING_REPLY_INVALID_KEY[] = "NAMING REPLY RESULT=INVALID_KEY NAME=%s\n";
 	const char SAM_NAMING_REPLY_KEY_NOT_FOUND[] = "NAMING REPLY RESULT=KEY_NOT_FOUND NAME=%s\n";
@@ -83,6 +83,7 @@ namespace client
 	const char SAM_PARAM_HOST[] = "HOST";
 	const char SAM_PARAM_PORT[] = "PORT";
 	const char SAM_PARAM_FROM_PORT[] = "FROM_PORT";
+	const char SAM_PARAM_TO_PORT[] = "TO_PORT";
 	const char SAM_VALUE_TRANSIENT[] = "TRANSIENT";
 	const char SAM_VALUE_TRUE[] = "true";
 	const char SAM_VALUE_FALSE[] = "false";
@@ -129,6 +130,8 @@ namespace client
 
 			bool IsSession(std::string_view id) const;
 
+			static i2p::util::Mapping ExtractParams (std::string_view buf);
+
 		private:
 
 			void TerminateClose() { Terminate(nullptr); }
@@ -164,7 +167,6 @@ namespace client
 			void SendStreamI2PError(const std::string & msg);
 			void SendStreamCantReachPeer(const std::string & msg);
 			size_t ProcessDatagramSend (char * buf, size_t len, const char * data); // from SAM 1.0
-			static i2p::util::Mapping ExtractParams (std::string_view buf);
 
 			void Connect (std::shared_ptr<const i2p::data::LeaseSet> remote, std::shared_ptr<SAMSession> session = nullptr);
 			void HandleConnectLeaseSetRequestComplete (std::shared_ptr<i2p::data::LeaseSet> leaseSet);

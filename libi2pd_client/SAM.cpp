@@ -1288,9 +1288,25 @@ namespace client
 			else
 			{
 #ifdef _MSC_VER
-				size_t l = sprintf_s ((char *)m_StreamBuffer, SAM_STREAM_BUFFER_SIZE, SAM_DATAGRAM_RECEIVED, base64.c_str (), (long unsigned int)len);
+				size_t l = sprintf_s (
+					(char *)m_StreamBuffer,
+					SAM_STREAM_BUFFER_SIZE,
+					SAM_DATAGRAM_RECEIVED,
+					base64.c_str (),
+					(long unsigned int)len,
+					(unsigned)fromPort,
+					(unsigned)toPort
+				);
 #else
-				size_t l = snprintf ((char *)m_StreamBuffer, SAM_STREAM_BUFFER_SIZE, SAM_DATAGRAM_RECEIVED, base64.c_str (), (long unsigned int)len);
+				size_t l = snprintf (
+					(char *)m_StreamBuffer,
+					SAM_STREAM_BUFFER_SIZE,
+					SAM_DATAGRAM_RECEIVED,
+					base64.c_str (),
+					(long unsigned int)len,
+					(unsigned)fromPort,
+					(unsigned)toPort
+				);
 #endif
 				if (len < SAM_STREAM_BUFFER_SIZE - l)
 				{
@@ -1661,6 +1677,18 @@ namespace client
 						auto session = FindSession (sessionID);
 						if (session)
 						{
+							uint16_t fromPort = 0;
+							uint16_t toPort = 0;
+							char *raw_params = strchr(destination, ' ');
+							if (raw_params)
+							{
+								*raw_params = 0; raw_params++;
+								auto params = SAMSocket::ExtractParams(raw_params);
+								params.Get(SAM_PARAM_FROM_PORT, fromPort);
+								params.Get(SAM_PARAM_TO_PORT, toPort);
+								LogPrint (eLogInfo, "SAM: Datagram params are FROM_PORT=", fromPort, " TO_PORT=", toPort);
+							}
+
 							auto localDest = session->GetLocalDestination ();
 							auto datagramDest = localDest ? localDest->GetDatagramDestination () : nullptr;
 							if (datagramDest)
@@ -1687,9 +1715,9 @@ namespace client
 								if (isDest)
 								{
 									if (session->Type == SAMSessionType::eSAMSessionTypeDatagram)
-										datagramDest->SendDatagramTo ((uint8_t *)eol, payloadLen, ident);
+										datagramDest->SendDatagramTo ((uint8_t *)eol, payloadLen, ident, fromPort, toPort);
 									else if (session->Type == SAMSessionType::eSAMSessionTypeRaw)
-										datagramDest->SendRawDatagramTo ((uint8_t *)eol, payloadLen, ident);
+										datagramDest->SendRawDatagramTo ((uint8_t *)eol, payloadLen, ident, fromPort, toPort);
 									else
 										LogPrint (eLogError, "SAM: Unexpected session type ", (int)session->Type, "for session ", sessionID);
 								}
