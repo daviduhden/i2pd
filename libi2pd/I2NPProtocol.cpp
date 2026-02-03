@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2024, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -71,8 +71,8 @@ namespace i2p
 	{
 		auto exp = GetExpiration ();
 		return (ts > exp + I2NP_MESSAGE_CLOCK_SKEW) || (ts < exp - 3*I2NP_MESSAGE_CLOCK_SKEW); // check if expired or too far in future
-	}	
-	
+	}
+
 	bool I2NPMessage::IsExpired () const
 	{
 		return IsExpired (i2p::util::GetMillisecondsSinceEpoch ());
@@ -424,11 +424,11 @@ namespace i2p
 			return msg;
 		}
 		else
-		{	
+		{
 			auto newMsg = CreateTunnelGatewayMsg (tunnelID, msg->GetBuffer (), msg->GetLength ());
-			if (msg->onDrop) newMsg->onDrop = msg->onDrop; 
+			if (msg->onDrop) newMsg->onDrop = msg->onDrop;
 			return newMsg;
-		}	
+		}
 	}
 
 	std::shared_ptr<I2NPMessage> CreateTunnelGatewayMsg (uint32_t tunnelID, I2NPMessageType msgType,
@@ -498,7 +498,7 @@ namespace i2p
 				case eI2NPDatabaseSearchReply:
 					if (!msg->from || !msg->from->GetTunnelPool () || msg->from->GetTunnelPool ()->IsExploratory ())
 						i2p::data::netdb.PostDatabaseSearchReplyMsg (msg);
-				break;	
+				break;
 				case eI2NPDatabaseLookup:
 					// forward to netDb if floodfill and came directly
 					if (!msg->from && i2p::context.IsFloodfill ())
@@ -552,6 +552,19 @@ namespace i2p
 				case eI2NPTunnelGateway:
 					m_TunnelGatewayMsgs.push_back (msg);
 				break;
+				case eI2NPVariableTunnelBuild:
+				case eI2NPTunnelBuild:
+				case eI2NPShortTunnelBuild:
+				{
+					auto ts = i2p::util::GetMonotonicMilliseconds ();
+					if (!m_LastTunnelBuildMessageTimestamp || ts > m_LastTunnelBuildMessageTimestamp + TUNNEL_BUILD_MESSAGES_MIN_INTERVAL)
+					{
+						m_LastTunnelBuildMessageTimestamp = ts;
+						HandleI2NPMessage (msg);
+					}
+					// else drop TBM
+					break;
+				}
 				default:
 					HandleI2NPMessage (msg);
 			}

@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -319,10 +319,12 @@ namespace tunnel
 	size_t GetI2NPMessageLength (const uint8_t * msg, size_t len);
 	void HandleI2NPMessage (std::shared_ptr<I2NPMessage> msg);
 
+	const uint64_t TUNNEL_BUILD_MESSAGES_MIN_INTERVAL = 100; // in milliseconds
 	class I2NPMessagesHandler
 	{
 		public:
 
+			I2NPMessagesHandler (): m_LastTunnelBuildMessageTimestamp (0) {};
 			~I2NPMessagesHandler ();
 			void PutNextMessage (std::shared_ptr<I2NPMessage>&& msg);
 			void Flush ();
@@ -330,6 +332,7 @@ namespace tunnel
 		private:
 
 			std::list<std::shared_ptr<I2NPMessage> > m_TunnelMsgs, m_TunnelGatewayMsgs;
+			uint64_t m_LastTunnelBuildMessageTimestamp; // in milliseconds
 	};
 }
 
