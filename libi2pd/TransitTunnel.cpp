@@ -275,7 +275,8 @@ namespace tunnel
 
 	void TransitTunnels::PostTransitTunnelBuildMsg  (std::shared_ptr<I2NPMessage>&& msg)
 	{
-		if (msg) m_TunnelBuildMsgQueue.Put (msg);
+		if (msg && m_TunnelBuildMsgQueue.GetSize () < TRANSIT_TUNNELS_BUILD_MSG_QUEUE_MAX_SIZE)
+			m_TunnelBuildMsgQueue.Put (msg);
 	}
 
 	void TransitTunnels::HandleShortTransitTunnelBuildMsg (std::shared_ptr<I2NPMessage>&& msg)
