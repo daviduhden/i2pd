@@ -275,8 +275,13 @@ namespace tunnel
 
 	void TransitTunnels::PostTransitTunnelBuildMsg  (std::shared_ptr<I2NPMessage>&& msg)
 	{
-		if (msg && m_TunnelBuildMsgQueue.GetSize () < TRANSIT_TUNNELS_BUILD_MSG_QUEUE_MAX_SIZE)
-			m_TunnelBuildMsgQueue.Put (msg);
+		if (msg)
+		{
+			if (m_TunnelBuildMsgQueue.GetSize () < TRANSIT_TUNNELS_BUILD_MSG_QUEUE_MAX_SIZE)
+				m_TunnelBuildMsgQueue.Put (msg);
+			else
+				m_TunnelBuildMsgQueue.WakeUp (); // tell TBM thread to process queue
+		}
 	}
 
 	void TransitTunnels::HandleShortTransitTunnelBuildMsg (std::shared_ptr<I2NPMessage>&& msg)
@@ -607,7 +612,7 @@ namespace tunnel
 			auto tunnel = *it;
 			if (ts > tunnel->GetCreationTime () + TUNNEL_EXPIRATION_TIMEOUT ||
 			    ts + TUNNEL_EXPIRATION_TIMEOUT < tunnel->GetCreationTime () ||
-			    (!tunnel->GetNumTransmittedBytes () && ts > tunnel->GetCreationTime () + TUNNEL_EXPIRATION_THRESHOLD)) // inactive?
+			    (!tunnel->GetNumTransmittedBytes () && ts > tunnel->GetCreationTime () + 2*TUNNEL_EXPIRATION_THRESHOLD)) // inactive?
 			{
 				LogPrint (eLogDebug, "TransitTunnel: Transit tunnel with id ", tunnel->GetTunnelID (), " expired or inactive");
 				tunnels.RemoveTunnel (tunnel->GetTunnelID ());
