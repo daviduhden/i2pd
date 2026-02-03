@@ -606,9 +606,10 @@ namespace tunnel
 		{
 			auto tunnel = *it;
 			if (ts > tunnel->GetCreationTime () + TUNNEL_EXPIRATION_TIMEOUT ||
-			    ts + TUNNEL_EXPIRATION_TIMEOUT < tunnel->GetCreationTime ())
+			    ts + TUNNEL_EXPIRATION_TIMEOUT < tunnel->GetCreationTime () ||
+			    (!tunnel->GetNumTransmittedBytes () && ts > tunnel->GetCreationTime () + TUNNEL_EXPIRATION_THRESHOLD)) // inactive?
 			{
-				LogPrint (eLogDebug, "TransitTunnel: Transit tunnel with id ", tunnel->GetTunnelID (), " expired");
+				LogPrint (eLogDebug, "TransitTunnel: Transit tunnel with id ", tunnel->GetTunnelID (), " expired or inactive");
 				tunnels.RemoveTunnel (tunnel->GetTunnelID ());
 				it = m_TransitTunnels.erase (it);
 			}
