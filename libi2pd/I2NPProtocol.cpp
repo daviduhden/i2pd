@@ -560,9 +560,15 @@ namespace i2p
 					if (!m_LastTunnelBuildMessageTimestamp || ts > m_LastTunnelBuildMessageTimestamp + TUNNEL_BUILD_MESSAGES_MIN_INTERVAL)
 					{
 						m_LastTunnelBuildMessageTimestamp = ts;
+						if (m_NumDroppedTunnelBuildMessages > 0)
+						{
+							LogPrint (eLogWarning, "I2NP: ", m_NumDroppedTunnelBuildMessages, " tunnel build messages dropped");
+							m_NumDroppedTunnelBuildMessages = 0;
+						}
 						HandleI2NPMessage (msg);
 					}
-					// else drop TBM
+					else // drop TBM
+						m_NumDroppedTunnelBuildMessages++;
 					break;
 				}
 				default:
