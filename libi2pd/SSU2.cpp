@@ -475,7 +475,7 @@ namespace transport
 				m_ReceivedPacketsQueue.splice (m_ReceivedPacketsQueue.end (), packets);
 			else
 			{
-				LogPrint (eLogError, "SSU2: Received queue size ", queueSize, " exceeds max size", SSU2_MAX_RECEIVED_QUEUE_SIZE);
+				LogPrint (eLogError, "SSU2: Received queue size ", queueSize, " exceeds max size ", SSU2_MAX_RECEIVED_QUEUE_SIZE);
 				m_PacketsPool.ReleaseMt (packets);
 				queueSize = 0; // invoke processing just in case
 			}		
