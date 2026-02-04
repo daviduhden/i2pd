@@ -319,10 +319,9 @@ namespace tunnel
 	size_t GetI2NPMessageLength (const uint8_t * msg, size_t len);
 	void HandleI2NPMessage (std::shared_ptr<I2NPMessage> msg);
 
-	const uint64_t TUNNEL_BUILD_MESSAGES_MIN_INTERVAL = 200; // in milliseconds
-	const uint64_t TUNNEL_BUILD_MESSAGES_MAX_INTERVAL = 3000; // in milliseconds
-	const uint64_t TUNNEL_BUILD_MESSAGES_EXTRA_INTERVAL_PER_MESSAGE = 50; // in milliseconds
+	const uint64_t TUNNEL_BUILD_MESSAGES_MIN_INTERVAL = 100; // in milliseconds
 	const int MAX_NUM_THROTTLED_TUNNEL_BUILD_MESSAGES = 5;
+	const int MAX_NUM_DROPPED_TUNNEL_BUILD_MESSAGES = 1000;
 	class I2NPMessagesHandler
 	{
 		public:

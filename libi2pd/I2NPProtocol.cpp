@@ -558,11 +558,9 @@ namespace i2p
 				{
 					auto ts = i2p::util::GetMonotonicMilliseconds ();
 					if (!m_LastTunnelBuildMessageTimestamp ||
-						ts > m_LastTunnelBuildMessageTimestamp + TUNNEL_BUILD_MESSAGES_MAX_INTERVAL ||
-						ts > m_LastTunnelBuildMessageTimestamp + TUNNEL_BUILD_MESSAGES_MIN_INTERVAL +
-							m_NumThrottledTunnelBuildMessages*TUNNEL_BUILD_MESSAGES_EXTRA_INTERVAL_PER_MESSAGE)
+						ts > m_LastTunnelBuildMessageTimestamp + TUNNEL_BUILD_MESSAGES_MIN_INTERVAL ||
+						m_NumDroppedTunnelBuildMessages > MAX_NUM_DROPPED_TUNNEL_BUILD_MESSAGES)
 					{
-						m_LastTunnelBuildMessageTimestamp = ts;
 						m_NumThrottledTunnelBuildMessages = 0;
 						if (m_NumDroppedTunnelBuildMessages > 0)
 						{
@@ -582,6 +580,7 @@ namespace i2p
 						else // drop TBM
 							m_NumDroppedTunnelBuildMessages++;
 					}
+					m_LastTunnelBuildMessageTimestamp = ts;
 					break;
 				}
 				default:
