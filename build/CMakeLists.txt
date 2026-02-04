@@ -37,6 +37,7 @@ option(WITH_UPNP            "Include support for UPnP client"         OFF)
 option(WITH_GIT_VERSION     "Use git commit info as version"          OFF)
 option(WITH_ADDRSANITIZER   "Build with address sanitizer unix only"  OFF)
 option(WITH_THREADSANITIZER "Build with thread sanitizer unix only"   OFF)
+option(WITH_UNDEFSANITIZER  "Build with undefined sanitizer unix only" OFF)
 option(BUILD_TESTING        "Build tests"                             OFF)
 
 IF(BUILD_TESTING)
@@ -184,18 +185,34 @@ if(UNIX)
   endif()
 endif()
 
+set(_SANITIZE_FLAGS "")
+
 if(WITH_ADDRSANITIZER)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+  list(APPEND _SANITIZE_FLAGS -fsanitize=address)
 endif()
 
 if(WITH_THREADSANITIZER)
   if(WITH_ADDRSANITIZER)
     message(FATAL_ERROR "thread sanitizer option cannot be combined with address sanitizer")
   else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=thread")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=thread")
+    list(APPEND _SANITIZE_FLAGS -fsanitize=thread)
   endif()
+endif()
+
+if(WITH_UNDEFSANITIZER)
+  list(APPEND _SANITIZE_FLAGS -fsanitize=undefined)
+  list(APPEND _SANITIZE_FLAGS -fno-sanitize=vptr)
+  list(APPEND _SANITIZE_FLAGS -fno-sanitize=enum)
+endif()
+
+if(NOT "${_SANITIZE_FLAGS}" STREQUAL "")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer")
+
+  list(JOIN _SANITIZE_FLAGS " " _X)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${_X}")
+
+  # Is this really needed? Compiler (and CXX flags) used to link
+  #set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${_X}")
 endif()
 
 if (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 10.0 AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0) # gcc 8-9
@@ -336,6 +353,7 @@ message(STATUS "  GIT VERSION      : ${WITH_GIT_VERSION}")
 endif()
 message(STATUS "  ADDRSANITIZER    : ${WITH_ADDRSANITIZER}")
 message(STATUS "  THREADSANITIZER  : ${WITH_THREADSANITIZER}")
+message(STATUS "  UNDEFSANITIZER   : ${WITH_UNDEFSANITIZER}")
 message(STATUS "---------------------------------------")
 
 if(WITH_BINARY)
