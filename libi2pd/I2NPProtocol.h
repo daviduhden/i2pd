@@ -320,11 +320,15 @@ namespace tunnel
 	void HandleI2NPMessage (std::shared_ptr<I2NPMessage> msg);
 
 	const uint64_t TUNNEL_BUILD_MESSAGES_MIN_INTERVAL = 200; // in milliseconds
+	const uint64_t TUNNEL_BUILD_MESSAGES_MAX_INTERVAL = 3000; // in milliseconds
+	const uint64_t TUNNEL_BUILD_MESSAGES_EXTRA_INTERVAL_PER_MESSAGE = 50; // in milliseconds
+	const int MAX_NUM_THROTTLED_TUNNEL_BUILD_MESSAGES = 5;
 	class I2NPMessagesHandler
 	{
 		public:
 
-			I2NPMessagesHandler (): m_LastTunnelBuildMessageTimestamp (0), m_NumDroppedTunnelBuildMessages (0) {};
+			I2NPMessagesHandler (): m_LastTunnelBuildMessageTimestamp (0),
+				m_NumThrottledTunnelBuildMessages (0), m_NumDroppedTunnelBuildMessages (0) {};
 			~I2NPMessagesHandler ();
 			void PutNextMessage (std::shared_ptr<I2NPMessage>&& msg);
 			void Flush ();
@@ -333,7 +337,7 @@ namespace tunnel
 
 			std::list<std::shared_ptr<I2NPMessage> > m_TunnelMsgs, m_TunnelGatewayMsgs;
 			uint64_t m_LastTunnelBuildMessageTimestamp; // in milliseconds
-			int m_NumDroppedTunnelBuildMessages;
+			int m_NumThrottledTunnelBuildMessages, m_NumDroppedTunnelBuildMessages;
 	};
 }
 

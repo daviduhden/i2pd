@@ -557,9 +557,13 @@ namespace i2p
 				case eI2NPShortTunnelBuild:
 				{
 					auto ts = i2p::util::GetMonotonicMilliseconds ();
-					if (!m_LastTunnelBuildMessageTimestamp || ts > m_LastTunnelBuildMessageTimestamp + TUNNEL_BUILD_MESSAGES_MIN_INTERVAL)
+					if (!m_LastTunnelBuildMessageTimestamp ||
+						ts > m_LastTunnelBuildMessageTimestamp + TUNNEL_BUILD_MESSAGES_MAX_INTERVAL ||
+						ts > m_LastTunnelBuildMessageTimestamp + TUNNEL_BUILD_MESSAGES_MIN_INTERVAL +
+							m_NumThrottledTunnelBuildMessages*TUNNEL_BUILD_MESSAGES_EXTRA_INTERVAL_PER_MESSAGE)
 					{
 						m_LastTunnelBuildMessageTimestamp = ts;
+						m_NumThrottledTunnelBuildMessages = 0;
 						if (m_NumDroppedTunnelBuildMessages > 0)
 						{
 							LogPrint (eLogWarning, "I2NP: ", m_NumDroppedTunnelBuildMessages, " tunnel build messages dropped");
@@ -567,8 +571,17 @@ namespace i2p
 						}
 						HandleI2NPMessage (msg);
 					}
-					else // drop TBM
-						m_NumDroppedTunnelBuildMessages++;
+					else
+					{
+						if (m_NumThrottledTunnelBuildMessages < MAX_NUM_THROTTLED_TUNNEL_BUILD_MESSAGES)
+						{
+							// let TBM go through
+							m_NumThrottledTunnelBuildMessages++;
+							HandleI2NPMessage (msg);
+						}
+						else // drop TBM
+							m_NumDroppedTunnelBuildMessages++;
+					}
 					break;
 				}
 				default:
