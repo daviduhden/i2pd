@@ -574,7 +574,8 @@ namespace i2p
 						if (m_NumThrottledTunnelBuildMessages < MAX_NUM_THROTTLED_TUNNEL_BUILD_MESSAGES)
 						{
 							// let TBM go through
-							m_NumThrottledTunnelBuildMessages++;
+							if (ts > m_LastTunnelBuildMessageTimestamp + 1) // don't count if from the same millisecond
+								m_NumThrottledTunnelBuildMessages++;
 							HandleI2NPMessage (msg);
 						}
 						else // drop TBM
