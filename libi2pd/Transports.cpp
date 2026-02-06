@@ -1332,7 +1332,7 @@ namespace transport
 		auto it = m_BanList.find (addr);
 		if (it != m_BanList.end ())
 		{
-			if (it->second < i2p::util::GetMonotonicSeconds ())
+			if (it->second > i2p::util::GetMonotonicSeconds ())
 				return true;
 			else
 				m_BanList.erase (it);
