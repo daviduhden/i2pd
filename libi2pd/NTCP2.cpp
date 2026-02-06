@@ -1047,9 +1047,9 @@ namespace transport
 
 		auto addr = m_RemoteEndpoint.address ().is_v4 () ? ri1->GetNTCP2V4Address () :
 			(i2p::util::net::IsYggdrasilAddress (m_RemoteEndpoint.address ()) ? ri1->GetYggdrasilAddress () : ri1->GetNTCP2V6Address ());
-		if (!addr || memcmp (m_Establisher->m_RemoteStaticKey, addr->s, 32))
+		if (!addr)
 		{
-			LogPrint (eLogError, "NTCP2: Wrong static key in SessionConfirmed");
+			LogPrint (eLogError, "NTCP2: Address not found in SessionConfirmed");
 			Terminate ();
 			return;
 		}
@@ -1067,6 +1067,14 @@ namespace transport
 			else
 				LogPrint (eLogInfo, "NTCP2: Host mismatch between published address ", addr->host, " and actual endpoint ", m_RemoteEndpoint.address ());
 			SendTerminationAndTerminate (eNTCP2Banned);
+			return;
+		}
+		if (memcmp (m_Establisher->m_RemoteStaticKey, addr->s, 32))
+		{
+			LogPrint (eLogError, "NTCP2: Wrong static key in SessionConfirmed");
+			if (addr->IsPublishedNTCP2 ())
+				i2p::transport::transports.AddBan (m_RemoteEndpoint.address ());
+			Terminate ();
 			return;
 		}
 		// TODO: process options block
@@ -1936,7 +1944,7 @@ namespace transport
 			if (!ec)
 			{
 				LogPrint (eLogDebug, "NTCP2: Connected from ", ep);
-				if (!i2p::transport::transports.IsInReservedRange(ep.address ()))
+				if (!i2p::transport::transports.IsInReservedRange(ep.address ()) && !i2p::transport::transports.IsBanned(ep.address ()))
 				{
 					if (m_PendingIncomingSessions.emplace (ep.address (), conn).second)
 					{
@@ -1948,7 +1956,7 @@ namespace transport
 						LogPrint (eLogInfo, "NTCP2: Incoming session from ", ep.address (), " is already pending");
 				}
 				else
-					LogPrint (eLogError, "NTCP2: Incoming connection from invalid IP ", ep.address ());
+					LogPrint (eLogError, "NTCP2: Incoming connection from invalid or banned IP ", ep.address ());
 			}
 			else
 				LogPrint (eLogError, "NTCP2: Connected from error ", ec.message ());
@@ -1983,8 +1991,9 @@ namespace transport
 			if (!ec)
 			{
 				LogPrint (eLogDebug, "NTCP2: Connected from ", ep);
-				if (!i2p::transport::transports.IsInReservedRange(ep.address ()) ||
-				    i2p::util::net::IsYggdrasilAddress (ep.address ()))
+				if ((!i2p::transport::transports.IsInReservedRange(ep.address ()) ||
+				    i2p::util::net::IsYggdrasilAddress (ep.address ())) &&
+				    !i2p::transport::transports.IsBanned(ep.address ()))
 				{
 					if (m_PendingIncomingSessions.emplace (ep.address (), conn).second)
 					{
@@ -1996,7 +2005,7 @@ namespace transport
 						LogPrint (eLogInfo, "NTCP2: Incoming session from ", ep.address (), " is already pending");
 				}
 				else
-					LogPrint (eLogError, "NTCP2: Incoming connection from invalid IP ", ep.address ());
+					LogPrint (eLogError, "NTCP2: Incoming connection from invalid or banned IP ", ep.address ());
 			}
 			else
 				LogPrint (eLogError, "NTCP2: Connected from error ", ec.message ());

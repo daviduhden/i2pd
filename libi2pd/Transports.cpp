@@ -187,6 +187,7 @@ namespace transport
 			m_PeerCleanupTimer = new boost::asio::deadline_timer (*m_Service);
 			m_PeerTestTimer = new boost::asio::deadline_timer (*m_Service);
 			m_UpdateBandwidthTimer = new boost::asio::deadline_timer (*m_Service);
+			m_BanListCleanupTimer = std::make_unique<boost::asio::steady_timer>(*m_Service);
 		}
 
 		bool ipv4; i2p::config::GetOption("ipv4", ipv4);
@@ -347,12 +348,15 @@ namespace transport
 			m_PeerTestTimer->expires_from_now (boost::posix_time::seconds(PEER_TEST_INTERVAL + m_Rng() % PEER_TEST_INTERVAL_VARIANCE));
 			m_PeerTestTimer->async_wait (std::bind (&Transports::HandlePeerTestTimer, this, std::placeholders::_1));
 		}
+		m_BanListCleanupTimer->expires_after (std::chrono::seconds(BAN_LIST_CLEANUP_INTERVAL + m_Rng () % BAN_LIST_CLEANUP_INTERVAL_VARIANCE));
+		m_BanListCleanupTimer->async_wait (std::bind (&Transports::HandleBanListCleanupTimer, this, std::placeholders::_1));
 	}
 
 	void Transports::Stop ()
 	{
 		if (m_PeerCleanupTimer) m_PeerCleanupTimer->cancel ();
 		if (m_PeerTestTimer) m_PeerTestTimer->cancel ();
+		if (m_BanListCleanupTimer) m_BanListCleanupTimer->cancel ();
 
 		if (m_SSU2Server)
 		{
@@ -1076,6 +1080,29 @@ namespace transport
 		}
 	}
 
+	void Transports::HandleBanListCleanupTimer (const boost::system::error_code& ecode)
+	{
+		if (ecode != boost::asio::error::operation_aborted)
+		{
+			if (!m_BanList.empty ())
+			{
+				auto ts = i2p::util::GetMonotonicSeconds ();
+				{
+					std::lock_guard<std::mutex> l(m_BanListMutex);
+					for (auto it = m_BanList.begin (); it != m_BanList.end (); )
+					{
+						if (ts < it->second)
+							it++;
+						else
+							it = m_BanList.erase (it);
+					}
+				}
+			}
+			m_BanListCleanupTimer->expires_after (std::chrono::seconds(BAN_LIST_CLEANUP_INTERVAL + m_Rng () % BAN_LIST_CLEANUP_INTERVAL_VARIANCE));
+			m_BanListCleanupTimer->async_wait (std::bind (&Transports::HandleBanListCleanupTimer, this, std::placeholders::_1));
+		}
+	}
+
 	template<typename Filter>
 	std::shared_ptr<const i2p::data::RouterInfo> Transports::GetRandomPeer (Filter filter) const
 	{
@@ -1297,6 +1324,27 @@ namespace transport
 	bool Transports::IsInReservedRange (const boost::asio::ip::address& host) const
 	{
 		return IsCheckReserved () && i2p::util::net::IsInReservedRange (host);
+	}
+
+	bool Transports::IsBanned (const boost::asio::ip::address& addr)
+	{
+		std::lock_guard<std::mutex> l(m_BanListMutex);
+		auto it = m_BanList.find (addr);
+		if (it != m_BanList.end ())
+		{
+			if (it->second < i2p::util::GetMonotonicSeconds ())
+				return true;
+			else
+				m_BanList.erase (it);
+		}
+		return false;
+	}
+
+	bool Transports::AddBan (const boost::asio::ip::address& addr)
+	{
+		auto ts = i2p::util::GetMonotonicSeconds () + IP_BAN_TIME + m_Rng () % IP_BAN_TIME_VARIANCE;
+		std::lock_guard<std::mutex> l(m_BanListMutex);
+		return m_BanList.emplace (addr, ts).second;
 	}
 
 	void InitAddressFromIface ()

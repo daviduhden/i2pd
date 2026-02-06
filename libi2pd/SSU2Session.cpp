@@ -1200,9 +1200,9 @@ namespace transport
 		ri = ri1;
 
 		m_Address = m_RemoteEndpoint.address ().is_v6 () ? ri->GetSSU2V6Address () : ri->GetSSU2V4Address ();
-		if (!m_Address || memcmp (S, m_Address->s, 32))
+		if (!m_Address)
 		{
-			LogPrint (eLogError, "SSU2: Wrong static key in SessionConfirmed from ", i2p::data::GetIdentHashAbbreviation (ri->GetIdentHash ()));
+			LogPrint (eLogError, "SSU2: Address not found in SessionConfirmed from ", i2p::data::GetIdentHashAbbreviation (ri->GetIdentHash ()));
 			return false;
 		}
 		if (m_Address->published && m_RemoteEndpoint.address () != m_Address->host &&
@@ -1218,6 +1218,13 @@ namespace transport
 			else
 				LogPrint (eLogInfo, "SSU2: Host mismatch between published address ", m_Address->host,
 					" and actual endpoint ", m_RemoteEndpoint.address (), " from ", i2p::data::GetIdentHashAbbreviation (ri->GetIdentHash ()));
+			return false;
+		}
+		if (memcmp (S, m_Address->s, 32))
+		{
+			LogPrint (eLogError, "SSU2: Wrong static key in SessionConfirmed from ", i2p::data::GetIdentHashAbbreviation (ri->GetIdentHash ()));
+			if (m_Address->published)
+				i2p::transport::transports.AddBan (m_RemoteEndpoint.address ());
 			return false;
 		}
 		if (!m_Address->published)

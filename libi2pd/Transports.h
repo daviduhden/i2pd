@@ -116,8 +116,12 @@ namespace transport
 	const int CHECK_PROFILE_NUM_DELAYED_MESSAGES = 15; // check profile after
 	const int NUM_X25519_PRE_GENERATED_KEYS = 25; // pre-generated x25519 keys pairs
 
-	const int TRAFFIC_SAMPLE_COUNT = 301; // seconds
+	const int IP_BAN_TIME = 1800; // in seconds
+	const int IP_BAN_TIME_VARIANCE = 540; // in seconds
+	const int BAN_LIST_CLEANUP_INTERVAL = 66; // in seconds
+	const int BAN_LIST_CLEANUP_INTERVAL_VARIANCE = 20; // in seconds
 
+	const int TRAFFIC_SAMPLE_COUNT = 301; // seconds
 	struct TrafficSample
 	{
 		uint64_t Timestamp;
@@ -190,6 +194,9 @@ namespace transport
 			bool IsCheckReserved () const { return m_CheckReserved; };
 			bool IsInReservedRange (const boost::asio::ip::address& host) const;
 
+			bool IsBanned (const boost::asio::ip::address& addr);
+			bool AddBan (const boost::asio::ip::address& addr);
+
 		private:
 
 			void Run ();
@@ -201,6 +208,7 @@ namespace transport
 			void HandlePeerCleanupTimer (const boost::system::error_code& ecode);
 			void HandlePeerTestTimer (const boost::system::error_code& ecode);
 			void HandleUpdateBandwidthTimer (const boost::system::error_code& ecode);
+			void HandleBanListCleanupTimer (const boost::system::error_code& ecode);
 			void UpdateBandwidthValues (int interval, uint32_t& in, uint32_t& out, uint32_t& transit);
 
 			void DetectExternalIP ();
@@ -246,6 +254,11 @@ namespace transport
 
 			i2p::I2NPMessagesHandler m_LoopbackHandler;
 			std::mt19937 m_Rng;
+
+			std::map<boost::asio::ip::address, uint64_t> m_BanList; // ip->expiration time in seconds
+			mutable std::mutex m_BanListMutex;
+			std::unique_ptr<boost::asio::steady_timer> m_BanListCleanupTimer;
+
 
 		public:
 
