@@ -281,6 +281,7 @@ namespace config {
 				"http://[320:f09a:f09f:7acd::216]/,"
 				"http://[316:f9e0:f22e:a74f::216]/"
 			),                                                            "Reseed URLs through the Yggdrasil, separated by comma")
+			("reseed.followredirect", value<bool>()->default_value(false),         "Follow redirects when reseeding")
 		;
 
 		options_description addressbook("AddressBook options");

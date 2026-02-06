@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -71,6 +71,7 @@ namespace http
 		void add_header(const char *name, const std::string & value, bool replace = false);
 		void add_header(const char *name, const char *value, bool replace = false);
 		void del_header(const char *name);
+		std::string get_header(const std::string& name) const;
 
 		/** @brief Returns declared message length or -1 if unknown */
 		long int content_length() const;

@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -489,13 +489,13 @@ namespace data
 				BIGNUM * n1 = BN_new ();
 				if (EVP_PKEY_get_bn_param (pubKey, OSSL_PKEY_PARAM_RSA_N, &n1) > 0)
 					n = n1;
-#else				
+#else
 				const RSA * key = EVP_PKEY_get0_RSA (pubKey);
 				const BIGNUM * e, * d;
 				RSA_get0_key(key, &n, &e, &d);
-#endif				
+#endif
 				if (n)
-				{	
+				{
 					PublicKey value;
 					i2p::crypto::bn2buf (n, value, 512);
 					if (cn)
@@ -507,7 +507,7 @@ namespace data
 					LogPrint (eLogError, "Reseed: Can't extract RSA key from ", filename);
 #if (OPENSSL_VERSION_NUMBER >= 0x030000000) // since 3.0.0
 				BN_free (n1);
-#endif				
+#endif
 			}
 			SSL_free (ssl);
 		}
@@ -636,19 +636,19 @@ namespace data
 						// TODO: support username/password auth etc
 						bool success = false;
 						i2p::transport::Socks5Handshake (sock, std::make_pair(url.host, url.port),
-							[&success](const boost::system::error_code& ec) 
-						    { 
+							[&success](const boost::system::error_code& ec)
+						    {
 								if (!ec)
 									success = true;
 								else
 									LogPrint (eLogError, "Reseed: SOCKS handshake failed: ", ec.message());
-							});	
+							});
 						service.run (); // execute all async operations
 						if (!success)
 						{
 							sock.close();
 							return "";
-						}	
+						}
 					}
 				}
 			}
@@ -669,9 +669,9 @@ namespace data
 						if (ep.address ().is_v4 ())
 							supported = i2p::context.SupportsV4 ();
 						else if (ep.address ().is_v6 ())
-							supported = i2p::util::net::IsYggdrasilAddress (ep.address ()) ? 
+							supported = i2p::util::net::IsYggdrasilAddress (ep.address ()) ?
 								i2p::context.SupportsMesh () : i2p::context.SupportsV6 ();
-					}	
+					}
 					if (supported)
 					{
 						s.lowest_layer().connect (ep, ecode);
@@ -710,12 +710,16 @@ namespace data
 	template<typename Stream>
 	std::string Reseeder::ReseedRequest (Stream& s, const std::string& uri)
 	{
+		bool follow; i2p::config::GetOption("reseed.followredirect", follow);
 		boost::system::error_code ecode;
 		i2p::http::HTTPReq req;
+		i2p::http::HTTPRes res;
+
 		req.uri = uri;
 		req.AddHeader("User-Agent", "Wget/1.11.4");
 		req.AddHeader("Connection", "close");
 		s.write_some (boost::asio::buffer (req.to_string()));
+
 		// read response
 		std::stringstream rs;
 		char recv_buf[1024]; size_t l = 0;
@@ -723,18 +727,32 @@ namespace data
 			l = s.read_some (boost::asio::buffer (recv_buf, sizeof(recv_buf)), ecode);
 			if (l) rs.write (recv_buf, l);
 		} while (!ecode && l);
+
 		// process response
 		std::string data = rs.str();
-		i2p::http::HTTPRes res;
 		int len = res.parse(data);
 		if (len <= 0) {
 			LogPrint(eLogWarning, "Reseed: Incomplete/broken response from ", uri);
 			return "";
 		}
+
+		if ((res.code == 301 || res.code == 302 || res.code == 307) && follow) {
+			LogPrint(eLogDebug, "Reseed: Recieved redirect from ", uri);
+
+			std::string location = res.get_header("Location");
+			if (location.length() == 0) {
+				LogPrint(eLogWarning, "Reseed: Broken redirect from ", uri);
+				return "";
+			}
+			bool isHttps = (location.length() > 8 && location.substr(0, 8) == "https://");
+			return (isHttps ? HttpsRequest (location) : YggdrasilRequest (location));
+		}
+
 		if (res.code != 200) {
 			LogPrint(eLogError, "Reseed: Failed to reseed from ", uri, ", http code ", res.code);
 			return "";
 		}
+
 		data.erase(0, len); /* drop http headers from response */
 		LogPrint(eLogDebug, "Reseed: Got ", data.length(), " bytes of data from ", uri);
 		if (res.is_chunked()) {
