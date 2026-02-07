@@ -93,7 +93,7 @@ namespace config {
 #else
 			("limits.openfiles", value<uint16_t>()->default_value(0),         "Maximum number of open files (0 - use system default)")
 #endif
-			("limits.transittunnels", value<uint32_t>()->default_value(10000), "Maximum active transit tunnels (default:10000)")
+			("limits.transittunnels", value<uint32_t>()->default_value(25000), "Maximum active transit tunnels (default:25000)")
 			("limits.zombies", value<double>()->default_value(0),             "Minimum percentage of successfully created tunnels under which tunnel cleanup is paused (default [%]: 0.00)")
 			("limits.ntcpsoft", value<uint16_t>()->default_value(0),          "Ignored")
 			("limits.ntcphard", value<uint16_t>()->default_value(0),          "Ignored")
