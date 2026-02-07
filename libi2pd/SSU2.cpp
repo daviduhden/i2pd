@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2022-2025, The PurpleI2P Project
+* Copyright (c) 2022-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -773,12 +773,18 @@ namespace transport
 				!i2p::transport::transports.IsBanned (senderEndpoint.address ()))
 			{
 				// assume new incoming session
-				auto session = std::make_shared<SSU2Session> (*this);
-				session->SetRemoteEndpoint (senderEndpoint);
-				session->ProcessFirstIncomingMessage (connID, buf, len);
+				auto queueSize = m_ReceivedPacketsQueue.size ();
+				if (queueSize < SSU2_STOP_ACCEPTING_NEW_SESSIONS_QUEUE_SIZE)
+				{
+					auto session = std::make_shared<SSU2Session> (*this);
+					session->SetRemoteEndpoint (senderEndpoint);
+					session->ProcessFirstIncomingMessage (connID, buf, len);
+				}
+				else
+					LogPrint (eLogWarning, "SSU2: Incoming session dropped from ",  senderEndpoint, ". Queue size ", queueSize, " exceeds ", SSU2_STOP_ACCEPTING_NEW_SESSIONS_QUEUE_SIZE);
 			}
 			else
-				LogPrint (eLogError, "SSU2: Incoming packet received from invalid or banned endpoint ", senderEndpoint);
+				LogPrint (eLogWarning, "SSU2: Incoming packet received from invalid or banned endpoint ", senderEndpoint);
 		}
 	}
 
