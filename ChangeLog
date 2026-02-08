@@ -16,6 +16,7 @@
 - Network error and testing metrics for I2PControl
 - Handle reseed address redirection
 - Throttle excessive number of tunnel build message from the same peer
+- Localization to Esperanto, Filipino and Finnish
 ### Changed
 - Return base64 of ident instead full address for Datagram3 in SAM
 - Send ratchet session response for unidirectional traffic for I2CP
@@ -57,7 +58,7 @@
 - Ability to specify bandwidth with "mb" and "gb" suffixes
 - "i2p.streaming.maxWindowSize" and "i2p.streaming.dontSign" params
 ### Changed
-- Don't verify streaming SYN packet signature if comes from an ECIESx25519 session 
+- Don't verify streaming SYN packet signature if comes from an ECIESx25519 session
 - Non-blocking mode for UDP sockets in UDP tunnels
 - Accept "HELLO VERSION" without "MIN" and "MAX" in SAM
 - Try to resolve host again in server tunnel if failed before
