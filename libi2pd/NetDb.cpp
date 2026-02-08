@@ -699,6 +699,8 @@ namespace data
 				// find & mark expired routers
 				if (!r->GetCompatibleTransports (true)) // non reachable by any transport
 					r->SetUnreachable (true);
+				else if (r->GetVersion () < NETDB_MIN_ALLOWED_VERSION && !r->IsHighBandwidth ()) // too old
+					r->SetUnreachable (true);
 				else if (ts + NETDB_EXPIRATION_TIMEOUT_THRESHOLD*1000LL < r->GetTimestamp ())
 				{
 					LogPrint (eLogWarning, "NetDb: RouterInfo is from future for ", (r->GetTimestamp () - ts)/1000LL, " seconds");
