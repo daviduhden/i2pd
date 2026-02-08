@@ -1077,6 +1077,12 @@ namespace transport
 			Terminate ();
 			return;
 		}
+		if (ri1->GetVersion () < i2p::data::NETDB_MIN_ALLOWED_VERSION && !ri1->IsHighBandwidth ())
+		{
+			LogPrint (eLogInfo, "NTCP2: Router version ", ri1->GetVersion (), " is too old in SessionConfirmed");
+			SendTerminationAndTerminate (eNTCP2Banned);
+			return;
+		}
 		// TODO: process options block
 
 		// ready to communicate

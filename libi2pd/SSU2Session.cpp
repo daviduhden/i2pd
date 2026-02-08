@@ -1227,6 +1227,11 @@ namespace transport
 				i2p::transport::transports.AddBan (m_RemoteEndpoint.address ());
 			return false;
 		}
+		if (ri->GetVersion () < i2p::data::NETDB_MIN_ALLOWED_VERSION && !ri->IsHighBandwidth ())
+		{
+			LogPrint (eLogInfo, "SSU2: Router version ", ri->GetVersion (), " is too old in SessionConfirmed");
+			return false;
+		}
 		if (!m_Address->published)
 		{
 			if (ri->HasProfile ())

@@ -506,7 +506,9 @@ namespace transport
 			try
 			{
 				auto r = netdb.FindRouter (ident);
-				if (r && (r->IsUnreachable () || !r->IsReachableFrom (i2p::context.GetRouterInfo ()))) return nullptr; // router found but non-reachable
+				if (r && (r->IsUnreachable () || !r->IsReachableFrom (i2p::context.GetRouterInfo ()) ||
+					(r->GetVersion () < i2p::data::NETDB_MIN_ALLOWED_VERSION && !r->IsHighBandwidth ())))
+					return nullptr; // router found but non-reachable or too old
 
 				peer = std::make_shared<Peer>(r, i2p::util::GetSecondsSinceEpoch ());
 				{
