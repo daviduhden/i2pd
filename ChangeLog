@@ -1,6 +1,50 @@
 # for this file format description,
 # see https://github.com/olivierlacan/keep-a-changelog
 
+## [2.59.0] - 2026-02-09
+### Added
+- Post-quantum NTCP2 crypto(ML-KEM-512, ML-KEM-768, ML-KEM-1024) support if openssl >= 3.5.0
+- UDP associate for SOCKS5 proxy
+- Trusted routers list for first hop per tunnel
+- "i2p.streaming.maxConnsPerMinute" and "i2p.streaming.maxResends" params
+- Limited connectivity mode
+- *.b32.i2p addresses for SAM datagrams
+- Limiting the number of datagrams sent to maintain the consistency of session encryption through UDP tunnels
+- Desktop app mode for Haiku
+- Ability to suppress X-I2P-* headers for HTTP server tunnel
+- Multi cloves garlic message for datagrams
+- Network error and testing metrics for I2PControl
+- Handle reseed address redirection
+- Throttle excessive number of tunnel build message from the same peer
+### Changed
+- Return base64 of ident instead full address for Datagram3 in SAM
+- Send ratchet session response for unidirectional traffic for I2CP
+- Set default number of generated tags to 800 for a datagram destination
+- Check ML-KEM encaps_key section length before decryption
+- Create new stream only if bandwidth is available. Close non-responding streams
+- Use Datagram3 by default in UDP tunnels
+- Floodfills are not introducers
+- Disable ipv6 if global ipv6 interface not found
+- Network congestion detection algorithm in streaming
+- Reply with relay tag only if accept tunnels
+- Case-insensitive Content-Length header in I2PControl
+- Increase PID string length
+- Don't communicate with routers of version < 0.9.58
+- Webconsole layout improvements
+- Localization to Hebrew
+- Reseeds list
+### Fixed
+- Incorrect params length calculation for SAM streams
+- Unexpected index in SymmetricKeyTagSet
+- Incorrect preferred crypto type if i2cp.leaseSetEncType is not specified
+- Decoding %00 in url
+- Thread-unsafe localtime()
+- NetDb crash on stop
+- Peer test result OK in case of another recent peer test
+- Published port if full-cone NAT
+- Missing trailing newline in I2PControl JSON response
+- Language selection in webconsole
+
 ## [2.58.0] - 2025-09-08
 ### Added
 - Post-quantum end-to-end crypto(ML-KEM-512, ML-KEM-768, ML-KEM-1024) support if openssl >= 3.5.0

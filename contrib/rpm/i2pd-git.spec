@@ -1,7 +1,7 @@
 %define git_hash %(git rev-parse HEAD | cut -c -7)
 
 Name:          i2pd-git
-Version:       2.58.0
+Version:       2.59.0
 Release:       git%{git_hash}%{?dist}
 Summary:       C++ daemon for accessing the I2P network
 Conflicts:     i2pd
@@ -139,6 +139,9 @@ getent passwd i2pd >/dev/null || \
 
 
 %changelog
+* Mon Feb 09 2026 orignal <orignal@i2pmail.org> - 2.59.0
+- update to 2.59.0
+
 * Mon Sep 08 2025 orignal <orignal@i2pmail.org> - 2.58.0
 - update to 2.58.0
 
