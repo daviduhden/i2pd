@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2022-2025, The PurpleI2P Project
+* Copyright (c) 2022-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -209,7 +209,7 @@ namespace transport
 	class SSU2Session: public TransportSession, public std::enable_shared_from_this<SSU2Session>
 	{
 		protected:
-			
+
 			union Header
 			{
 				uint64_t ll[2];
@@ -224,7 +224,7 @@ namespace transport
 			};
 
 		private:
-			
+
 			struct HandshakePacket
 			{
 				Header header;
@@ -247,6 +247,7 @@ namespace transport
 			const boost::asio::ip::udp::endpoint& GetRemoteEndpoint () const { return m_RemoteEndpoint; };
 			i2p::data::RouterInfo::CompatibleTransports GetRemoteTransports () const { return m_RemoteTransports; };
 			i2p::data::RouterInfo::CompatibleTransports GetRemotePeerTestTransports () const { return m_RemotePeerTestTransports; };
+			int GetRemoteVersion () const { return m_RemoteVersion; };
 			std::shared_ptr<const i2p::data::RouterInfo::Address> GetAddress () const { return m_Address; };
 			void SetOnEstablished (OnEstablished e) { m_OnEstablished = e; };
 			OnEstablished GetOnEstablished () const { return m_OnEstablished; };
@@ -287,7 +288,7 @@ namespace transport
 			void SetRouterStatus (RouterStatus status) const;
 			size_t GetMaxPayloadSize () const { return m_MaxPayloadSize; }
 			void SetIsDataReceived (bool dataReceived) { m_IsDataReceived = dataReceived; };
-			
+
 			uint64_t GetSourceConnID () const { return m_SourceConnID; }
 			void SetSourceConnID (uint64_t sourceConnID) { m_SourceConnID = sourceConnID; }
 			uint64_t GetDestConnID () const { return m_DestConnID; }
@@ -301,7 +302,7 @@ namespace transport
 			size_t CreatePeerTestBlock (uint8_t * buf, size_t len, uint8_t msg, SSU2PeerTestCode code, const uint8_t * routerHash, const uint8_t * signedData, size_t signedDataLen);
 
 			bool ExtractEndpoint (const uint8_t * buf, size_t size, boost::asio::ip::udp::endpoint& ep);
-			
+
 		private:
 
 			void Terminate ();
@@ -360,7 +361,7 @@ namespace transport
 
 			size_t CreatePeerTestBlock (uint8_t * buf, size_t len, uint32_t nonce); // Alice
 			size_t CreateTerminationBlock (uint8_t * buf, size_t len);
-			
+
 		private:
 
 			SSU2Server& m_Server;
@@ -370,7 +371,7 @@ namespace transport
 			std::unique_ptr<HandshakePacket> m_SentHandshakePacket; // SessionRequest, SessionCreated or SessionConfirmed
 			std::shared_ptr<const i2p::data::RouterInfo::Address> m_Address;
 			boost::asio::ip::udp::endpoint m_RemoteEndpoint;
-			i2p::data::RouterInfo::CompatibleTransports m_RemoteTransports, m_RemotePeerTestTransports; 
+			i2p::data::RouterInfo::CompatibleTransports m_RemoteTransports, m_RemotePeerTestTransports;
 			int m_RemoteVersion;
 			uint64_t m_DestConnID, m_SourceConnID;
 			SSU2SessionState m_State;
@@ -400,7 +401,7 @@ namespace transport
 			int m_NumRanges;
 			uint8_t m_Ranges[SSU2_MAX_NUM_ACK_RANGES*2]; // ranges sent with previous Ack if any
 	};
-	
+
 	inline uint64_t CreateHeaderMask (const uint8_t * kh, const uint8_t * nonce)
 	{
 		uint64_t data = 0;

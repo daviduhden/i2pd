@@ -615,6 +615,7 @@ namespace transport
 		while (it != m_Sessions.end ())
 		{
 			if (it->second->IsEstablished () && (it->second->GetRemotePeerTestTransports () & remoteTransports) &&
+				it->second->GetRemoteVersion () >= i2p::data::NETDB_MIN_PEER_TEST_VERSION &&
 			    it->second->GetRemoteIdentity ()->GetIdentHash () != excluded)
 				return it->second;
 			it++;
@@ -624,6 +625,7 @@ namespace transport
 		while (it != m_Sessions.end () && ind)
 		{
 			if (it->second->IsEstablished () && (it->second->GetRemotePeerTestTransports () & remoteTransports) &&
+				it->second->GetRemoteVersion () >= i2p::data::NETDB_MIN_PEER_TEST_VERSION &&
 			    it->second->GetRemoteIdentity ()->GetIdentHash () != excluded)
 				return it->second;
 			it++; ind--;
