@@ -1177,6 +1177,11 @@ namespace transport
 			LogPrint (eLogError, "SSU2: RouterInfo in SessionConfirmed is from future for ", (ri->GetTimestamp () - ts)/1000LL, " seconds");
 			return false;
 		}
+		if (ri->GetVersion () < i2p::data::NETDB_MIN_ALLOWED_VERSION && !ri->IsHighBandwidth ())
+		{
+			LogPrint (eLogInfo, "SSU2: Router version ", ri->GetVersion (), " is too old in SessionConfirmed");
+			return false;
+		}
 		// update RouterInfo in netdb
 		auto ri1 = i2p::data::netdb.AddRouterInfo (ri->GetBuffer (), ri->GetBufferLen ()); // ri points to one from netdb now
 		if (!ri1)
@@ -1225,11 +1230,6 @@ namespace transport
 			LogPrint (eLogError, "SSU2: Wrong static key in SessionConfirmed from ", i2p::data::GetIdentHashAbbreviation (ri->GetIdentHash ()));
 			if (m_Address->published)
 				i2p::transport::transports.AddBan (m_RemoteEndpoint.address ());
-			return false;
-		}
-		if (ri->GetVersion () < i2p::data::NETDB_MIN_ALLOWED_VERSION && !ri->IsHighBandwidth ())
-		{
-			LogPrint (eLogInfo, "SSU2: Router version ", ri->GetVersion (), " is too old in SessionConfirmed");
 			return false;
 		}
 		if (!m_Address->published)

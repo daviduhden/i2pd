@@ -1020,6 +1020,12 @@ namespace transport
 			SendTerminationAndTerminate (eNTCP2Message3Error);
 			return;
 		}
+		if (ri.GetVersion () < i2p::data::NETDB_MIN_ALLOWED_VERSION && !ri.IsHighBandwidth ())
+		{
+			LogPrint (eLogInfo, "NTCP2: Router version ", ri.GetVersion (), " is too old in SessionConfirmed");
+			SendTerminationAndTerminate (eNTCP2Banned);
+			return;
+		}
 		// update RouterInfo in netdb
 		auto ri1 = i2p::data::netdb.AddRouterInfo (ri.GetBuffer (), ri.GetBufferLen ()); // ri1 points to one from netdb now
 		if (!ri1)
@@ -1075,12 +1081,6 @@ namespace transport
 			if (addr->IsPublishedNTCP2 ())
 				i2p::transport::transports.AddBan (m_RemoteEndpoint.address ());
 			Terminate ();
-			return;
-		}
-		if (ri1->GetVersion () < i2p::data::NETDB_MIN_ALLOWED_VERSION && !ri1->IsHighBandwidth ())
-		{
-			LogPrint (eLogInfo, "NTCP2: Router version ", ri1->GetVersion (), " is too old in SessionConfirmed");
-			SendTerminationAndTerminate (eNTCP2Banned);
 			return;
 		}
 		// TODO: process options block
