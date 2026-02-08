@@ -1165,6 +1165,7 @@ namespace data
 				return !router->IsHidden () && router != compatibleWith &&
 					(reverse ? (compatibleWith->IsReachableFrom (*router) && router->GetCompatibleTransports (true)):
 						router->IsReachableFrom (*compatibleWith)) && !router->IsNAT2NATOnly (*compatibleWith) &&
+					router->GetVersion () >= NETDB_MIN_ALLOWED_VERSION &&
 					router->IsECIES () && !router->IsHighCongestion (clientTunnel) &&
 					(!i2p::transport::transports.IsCheckReserved () || !router->IsSameSubnet (*compatibleWith)) &&
 					(!checkIsReal || router->GetProfile ()->IsReal ()) &&
