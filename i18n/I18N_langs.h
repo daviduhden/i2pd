@@ -28,6 +28,9 @@ namespace i18n
 	namespace chinese    { std::shared_ptr<const i2p::i18n::Locale> GetLocale (); }
 	namespace czech      { std::shared_ptr<const i2p::i18n::Locale> GetLocale (); }
 	namespace english    { std::shared_ptr<const i2p::i18n::Locale> GetLocale (); }
+	namespace esperanto  { std::shared_ptr<const i2p::i18n::Locale> GetLocale (); }
+	namespace filipino   { std::shared_ptr<const i2p::i18n::Locale> GetLocale (); }
+	namespace finnish    { std::shared_ptr<const i2p::i18n::Locale> GetLocale (); }
 	namespace french     { std::shared_ptr<const i2p::i18n::Locale> GetLocale (); }
 	namespace german     { std::shared_ptr<const i2p::i18n::Locale> GetLocale (); }
 	namespace hebrew     { std::shared_ptr<const i2p::i18n::Locale> GetLocale (); }
@@ -53,6 +56,9 @@ namespace i18n
 		{ "chinese", {"简体字", "zh-CN", i2p::i18n::chinese::GetLocale} },
 		{ "czech", {"čeština", "cs", i2p::i18n::czech::GetLocale} },
 		{ "english", {"English", "en", i2p::i18n::english::GetLocale} },
+		{ "esperanto", {"Esperanto", "eo", i2p::i18n::esperanto::GetLocale} },
+		{ "filipino", {"Wikang Filipino", "fil", i2p::i18n::filipino::GetLocale} },
+		{ "finnish", {"Suomi", "fi", i2p::i18n::finnish::GetLocale} },
 		{ "french", {"Français", "fr", i2p::i18n::french::GetLocale} },
 		{ "german", {"Deutsch", "de", i2p::i18n::german::GetLocale} },
 		{ "hebrew", {"עִבְרִית‎", "he", i2p::i18n::hebrew::GetLocale} },
