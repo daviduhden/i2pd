@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -979,7 +979,7 @@ namespace http {
 			  << "</b> ( " << cnt << " )</label>\r\n"
 			  << "<input type=\"checkbox\" id=\"slide_" << boost::algorithm::to_lower_copy(name) << "\" />\r\n"
 			  << "<div class=\"slidecontent list\">\r\n\r\n"
-			  << tmp_s.str () << "</div>\r\n</div>\r\n<br>\r\n\r\n";
+			  << tmp_s.str () << "</div>\r\n</div>\r\n";
 		}
 		if (!tmp_s6.str ().empty ())
 		{
@@ -987,7 +987,7 @@ namespace http {
 			  << "v6</b> ( " << cnt6 << " )</label>\r\n"
 			  << "<input type=\"checkbox\" id=\"slide_" << boost::algorithm::to_lower_copy(name) << "v6\" />\r\n"
 			  << "<div class=\"slidecontent list\">\r\n\r\n"
-			  << tmp_s6.str () << "</div>\r\n</div>\r\n<br>\r\n\r\n";
+			  << tmp_s6.str () << "</div>\r\n</div>\r\n";
 		}
 	}
 
