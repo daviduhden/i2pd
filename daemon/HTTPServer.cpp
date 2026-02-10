@@ -979,7 +979,7 @@ namespace http {
 			  << "</b> ( " << cnt << " )</label>\r\n"
 			  << "<input type=\"checkbox\" id=\"slide_" << boost::algorithm::to_lower_copy(name) << "\" />\r\n"
 			  << "<div class=\"slidecontent list\">\r\n\r\n"
-			  << tmp_s.str () << "</div>\r\n</br>\r\n</div>\r\n";
+			  << tmp_s.str () << "</div>\r\n<br>\r\n</div>\r\n";
 		}
 		if (!tmp_s6.str ().empty ())
 		{
@@ -987,7 +987,7 @@ namespace http {
 			  << "v6</b> ( " << cnt6 << " )</label>\r\n"
 			  << "<input type=\"checkbox\" id=\"slide_" << boost::algorithm::to_lower_copy(name) << "v6\" />\r\n"
 			  << "<div class=\"slidecontent list\">\r\n\r\n"
-			  << tmp_s6.str () << "</div>\r\n</br>\r\n</div>\r\n";
+			  << tmp_s6.str () << "</div>\r\n<br>\r\n</div>\r\n";
 		}
 	}
 
