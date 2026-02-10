@@ -1772,6 +1772,7 @@ namespace transport
 						m_RelayTag = 0; // not longer introducer
 				}
 			}
+			i2p::transport::transports.UpdatePeerParams (newRi);
 		}
 	}
 

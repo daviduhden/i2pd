@@ -1021,6 +1021,20 @@ namespace transport
 #endif
 	}
 
+	void Transports::UpdatePeerParams (std::shared_ptr<const i2p::data::RouterInfo> r)
+	{
+		if (!r) return;
+		std::shared_ptr<Peer> peer;
+		{
+			std::lock_guard<std::mutex> l(m_PeersMutex);
+			auto it = m_Peers.find (r->GetIdentHash ());
+			if (it != m_Peers.end ())
+				peer = it->second;
+		}
+		if (peer)
+			peer->UpdateParams (r);
+	}
+
 	void Transports::HandlePeerCleanupTimer (const boost::system::error_code& ecode)
 	{
 		if (ecode != boost::asio::error::operation_aborted)

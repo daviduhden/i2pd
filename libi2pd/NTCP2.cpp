@@ -1291,6 +1291,7 @@ namespace transport
 							if (remoteIdentity && remoteIdentity->GetIdentHash () == newRi->GetIdentHash ())
 								// peer's RouterInfo update
 								SetRemoteIdentity (newRi->GetIdentity ());
+							i2p::transport::transports.UpdatePeerParams (newRi);
 						}
 					}
 					else
