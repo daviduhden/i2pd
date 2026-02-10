@@ -145,7 +145,7 @@ namespace transport
 		{
 			isHighBandwidth = router->IsHighBandwidth ();
 			isEligible =(bool)router->GetCompatibleTransports (true) && // reachable
-				router->GetCongestion () != i2p::data::RouterInfo::eRejectAll && // accepts tunnel
+				router->GetCongestion () < i2p::data::RouterInfo::eHighCongestion && // accepts tunnel and not overloaded
 				router->IsECIES () && router->GetVersion () >= NETDB_MIN_HIGHBANDWIDTH_VERSION; // not too old
 		}
 	}
