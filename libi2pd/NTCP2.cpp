@@ -1090,6 +1090,12 @@ namespace transport
 		if (m_Server.AddNTCP2Session (shared_from_this (), true))
 		{
 			Established ();
+			if (ri1->GetCongestion () == i2p::data::RouterInfo::eRejectAll)
+			{
+				auto terminationTimeout = GetTerminationTimeout ()/2;
+				if (terminationTimeout < NTCP2_ESTABLISH_TIMEOUT) terminationTimeout = NTCP2_ESTABLISH_TIMEOUT;
+				SetTerminationTimeout (terminationTimeout);
+			}
 			ReceiveLength ();
 		}
 		else

@@ -1254,8 +1254,14 @@ namespace transport
 
 		// handle other blocks
 		HandlePayload (decryptedPayload.data () + riSize + 3, decryptedPayload.size () - riSize - 3);
-		Established ();
 
+		Established ();
+		if (ri->GetCongestion () == i2p::data::RouterInfo::eRejectAll)
+		{
+			auto terminationTimeout = GetTerminationTimeout ()/2;
+			if (terminationTimeout < SSU2_CONNECT_TIMEOUT) terminationTimeout = SSU2_CONNECT_TIMEOUT;
+			SetTerminationTimeout (terminationTimeout);
+		}
 		SendQuickAck ();
 
 		return true;
