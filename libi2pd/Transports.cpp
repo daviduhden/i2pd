@@ -1423,8 +1423,13 @@ namespace transport
 
 		if (ipv6 &&	i2p::util::net::GetClearnetIPV6Address ().is_unspecified ())
 		{
-			LogPrint(eLogWarning, "Transports: Clearnet ipv6 not found. Disabled");
-			ipv6 = false;
+			std::string ntcp2proxy; i2p::config::GetOption("ntcp2.proxy", ntcp2proxy);
+			std::string ssu2proxy; i2p::config::GetOption("ssu2.proxy", ssu2proxy);
+			if (ntcp2proxy.empty () && ssu2proxy.empty ())
+			{
+				LogPrint(eLogWarning, "Transports: Clearnet ipv6 not found. Disabled");
+				ipv6 = false;
+			}
 		}
 
 		if (!i2p::config::IsDefault("port"))
