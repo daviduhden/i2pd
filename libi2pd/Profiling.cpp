@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <list>
 #include <thread>
+#include <random>
 #include <iomanip>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
@@ -29,7 +30,8 @@ namespace data
 	static std::mutex g_ProfilesMutex;
 	static std::list<std::pair<i2p::data::IdentHash, std::function<void (std::shared_ptr<RouterProfile>)> > > g_PostponedUpdates;
 	static std::mutex g_PostponedUpdatesMutex;
-	
+	static std::mt19937 m_ProfilesRng(i2p::util::GetMonotonicMicroseconds () % 1000000LL);
+
 	RouterProfile::RouterProfile ():
 		m_IsUpdated (false), m_LastDeclineTime (0), m_LastUnreachableTime (0),
 		m_LastUpdateTime (i2p::util::GetSecondsSinceEpoch ()), m_LastAccessTime (0),
@@ -106,18 +108,18 @@ namespace data
 			auto ts = pt.get (PEER_PROFILE_LAST_UPDATE_TIMESTAMP, 0);
 			if (ts)
 				m_LastUpdateTime = ts;
-			else	
-			{	
-				// try old lastupdatetime 
+			else
+			{
+				// try old lastupdatetime
 				auto ut = pt.get (PEER_PROFILE_LAST_UPDATE_TIME, "");
 				if (ut.length () > 0)
-				{	
+				{
 					std::istringstream ss (ut); std::tm t;
 					ss >> std::get_time(&t, "%Y-%b-%d %H:%M:%S");
 					if (!ss.fail())
 						m_LastUpdateTime = mktime (&t); // t is local time
-				}	
-			}	
+				}
+			}
 			if (i2p::util::GetSecondsSinceEpoch () - m_LastUpdateTime < PEER_PROFILE_EXPIRATION_TIMEOUT)
 			{
 				m_LastUnreachableTime = pt.get (PEER_PROFILE_LAST_UNREACHABLE_TIME, 0);
@@ -186,7 +188,7 @@ namespace data
 		m_LastUnreachableTime = unreachable ? i2p::util::GetSecondsSinceEpoch () : 0;
 		UpdateTime ();
 	}
-		
+
 	void RouterProfile::Connected ()
 	{
 		m_HasConnected = true;
@@ -196,8 +198,8 @@ namespace data
 	void RouterProfile::Duplicated ()
 	{
 		m_IsDuplicated = true;
-	}	
-		
+	}
+
 	bool RouterProfile::IsLowPartcipationRate () const
 	{
 		return 4*m_NumTunnelsAgreed < m_NumTunnelsDeclined; // < 20% rate
@@ -223,15 +225,15 @@ namespace data
 		if (IsUnreachable () || m_IsDuplicated) return true;
 		auto ts = i2p::util::GetSecondsSinceEpoch ();
 		if (ts > PEER_PROFILE_MAX_DECLINED_INTERVAL + m_LastDeclineTime) return false;
-		if (IsDeclinedRecently (ts)) return true; 
-		auto isBad = IsAlwaysDeclining () || IsLowPartcipationRate () /*|| IsLowReplyRate ()*/;
-		if (isBad && m_NumTimesRejected > 10*(m_NumTimesTaken + 1))
+		if (IsDeclinedRecently (ts)) return true;
+		bool isBad = false;
+		if (IsAlwaysDeclining () && m_NumTunnelsDeclined)
+			isBad = m_ProfilesRng () % m_NumTunnelsDeclined; // only zero means not bad
+		if (!isBad && IsLowPartcipationRate ())
 		{
-			// reset profile
-			m_NumTunnelsAgreed = 0;
-			m_NumTunnelsDeclined = 0;
-			m_NumTunnelsNonReplied = 0;
-			isBad = false;
+			auto failed = m_NumTunnelsDeclined + m_NumTunnelsNonReplied - m_NumTunnelsAgreed;
+			if (failed > 0)
+				isBad = m_ProfilesRng () % failed; // only zero means not bad
 		}
 		if (isBad) m_NumTimesRejected++; else m_NumTimesTaken++;
 		return isBad;
@@ -247,7 +249,7 @@ namespace data
 		return (bool)m_LastUnreachableTime;
 	}
 
-	bool RouterProfile::IsUseful() const 
+	bool RouterProfile::IsUseful() const
 	{
 	    return IsReal () || m_NumTunnelsNonReplied >= PEER_PROFILE_USEFUL_THRESHOLD;
 	}
@@ -261,7 +263,7 @@ namespace data
 			{
 				it->second->SetLastAccessTime (i2p::util::GetSecondsSinceEpoch ());
 				return it->second;
-			}	
+			}
 		}
 		auto profile = netdb.NewRouterProfile ();
 		profile->Load (identHash); // if possible
@@ -277,7 +279,7 @@ namespace data
 		if (it != g_Profiles.end ())
 			return it->second->IsUnreachable ();
 		return false;
-	}	
+	}
 
 	bool IsRouterDuplicated (const IdentHash& identHash)
 	{
@@ -286,20 +288,20 @@ namespace data
 		if (it != g_Profiles.end ())
 			return it->second->IsDuplicated ();
 		return false;
-	}	
-		
+	}
+
 	void InitProfilesStorage ()
 	{
 		g_ProfilesStorage.SetPlace(i2p::fs::GetDataDir());
 		g_ProfilesStorage.Init(i2p::data::GetBase64SubstitutionTable(), 64);
 	}
-		
+
 	static void SaveProfilesToDisk (std::list<std::pair<i2p::data::IdentHash, std::shared_ptr<RouterProfile> > >&& profiles)
 	{
 		for (auto& it: profiles)
 			if (it.second) it.second->Save (it.first);
-	}	
-		
+	}
+
 	std::future<void> PersistProfiles ()
 	{
 		auto ts = i2p::util::GetSecondsSinceEpoch ();
@@ -313,7 +315,7 @@ namespace data
 					tmp.push_back (*it);
 					it->second->SetLastPersistTime (ts);
 					it->second->SetUpdated (false);
-				}	
+				}
 				if (!it->second->IsUpdated () && ts > std::max (it->second->GetLastUpdateTime (), it->second->GetLastAccessTime ()) + PEER_PROFILE_PERSIST_INTERVAL)
 					it = g_Profiles.erase (it);
 				else
@@ -342,24 +344,24 @@ namespace data
 	{
 		std::vector<std::string> files;
 		g_ProfilesStorage.Traverse(files);
-		
+
 		struct stat st;
 		std::time_t now = std::time(nullptr);
-		for (const auto& path: files) 
+		for (const auto& path: files)
 		{
-			if (stat(path.c_str(), &st) != 0) 
-			{	
+			if (stat(path.c_str(), &st) != 0)
+			{
 				LogPrint(eLogWarning, "Profiling: Can't stat(): ", path);
 				continue;
 			}
-			if (now - st.st_mtime >= PEER_PROFILE_EXPIRATION_TIMEOUT) 
+			if (now - st.st_mtime >= PEER_PROFILE_EXPIRATION_TIMEOUT)
 			{
 				LogPrint(eLogDebug, "Profiling: Removing expired peer profile: ", path);
 				i2p::fs::Remove(path);
 			}
 		}
-	}	
-		
+	}
+
 	std::future<void> DeleteObsoleteProfiles ()
 	{
 		{
@@ -391,12 +393,12 @@ namespace data
 		{
 			update (profile);
 			return true;
-		}	
+		}
 		// postpone
 		std::lock_guard<std::mutex> l(g_PostponedUpdatesMutex);
 		g_PostponedUpdates.emplace_back (identHash, update);
 		return false;
-	}	
+	}
 
 	static void ApplyPostponedUpdates (std::list<std::pair<i2p::data::IdentHash, std::function<void (std::shared_ptr<RouterProfile>)> > >&& updates)
 	{
@@ -404,9 +406,9 @@ namespace data
 		{
 			auto profile = GetRouterProfile (ident);
 			update (profile);
-		}	
-	}	
-		
+		}
+	}
+
 	std::future<void> FlushPostponedRouterProfileUpdates ()
 	{
 		if (g_PostponedUpdates.empty ()) return std::future<void>();
@@ -415,8 +417,8 @@ namespace data
 		{
 			std::lock_guard<std::mutex> l(g_PostponedUpdatesMutex);
 			g_PostponedUpdates.swap (updates);
-		}		
-		return std::async (std::launch::async, ApplyPostponedUpdates, std::move (updates));	
-	}	
+		}
+		return std::async (std::launch::async, ApplyPostponedUpdates, std::move (updates));
+	}
 }
 }
