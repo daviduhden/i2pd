@@ -129,7 +129,7 @@ namespace data
 					auto participations = pt.get_child (PEER_PROFILE_SECTION_PARTICIPATION);
 					m_NumTunnelsAgreed = participations.get (PEER_PROFILE_PARTICIPATION_AGREED, 0);
 					m_NumTunnelsDeclined = participations.get (PEER_PROFILE_PARTICIPATION_DECLINED, 0);
-					m_NumTunnelsNonReplied = participations.get (PEER_PROFILE_PARTICIPATION_NON_REPLIED, 0);
+					m_NumTunnelsNonReplied = participations.get (PEER_PROFILE_PARTICIPATION_NON_REPLIED, 0.0f);
 				}
 				catch (boost::property_tree::ptree_bad_path& ex)
 				{
@@ -173,11 +173,15 @@ namespace data
 		}
 	}
 
-	void RouterProfile::TunnelNonReplied ()
+	void RouterProfile::TunnelNonReplied (int tunnelLength)
 	{
-	    m_NumTunnelsNonReplied++;
+		if (!tunnelLength) return;
+		if (tunnelLength == 1)
+			m_NumTunnelsNonReplied++;
+		else
+			m_NumTunnelsNonReplied += 1.0f/tunnelLength;
 		UpdateTime ();
-		if (m_NumTunnelsNonReplied > 2*m_NumTunnelsAgreed && m_NumTunnelsNonReplied > 3)
+		if (m_NumTunnelsNonReplied > m_NumTunnelsAgreed + m_NumTunnelsDeclined && m_NumTunnelsNonReplied > 3)
 		{
 			m_LastDeclineTime = i2p::util::GetSecondsSinceEpoch ();
 		}
@@ -231,7 +235,7 @@ namespace data
 			isBad = m_ProfilesRng () % m_NumTunnelsDeclined; // only zero means not bad
 		if (!isBad && IsLowPartcipationRate ())
 		{
-			auto failed = m_NumTunnelsDeclined + m_NumTunnelsNonReplied - m_NumTunnelsAgreed;
+			auto failed = m_NumTunnelsDeclined + (int)m_NumTunnelsNonReplied - m_NumTunnelsAgreed;
 			if (failed > 0)
 				isBad = m_ProfilesRng () % failed; // only zero means not bad
 		}
