@@ -7,6 +7,7 @@
 */
 
 #include <string.h>
+#include <random>
 #include <fstream>
 #include <sstream>
 #include <boost/asio.hpp>
@@ -113,19 +114,30 @@ namespace data
 			return 0;
 		}
 
-		int reseedRetries = 0;
-		while (reseedRetries < 10)
+		int numReseeds = httpsReseedHostList.size () + yggReseedHostList.size ();
+		int reseedAttempts = std::min (numReseeds, MAX_NUM_RESEED_ATTEMPTS);
+		if (reseedAttempts)
 		{
-			auto ind = rand () % (httpsReseedHostList.size () + yggReseedHostList.size ());
-			bool isHttps = ind < httpsReseedHostList.size ();
-			std::string reseedUrl = isHttps ? httpsReseedHostList[ind] :
-				yggReseedHostList[ind - httpsReseedHostList.size ()];
-			reseedUrl += "i2pseeds.su3";
-			auto num = ReseedFromSU3Url (reseedUrl, isHttps);
-			if (num > 0) return num; // success
-			reseedRetries++;
+			std::mt19937 rng(i2p::util::GetMonotonicMicroseconds () % 1000000LL);
+			for (int i = 0; i < reseedAttempts; i++)
+			{
+				auto ind = rng () % numReseeds;
+				bool isHttps = ind < httpsReseedHostList.size ();
+				std::string reseedUrl = isHttps ? httpsReseedHostList[ind] :
+					yggReseedHostList[ind - httpsReseedHostList.size ()];
+				reseedUrl += "i2pseeds.su3";
+				auto num = ReseedFromSU3Url (reseedUrl, isHttps);
+				if (num > 0) return num; // success
+
+				if (isHttps)
+					httpsReseedHostList.erase (httpsReseedHostList.begin() + ind);
+				else
+					yggReseedHostList.erase (yggReseedHostList.begin() + (ind - httpsReseedHostList.size ()));
+				numReseeds--;
+				if (!numReseeds) break;
+			}
 		}
-		LogPrint (eLogWarning, "Reseed: Failed to reseed from servers after 10 attempts");
+		LogPrint (eLogWarning, "Reseed: Failed to reseed from ", numReseeds, " servers after ", reseedAttempts, " attempts");
 		return 0;
 	}
 
