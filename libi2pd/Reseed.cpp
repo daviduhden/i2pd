@@ -686,10 +686,17 @@ namespace data
 					}
 					if (supported)
 					{
-						s.lowest_layer().connect (ep, ecode);
+						s.lowest_layer().async_connect (ep,
+							[&ecode](const boost::system::error_code& ec)
+							{
+								ecode = ec;
+							});
+						service.run_for (std::chrono::seconds (RESEED_CONNECT_TIMEOUT));
+						if (!service.stopped()) s.lowest_layer().close ();
+
 						if (!ecode)
 						{
-							LogPrint (eLogDebug, "Reseed: Resolved to ", ep.address ());
+							LogPrint (eLogDebug, "Reseed: Connected to ", ep.address ());
 							connected = true;
 							break;
 						}
@@ -801,13 +808,17 @@ namespace data
 			for (const auto& it: endpoints)
 			{
 				boost::asio::ip::tcp::endpoint ep = it;
-				if (
-					i2p::util::net::IsYggdrasilAddress (ep.address ()) &&
-					i2p::context.SupportsMesh ()
-				)
+				if (i2p::util::net::IsYggdrasilAddress (ep.address ()) && i2p::context.SupportsMesh ())
 				{
 					LogPrint (eLogDebug, "Reseed: Yggdrasil: Resolved to ", ep.address ());
-					s.connect (ep, ecode);
+					s.async_connect (ep,
+						[&ecode](const boost::system::error_code& ec)
+						{
+							ecode = ec;
+						});
+					service.run_for (std::chrono::seconds (2*RESEED_CONNECT_TIMEOUT));
+					if (!service.stopped()) s.close ();
+
 					if (!ecode)
 					{
 						connected = true;
