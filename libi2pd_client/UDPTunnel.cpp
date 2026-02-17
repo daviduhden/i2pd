@@ -208,7 +208,7 @@ namespace client
 						options.Put (UDP_SESSION_FLAGS, UDP_SESSION_FLAG_RESET_PATH | UDP_SESSION_FLAG_ACK_REQUESTED);
 						auto session = GetDatagramSession ();
 						session->DropSharedRoutingPath ();
-						GetDatagramDestination ()->SendDatagram (session, nullptr, 0, 0, 0, &options);
+						m_Destination->SendDatagram (session, nullptr, 0, 0, 0, &options);
 					}
 				});
 		}
@@ -227,16 +227,27 @@ namespace client
 		m_UnackedDatagrams.erase (m_UnackedDatagrams.begin (), it);
 	}
 
+	std::shared_ptr<i2p::datagram::DatagramSession> UDPConnection::GetDatagramSession ()
+	{
+		auto session = m_LastDatagramSession.lock ();
+		if (!session && isIdentity)
+		{
+			session = m_Destination->GetSession (Identity);
+			m_LastDatagramSession = session;
+		}
+		return session;
+	}
+
 	UDPSession::UDPSession(boost::asio::ip::udp::endpoint localEndpoint,
 		const std::shared_ptr<i2p::client::ClientDestination> & localDestination,
 		const boost::asio::ip::udp::endpoint& endpoint, const i2p::data::IdentHash& to,
 		uint16_t ourPort, uint16_t theirPort) :
-		UDPConnection (localDestination->GetService()),
-		m_Destination(localDestination->GetDatagramDestination()),
-		IPSocket(localDestination->GetService(), localEndpoint), Identity (to),
+		UDPConnection (localDestination->GetService(), localDestination->GetDatagramDestination()),
+		IPSocket(localDestination->GetService(), localEndpoint),
 		SendEndpoint(endpoint), LastActivity(i2p::util::GetMillisecondsSinceEpoch()),
 		LastRepliableDatagramTime (0), LocalPort(ourPort), RemotePort(theirPort)
 	{
+		SetIdentity (to);
 		Start ();
 		IPSocket.set_option (boost::asio::socket_base::receive_buffer_size (I2P_UDP_MAX_MTU ));
 		IPSocket.non_blocking (true);
@@ -313,17 +324,6 @@ namespace client
 			LogPrint(eLogError, "UDPSession: ", ecode.message());
 	}
 
-	std::shared_ptr<i2p::datagram::DatagramSession> UDPSession::GetDatagramSession ()
-	{
-		auto session = m_LastDatagramSession.lock ();
-		if (!session)
-		{
-			session = m_Destination->GetSession (Identity);
-			m_LastDatagramSession = session;
-		}
-		return session;
-	}
-
 	I2PUDPServerTunnel::I2PUDPServerTunnel (const std::string & name, std::shared_ptr<i2p::client::ClientDestination> localDestination,
 		const boost::asio::ip::address& localAddress, const boost::asio::ip::udp::endpoint& forwardTo, uint16_t inPort, bool gzip) :
 		m_IsUniqueLocal (true), m_Name (name), m_LocalAddress (localAddress),
@@ -389,7 +389,7 @@ namespace client
 		const boost::asio::ip::udp::endpoint& localEndpoint,
 		std::shared_ptr<i2p::client::ClientDestination> localDestination,
 		uint16_t remotePort, bool gzip, i2p::datagram::DatagramVersion datagramVersion) :
-		UDPConnection (localDestination->GetService ()),
+		UDPConnection (localDestination->GetService (), localDestination->GetDatagramDestination ()),
 		m_Name (name), m_RemoteDest (remoteDest), m_LocalDest (localDestination), m_LocalEndpoint (localEndpoint),
 		m_ResolveThread (nullptr), m_LocalSocket (nullptr), RemotePort (remotePort),
 		m_LastPort (0), m_cancel_resolve (false), m_Gzip (gzip), m_DatagramVersion (datagramVersion),
@@ -414,6 +414,7 @@ namespace client
 		m_LocalSocket->non_blocking (true);
 
 		auto dgram = m_LocalDest->CreateDatagramDestination (m_Gzip, m_DatagramVersion);
+		m_Destination = dgram;
 		dgram->SetReceiver (std::bind (&I2PUDPClientTunnel::HandleRecvFromI2P, this,
 			std::placeholders::_1, std::placeholders::_2,
 			std::placeholders::_3, std::placeholders::_4,
@@ -451,7 +452,6 @@ namespace client
 			delete m_ResolveThread;
 			m_ResolveThread = nullptr;
 		}
-		m_RemoteAddr = nullptr;
 		UDPConnection::Stop ();
 	}
 
@@ -472,7 +472,7 @@ namespace client
 			RecvFromLocal (); // Restart listener and continue work
 			return;
 		}
-		if (!m_RemoteAddr || !m_RemoteAddr->IsIdentHash ())  // TODO: handle B33
+		if (!isIdentity)
 		{
 			LogPrint (eLogWarning, "UDP Client: Remote endpoint not resolved yet");
 			RecvFromLocal ();
@@ -499,7 +499,7 @@ namespace client
 		}
 		// send off to remote i2p destination
 		auto ts = i2p::util::GetMillisecondsSinceEpoch ();
-		LogPrint (eLogDebug, "UDP Client: Send ", transferred, " to ", m_RemoteAddr->identHash.ToBase32 (), ":", RemotePort);
+		LogPrint (eLogDebug, "UDP Client: Send ", transferred, " to ", Identity.ToBase32 (), ":", RemotePort);
 		auto session = GetDatagramSession ();
 		uint64_t repliableDatagramInterval = I2P_UDP_REPLIABLE_DATAGRAM_INTERVAL;
 		if (m_RTT && m_RTT >= I2P_UDP_REPLIABLE_DATAGRAM_INTERVAL && m_RTT < I2P_UDP_REPLIABLE_DATAGRAM_INTERVAL*10) repliableDatagramInterval = m_RTT/10; // 10 - 100 ms
@@ -543,7 +543,7 @@ namespace client
 			numPackets++;
 		}
 		if (numPackets)
-			LogPrint (eLogDebug, "UDP Client: Sent ", numPackets, " more packets to ", m_RemoteAddr->identHash.ToBase32 ());
+			LogPrint (eLogDebug, "UDP Client: Sent ", numPackets, " more packets to ", Identity.ToBase32 ());
 		m_NextSendPacketNum += numPackets + 1;
 		m_LocalDest->GetDatagramDestination ()->FlushSendQueue (session);
 
@@ -565,7 +565,8 @@ namespace client
 		i2p::util::SetThreadName ("UDP Resolver");
 		LogPrint (eLogInfo, "UDP Tunnel: Trying to resolve ", m_RemoteDest);
 
-		while (!(m_RemoteAddr = context.GetAddressBook().GetAddress(m_RemoteDest)) && !m_cancel_resolve)
+		std::shared_ptr<const Address> remoteAddr;
+		while (!(remoteAddr = context.GetAddressBook().GetAddress(m_RemoteDest)) && !m_cancel_resolve)
 		{
 			LogPrint (eLogWarning, "UDP Tunnel: Failed to lookup ", m_RemoteDest);
 			std::this_thread::sleep_for (std::chrono::seconds (1));
@@ -575,29 +576,24 @@ namespace client
 			LogPrint(eLogError, "UDP Tunnel: Lookup of ", m_RemoteDest, " was cancelled");
 			return;
 		}
-		if (!m_RemoteAddr)
+		if (!remoteAddr)
 		{
 			LogPrint (eLogError, "UDP Tunnel: ", m_RemoteDest, " not found");
 			return;
 		}
-		LogPrint(eLogInfo, "UDP Tunnel: Resolved ", m_RemoteDest, " to ", m_RemoteAddr->identHash.ToBase32 ());
-	}
-
-	std::shared_ptr<i2p::datagram::DatagramSession> I2PUDPClientTunnel::GetDatagramSession ()
-	{
-		auto session = m_LastDatagramSession.lock ();
-		if (!session)
+		if (!remoteAddr->IsIdentHash ()) // TODO: handle B33
 		{
-			session = m_LocalDest->GetDatagramDestination ()->GetSession (m_RemoteAddr->identHash);
-			m_LastDatagramSession = session;
+			LogPrint (eLogError, "UDP Tunnel: ", m_RemoteDest, " resolved to invalid address type");
+			return;
 		}
-		return session;
+		LogPrint(eLogInfo, "UDP Tunnel: Resolved ", m_RemoteDest, " to ", remoteAddr->identHash.ToBase32 ());
+		SetIdentity (remoteAddr->identHash);
 	}
 
 	void I2PUDPClientTunnel::HandleRecvFromI2P (const i2p::data::IdentityEx& from, uint16_t fromPort, uint16_t toPort,
 		const uint8_t * buf, size_t len, const i2p::util::Mapping * options)
 	{
-		if (m_RemoteAddr && from.GetIdentHash() == m_RemoteAddr->identHash)
+		if (isIdentity && from.GetIdentHash() == Identity)
 		{
 			if (options)
 			{
@@ -632,7 +628,7 @@ namespace client
 			// found convo
 			if (len > 0)
 			{
-				LogPrint (eLogDebug, "UDP Client: Got ", len, "B from ", m_RemoteAddr ? m_RemoteAddr->identHash.ToBase32 () : "");
+				LogPrint (eLogDebug, "UDP Client: Got ", len, "B from ", isIdentity ? Identity.ToBase32 () : "");
 				boost::system::error_code ec;
 				m_LocalSocket->send_to (boost::asio::buffer (buf, len), itr->second->first, 0, ec);
 				if (!ec)
