@@ -521,15 +521,15 @@ namespace client
 					options.Put (UDP_SESSION_ACKED, m_LastReceivedPacketNum);
 				if (flags)
 					options.Put (UDP_SESSION_FLAGS, flags);
-				m_LocalDest->GetDatagramDestination ()->SendDatagram (session, m_RecvBuff, transferred, remotePort, RemotePort, &options);
+				m_Destination->SendDatagram (session, m_RecvBuff, transferred, remotePort, RemotePort, &options);
 				if (m_IsFirstPacket) m_IsSendingAllowed = false; // send only one packet at the start and wait ack
 			}
 			else
-				m_LocalDest->GetDatagramDestination ()->SendDatagram (session, m_RecvBuff, transferred, remotePort, RemotePort);
+				m_Destination->SendDatagram (session, m_RecvBuff, transferred, remotePort, RemotePort);
 			m_LastRepliableDatagramTime = ts;
 		}
 		else
-			m_LocalDest->GetDatagramDestination ()->SendRawDatagram (session, m_RecvBuff, transferred, remotePort, RemotePort);
+			m_Destination->SendRawDatagram (session, m_RecvBuff, transferred, remotePort, RemotePort);
 		size_t numPackets = 0;
 		while (numPackets < i2p::datagram::DATAGRAM_SEND_QUEUE_MAX_SIZE)
 		{
@@ -539,13 +539,13 @@ namespace client
 			transferred = m_LocalSocket->receive_from (boost::asio::buffer (m_RecvBuff, I2P_UDP_MAX_MTU), m_RecvEndpoint, 0, ec);
 			remotePort = m_RecvEndpoint.port ();
 			// TODO: check remotePort
-			m_LocalDest->GetDatagramDestination ()->SendRawDatagram (session, m_RecvBuff, transferred, remotePort, RemotePort);
+			m_Destination->SendRawDatagram (session, m_RecvBuff, transferred, remotePort, RemotePort);
 			numPackets++;
 		}
 		if (numPackets)
 			LogPrint (eLogDebug, "UDP Client: Sent ", numPackets, " more packets to ", Identity.ToBase32 ());
 		m_NextSendPacketNum += numPackets + 1;
-		m_LocalDest->GetDatagramDestination ()->FlushSendQueue (session);
+		m_Destination->FlushSendQueue (session);
 
 		// mark convo as active
 		if (m_LastSession)
