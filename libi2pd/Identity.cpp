@@ -599,7 +599,7 @@ namespace data
 			// override signing private key
 			m_TransientSigningPrivateKeyLen = transientVerifier->GetPrivateKeyLen ();
 			if (m_TransientSigningPrivateKeyLen + ret > len) return 0;
-			if (m_TransientSigningPrivateKeyLen > 128) m_SigningPrivateKey.resize (m_TransientSigningPrivateKeyLen);
+			if (m_TransientSigningPrivateKeyLen > m_SigningPrivateKey.size ()) m_SigningPrivateKey.resize (m_TransientSigningPrivateKeyLen);
 			memcpy (m_SigningPrivateKey.data (), buf + ret, m_TransientSigningPrivateKeyLen);
 			ret += m_TransientSigningPrivateKeyLen;
 			CreateSigner (keyType);
