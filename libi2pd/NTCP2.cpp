@@ -651,7 +651,7 @@ namespace transport
 
 	void NTCP2Session::SendSessionRequest ()
 	{
-		if (!m_Establisher->CreateSessionRequestMessage (m_Server.GetRng ()))
+		if (!m_Establisher->CreateSessionRequestMessage (m_Server.GetEstablisherRng ()))
 		{
 			LogPrint (eLogWarning, "NTCP2: Send SessionRequest KDF failed");
 			boost::asio::post (m_Server.GetService (), std::bind (&NTCP2Session::Terminate, shared_from_this ()));
@@ -787,7 +787,7 @@ namespace transport
 
 	void NTCP2Session::SendSessionCreated ()
 	{
-		if (!m_Establisher->CreateSessionCreatedMessage (m_Server.GetRng ()))
+		if (!m_Establisher->CreateSessionCreatedMessage (m_Server.GetEstablisherRng ()))
 		{
 			LogPrint (eLogWarning, "NTCP2: Send SessionCreated KDF failed");
 			boost::asio::post (m_Server.GetService (), std::bind (&NTCP2Session::Terminate, shared_from_this ()));
@@ -1697,6 +1697,7 @@ namespace transport
 		RunnableServiceWithWork ("NTCP2"), m_TerminationTimer (GetService ()),
 		m_ProxyType(eNoProxy), m_Resolver(GetService ()),
 		m_Rng(i2p::util::GetMonotonicMicroseconds ()%1000000LL),
+		m_EstablisherService (m_Rng ()),
 		m_Version (2)
 	{
 	}

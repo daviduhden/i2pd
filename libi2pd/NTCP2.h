@@ -263,10 +263,16 @@ namespace transport
 			{
 				public:
 
-					EstablisherService (): RunnableServiceWithWork ("NTCP2e") {};
+					EstablisherService (uint32_t seed): RunnableServiceWithWork ("NTCP2e"),
+						m_Rng (seed) {};
 					auto& GetService () { return GetIOService (); };
+					std::mt19937& GetRng () { return m_Rng; };
 					void Start () { StartIOService (); };
 					void Stop () { StopIOService (); };
+
+				private:
+
+					std::mt19937 m_Rng;
 			};
 
 		public:
@@ -286,6 +292,7 @@ namespace transport
 			auto& GetService () { return GetIOService (); };
 			auto& GetEstablisherService () { return m_EstablisherService.GetService (); };
 			std::mt19937& GetRng () { return m_Rng; };
+			std::mt19937& GetEstablisherRng () { return m_EstablisherService.GetRng (); };
 			void AEADChaCha20Poly1305Encrypt (const std::vector<std::pair<uint8_t *, size_t> >& bufs,
 				const uint8_t * key, const uint8_t * nonce, uint8_t * mac);
 			bool AEADChaCha20Poly1305Decrypt (const uint8_t * msg, size_t msgLen, const uint8_t * ad, size_t adLen,
