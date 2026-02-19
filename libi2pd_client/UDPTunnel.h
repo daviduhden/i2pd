@@ -40,6 +40,7 @@ namespace client
 	{
 		i2p::datagram::DatagramDestination * m_Destination;
 		std::weak_ptr<i2p::datagram::DatagramSession> m_LastDatagramSession;
+		uint64_t m_LastRepliableDatagramTime; // millseconds
 		i2p::data::IdentHash Identity;
 		bool isIdentity = false;
 		uint32_t m_NextSendPacketNum = 1, m_LastReceivedPacketNum = 0;
@@ -52,7 +53,7 @@ namespace client
 		bool m_IsFirstPacket = true;
 
 		UDPConnection (boost::asio::io_context& service, i2p::datagram::DatagramDestination * destination):
-			m_Destination (destination), m_AckTimer (service) {};
+			m_Destination (destination), m_LastRepliableDatagramTime (0), m_AckTimer (service) {};
 		void SetIdentity (const i2p::data::IdentHash& ident) { Identity = ident; isIdentity = true; };
 
 		virtual ~UDPConnection () { Stop (); };
@@ -71,7 +72,7 @@ namespace client
 		boost::asio::ip::udp::socket IPSocket;
 		boost::asio::ip::udp::endpoint FromEndpoint;
 		boost::asio::ip::udp::endpoint SendEndpoint;
-		uint64_t LastActivity, LastRepliableDatagramTime; // milliseconds
+		uint64_t LastActivity; // milliseconds
 
 		uint16_t LocalPort;
 		uint16_t RemotePort;
@@ -210,7 +211,6 @@ namespace client
 			bool m_Gzip;
 			i2p::datagram::DatagramVersion m_DatagramVersion;
 			std::shared_ptr<UDPConvo> m_LastSession;
-			uint64_t m_LastRepliableDatagramTime; // millseconds
 
 		public:
 
