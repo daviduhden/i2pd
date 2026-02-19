@@ -59,7 +59,9 @@ namespace tunnel
 			m_InboundVariance = (m_NumInboundHops < STANDARD_NUM_RECORDS) ? STANDARD_NUM_RECORDS - m_NumInboundHops : 0;
 		if (m_OutboundVariance > 0 && m_NumOutboundHops + m_OutboundVariance > STANDARD_NUM_RECORDS)
 			m_OutboundVariance = (m_NumOutboundHops < STANDARD_NUM_RECORDS) ? STANDARD_NUM_RECORDS - m_NumOutboundHops : 0;
-		m_NextManageTime = i2p::util::GetSecondsSinceEpoch () + rand () % TUNNEL_POOL_MANAGE_INTERVAL;
+		auto ts = i2p::util::GetSecondsSinceEpoch ();
+		m_LastTunnelTestTime = ts;
+		m_NextManageTime = ts + rand () % TUNNEL_POOL_MANAGE_INTERVAL;
 	}
 
 	TunnelPool::~TunnelPool ()
@@ -294,6 +296,11 @@ namespace tunnel
 
 	void TunnelPool::CreateTunnels ()
 	{
+		CreateTunnels (i2p::util::GetSecondsSinceEpoch ());
+	}
+
+	void TunnelPool::CreateTunnels (uint64_t ts)
+	{
 		int num = 0;
 		{
 			std::unique_lock<std::mutex> l(m_OutboundTunnelsMutex);
@@ -305,7 +312,7 @@ namespace tunnel
 		{
 			if (num > TUNNEL_POOL_MAX_NUM_BUILD_REQUESTS) num = TUNNEL_POOL_MAX_NUM_BUILD_REQUESTS;
 			for (int i = 0; i < num; i++)
-				CreateOutboundTunnel ();
+				CreateOutboundTunnel (ts);
 		}
 
 		num = 0;
@@ -330,14 +337,14 @@ namespace tunnel
 		{
 			if (num > TUNNEL_POOL_MAX_NUM_BUILD_REQUESTS) num = TUNNEL_POOL_MAX_NUM_BUILD_REQUESTS;
 			for (int i = 0; i < num; i++)
-				CreateInboundTunnel ();
+				CreateInboundTunnel (ts);
 		}
 
 		if (num < m_NumInboundTunnels && m_NumInboundHops <= 0 && m_LocalDestination) // zero hops IB
 			m_LocalDestination->SetLeaseSetUpdated (true); // update LeaseSet immediately
 	}
 
-	void TunnelPool::TestTunnels ()
+	void TunnelPool::TestTunnels (uint64_t ts)
 	{
 		decltype(m_Tests) tests;
 		{
@@ -360,7 +367,7 @@ namespace tunnel
 					else
 					{
 						it.second.first->SetState (eTunnelStateTestFailed);
-						CreateOutboundTunnel (); // create new tunnel immediately because last one failed
+						CreateOutboundTunnel (ts); // create new tunnel immediately because last one failed
 					}
 				}
 				else if (it.second.first->GetState () != eTunnelStateExpiring)
@@ -383,7 +390,7 @@ namespace tunnel
 							else
 							{
 								it.second.second->SetState (eTunnelStateTestFailed);
-								CreateInboundTunnel (); // create new tunnel immediately because last one failed
+								CreateInboundTunnel (ts); // create new tunnel immediately because last one failed
 							}
 						}
 						if (failed && m_LocalDestination)
@@ -423,6 +430,10 @@ namespace tunnel
 			newTests.push_back(std::make_pair (*it1, *it2));
 			++it1; ++it2;
 		}
+		if (!newTests.empty ())
+			m_LastTunnelTestTime = ts;
+		else
+			return;
 		bool isECIES = m_LocalDestination->SupportsEncryptionType (i2p::data::CRYPTO_KEY_TYPE_ECIES_X25519_AEAD);
 		for (auto& it: newTests)
 		{
@@ -472,8 +483,8 @@ namespace tunnel
 	{
 		if (ts > m_NextManageTime || ts + 2*TUNNEL_POOL_MANAGE_INTERVAL < m_NextManageTime) // in case if clock was adjusted
 		{
-			CreateTunnels ();
-			TestTunnels ();
+			CreateTunnels (ts);
+			TestTunnels (ts);
 			m_NextManageTime = ts + TUNNEL_POOL_MANAGE_INTERVAL + (tunnels.GetRng ()() % TUNNEL_POOL_MANAGE_INTERVAL)/2;
 		}
 	}
@@ -732,13 +743,15 @@ namespace tunnel
 		return r;
 	}
 
-	void TunnelPool::CreateInboundTunnel ()
+	void TunnelPool::CreateInboundTunnel (uint64_t ts)
 	{
 		LogPrint (eLogDebug, "Tunnels: Creating destination inbound tunnel...");
 		Path path;
 		if (SelectPeers (path, true))
 		{
-			auto outboundTunnel = GetNextOutboundTunnel (nullptr, path.farEndTransports);
+			// if we didn't run tunnel tests for a long time outbound tunnels might be dead
+			auto outboundTunnel = (ts < m_LastTunnelTestTime + TUNNEL_POOL_TUNNEL_TESTS_VALIDITY_INTERVAL) ?
+				GetNextOutboundTunnel (nullptr, path.farEndTransports) : nullptr;
 			if (!outboundTunnel)
 				outboundTunnel = tunnels.GetNextOutboundTunnel ();
 			std::shared_ptr<TunnelConfig> config;
@@ -757,12 +770,15 @@ namespace tunnel
 
 	void TunnelPool::RecreateInboundTunnel (std::shared_ptr<InboundTunnel> tunnel)
 	{
+		auto ts = i2p::util::GetSecondsSinceEpoch ();
 		if (IsExploratory () || tunnel->IsSlow ()) // always create new exploratory tunnel or if slow
 		{
-			CreateInboundTunnel ();
+			CreateInboundTunnel (ts);
 			return;
 		}
-		auto outboundTunnel = GetNextOutboundTunnel (nullptr, tunnel->GetFarEndTransports ());
+		// if we didn't run tunnel tests for a long time outbound tunnels might be dead
+		auto outboundTunnel = (ts < m_LastTunnelTestTime + TUNNEL_POOL_TUNNEL_TESTS_VALIDITY_INTERVAL) ?
+			GetNextOutboundTunnel (nullptr, tunnel->GetFarEndTransports ()) : nullptr;
 		if (!outboundTunnel)
 			outboundTunnel = tunnels.GetNextOutboundTunnel ();
 		LogPrint (eLogDebug, "Tunnels: Re-creating destination inbound tunnel...");
@@ -784,13 +800,15 @@ namespace tunnel
 		}
 	}
 
-	void TunnelPool::CreateOutboundTunnel ()
+	void TunnelPool::CreateOutboundTunnel (uint64_t ts)
 	{
 		LogPrint (eLogDebug, "Tunnels: Creating destination outbound tunnel...");
 		Path path;
 		if (SelectPeers (path, false))
 		{
-			auto inboundTunnel = GetNextInboundTunnel (nullptr, path.farEndTransports);
+			 // if we didn't run tunnel tests for a long time inbound tunnels might be dead
+			auto inboundTunnel = (ts < m_LastTunnelTestTime + TUNNEL_POOL_TUNNEL_TESTS_VALIDITY_INTERVAL) ?
+				GetNextInboundTunnel (nullptr, path.farEndTransports) : nullptr;
 			if (!inboundTunnel)
 				inboundTunnel = tunnels.GetNextInboundTunnel ();
 			if (!inboundTunnel)
@@ -825,12 +843,15 @@ namespace tunnel
 
 	void TunnelPool::RecreateOutboundTunnel (std::shared_ptr<OutboundTunnel> tunnel)
 	{
+		auto ts = i2p::util::GetSecondsSinceEpoch ();
 		if (IsExploratory () || tunnel->IsSlow ()) // always create new exploratory tunnel or if slow
 		{
-			CreateOutboundTunnel ();
+			CreateOutboundTunnel (ts);
 			return;
 		}
-		auto inboundTunnel = GetNextInboundTunnel (nullptr, tunnel->GetFarEndTransports ());
+		// if we didn't run tunnel tests for a long time inbound tunnels might be dead
+		auto inboundTunnel = (ts < m_LastTunnelTestTime + TUNNEL_POOL_TUNNEL_TESTS_VALIDITY_INTERVAL) ?
+			GetNextInboundTunnel (nullptr, tunnel->GetFarEndTransports ()) : nullptr;
 		if (!inboundTunnel)
 			inboundTunnel = tunnels.GetNextInboundTunnel ();
 		if (inboundTunnel)
