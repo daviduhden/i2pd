@@ -271,7 +271,7 @@ namespace config {
 				"https://reseed-pl.i2pd.xyz/,"
 				"https://www2.mk16.de/,"
 			    "https://i2p.novg.net/,"
-            	"https://reseed.stormycloud.org,"
+            	"https://reseed.stormycloud.org/,"
             	"https://reseed.sahil.world/,"
             	"https://i2p.diyarciftci.xyz/"
 			),                                                            "Reseed URLs, separated by comma")
