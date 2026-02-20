@@ -954,10 +954,7 @@ namespace transport
 					return;
 				}
 				if (!session->IsOutgoing ()) // incoming
-				{
-					std::list<std::shared_ptr<I2NPMessage> > msgs{ CreateDatabaseStoreMsg () };
-					session->SendI2NPMessages (msgs); // send DatabaseStore
-				}
+					session->SendLocalRouterInfo (); // send DatabaseStore
 				auto r = i2p::data::netdb.FindRouter (ident); // router should be in netdb after SessionConfirmed
 				i2p::data::UpdateRouterProfile (ident,
 					[](std::shared_ptr<i2p::data::RouterProfile> profile)
