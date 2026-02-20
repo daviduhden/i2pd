@@ -28,7 +28,7 @@ namespace i2p
 namespace tunnel
 {
 	const int TUNNEL_POOL_MANAGE_INTERVAL = 10; // in seconds
-	const int TUNNEL_POOL_TUNNEL_TESTS_VALIDITY_INTERVAL = 3*TUNNEL_POOL_MANAGE_INTERVAL; // in seconds
+	const int TUNNEL_POOL_TUNNEL_CREATED_RECENTLY_INTERVAL = 120; // in seconds
 	const int TUNNEL_POOL_MAX_INBOUND_TUNNELS_QUANTITY = 16;
 	const int TUNNEL_POOL_MAX_OUTBOUND_TUNNELS_QUANTITY = 16;
 	const int TUNNEL_POOL_MAX_NUM_BUILD_REQUESTS = 3;
@@ -148,7 +148,7 @@ namespace tunnel
 			mutable std::mutex m_TestsMutex;
 			std::map<uint32_t, std::pair<std::shared_ptr<OutboundTunnel>, std::shared_ptr<InboundTunnel> > > m_Tests;
 			bool m_IsActive, m_IsHighBandwidth;
-			uint64_t m_NextManageTime, m_LastTunnelTestTime; // in seconds
+			uint64_t m_NextManageTime; // in seconds
 			std::mutex m_CustomPeerSelectorMutex;
 			ITunnelPeerSelector * m_CustomPeerSelector;
 

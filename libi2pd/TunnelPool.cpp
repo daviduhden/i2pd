@@ -59,9 +59,7 @@ namespace tunnel
 			m_InboundVariance = (m_NumInboundHops < STANDARD_NUM_RECORDS) ? STANDARD_NUM_RECORDS - m_NumInboundHops : 0;
 		if (m_OutboundVariance > 0 && m_NumOutboundHops + m_OutboundVariance > STANDARD_NUM_RECORDS)
 			m_OutboundVariance = (m_NumOutboundHops < STANDARD_NUM_RECORDS) ? STANDARD_NUM_RECORDS - m_NumOutboundHops : 0;
-		auto ts = i2p::util::GetSecondsSinceEpoch ();
-		m_LastTunnelTestTime = ts;
-		m_NextManageTime = ts + rand () % TUNNEL_POOL_MANAGE_INTERVAL;
+		m_NextManageTime = i2p::util::GetSecondsSinceEpoch () + rand () % TUNNEL_POOL_MANAGE_INTERVAL;
 	}
 
 	TunnelPool::~TunnelPool ()
@@ -414,6 +412,7 @@ namespace tunnel
 				if (it->IsEstablished ())
 					outboundTunnels.push_back (it);
 		}
+		if (outboundTunnels.empty ()) return;
 		std::shuffle (outboundTunnels.begin(), outboundTunnels.end(), tunnels.GetRng ());
 		std::vector<std::shared_ptr<InboundTunnel> > inboundTunnels;
 		{
@@ -422,6 +421,7 @@ namespace tunnel
 				if (it->IsEstablished ())
 					inboundTunnels.push_back (it);
 		}
+		if (inboundTunnels.empty ()) return;
 		std::shuffle (inboundTunnels.begin(), inboundTunnels.end(), tunnels.GetRng ());
 		auto it1 = outboundTunnels.begin ();
 		auto it2 = inboundTunnels.begin ();
@@ -430,10 +430,6 @@ namespace tunnel
 			newTests.push_back(std::make_pair (*it1, *it2));
 			++it1; ++it2;
 		}
-		if (!newTests.empty ())
-			m_LastTunnelTestTime = ts;
-		else
-			return;
 		bool isECIES = m_LocalDestination->SupportsEncryptionType (i2p::data::CRYPTO_KEY_TYPE_ECIES_X25519_AEAD);
 		for (auto& it: newTests)
 		{
@@ -749,9 +745,10 @@ namespace tunnel
 		Path path;
 		if (SelectPeers (path, true))
 		{
-			// if we didn't run tunnel tests for a long time outbound tunnels might be dead
-			auto outboundTunnel = (ts < m_LastTunnelTestTime + TUNNEL_POOL_TUNNEL_TESTS_VALIDITY_INTERVAL) ?
-				GetNextOutboundTunnel (nullptr, path.farEndTransports) : nullptr;
+			 // if we are out of inbound tunnels and last outbound was not create recently most like it's dead
+			auto outboundTunnel =  (!m_InboundTunnels.empty () || (!m_OutboundTunnels.empty () &&
+				ts < (*m_OutboundTunnels.begin ())->GetCreationTime () + TUNNEL_POOL_TUNNEL_CREATED_RECENTLY_INTERVAL)) ?
+					GetNextOutboundTunnel (nullptr, path.farEndTransports) : nullptr;
 			if (!outboundTunnel)
 				outboundTunnel = tunnels.GetNextOutboundTunnel ();
 			std::shared_ptr<TunnelConfig> config;
@@ -770,15 +767,12 @@ namespace tunnel
 
 	void TunnelPool::RecreateInboundTunnel (std::shared_ptr<InboundTunnel> tunnel)
 	{
-		auto ts = i2p::util::GetSecondsSinceEpoch ();
 		if (IsExploratory () || tunnel->IsSlow ()) // always create new exploratory tunnel or if slow
 		{
-			CreateInboundTunnel (ts);
+			CreateInboundTunnel (i2p::util::GetSecondsSinceEpoch ());
 			return;
 		}
-		// if we didn't run tunnel tests for a long time outbound tunnels might be dead
-		auto outboundTunnel = (ts < m_LastTunnelTestTime + TUNNEL_POOL_TUNNEL_TESTS_VALIDITY_INTERVAL) ?
-			GetNextOutboundTunnel (nullptr, tunnel->GetFarEndTransports ()) : nullptr;
+		auto outboundTunnel = GetNextOutboundTunnel (nullptr, tunnel->GetFarEndTransports ());
 		if (!outboundTunnel)
 			outboundTunnel = tunnels.GetNextOutboundTunnel ();
 		LogPrint (eLogDebug, "Tunnels: Re-creating destination inbound tunnel...");
@@ -806,9 +800,10 @@ namespace tunnel
 		Path path;
 		if (SelectPeers (path, false))
 		{
-			 // if we didn't run tunnel tests for a long time inbound tunnels might be dead
-			auto inboundTunnel = (ts < m_LastTunnelTestTime + TUNNEL_POOL_TUNNEL_TESTS_VALIDITY_INTERVAL) ?
-				GetNextInboundTunnel (nullptr, path.farEndTransports) : nullptr;
+			 // if we are out of outbound tunnels and last inbound was not create recently most like it's dead
+			auto inboundTunnel = (!m_OutboundTunnels.empty () || (!m_InboundTunnels.empty () &&
+				ts < (*m_InboundTunnels.begin ())->GetCreationTime () + TUNNEL_POOL_TUNNEL_CREATED_RECENTLY_INTERVAL)) ?
+					GetNextInboundTunnel (nullptr, path.farEndTransports) : nullptr;
 			if (!inboundTunnel)
 				inboundTunnel = tunnels.GetNextInboundTunnel ();
 			if (!inboundTunnel)
@@ -843,15 +838,12 @@ namespace tunnel
 
 	void TunnelPool::RecreateOutboundTunnel (std::shared_ptr<OutboundTunnel> tunnel)
 	{
-		auto ts = i2p::util::GetSecondsSinceEpoch ();
 		if (IsExploratory () || tunnel->IsSlow ()) // always create new exploratory tunnel or if slow
 		{
-			CreateOutboundTunnel (ts);
+			CreateOutboundTunnel (i2p::util::GetSecondsSinceEpoch ());
 			return;
 		}
-		// if we didn't run tunnel tests for a long time inbound tunnels might be dead
-		auto inboundTunnel = (ts < m_LastTunnelTestTime + TUNNEL_POOL_TUNNEL_TESTS_VALIDITY_INTERVAL) ?
-			GetNextInboundTunnel (nullptr, tunnel->GetFarEndTransports ()) : nullptr;
+		auto inboundTunnel = GetNextInboundTunnel (nullptr, tunnel->GetFarEndTransports ());
 		if (!inboundTunnel)
 			inboundTunnel = tunnels.GetNextInboundTunnel ();
 		if (inboundTunnel)
