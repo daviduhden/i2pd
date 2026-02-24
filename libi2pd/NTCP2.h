@@ -31,8 +31,8 @@ namespace transport
 
 	const size_t NTCP2_UNENCRYPTED_FRAME_MAX_SIZE = 65519;
 	const size_t NTCP2_SEND_AFTER_FRAME_SIZE = 16386; // send frame when exceeds this size
-	const size_t NTCP2_SESSION_REQUEST_MAX_SIZE = 287; // without ML-KEM frame
-	const size_t NTCP2_SESSION_CREATED_MAX_SIZE = 287;
+	const size_t NTCP2_SESSION_HANDSHAKE_MAX_SIZE = 287; // SessionRequest/SesionCreated without ML-KEM frame
+	const size_t NTCP2_SESSION_HANDSHAKE_LONG_MAX_SIZE = 1248; // 1248 = 1184(MLKEM768 key len) + 64
 	const int NTCP2_MAX_PADDING_RATIO = 6; // in %
 
 	const int NTCP2_CONNECT_TIMEOUT = 5; // 5 seconds
@@ -128,13 +128,13 @@ namespace transport
 
 #if OPENSSL_PQ
         std::unique_ptr<i2p::crypto::MLKEMKeys> m_PQKeys;
-        uint8_t m_Buffer[NTCP2_SESSION_REQUEST_MAX_SIZE + i2p::crypto::MLKEM1024_KEY_LENGTH + 16],
+        uint8_t m_Buffer[NTCP2_SESSION_HANDSHAKE_LONG_MAX_SIZE + i2p::crypto::MLKEM1024_KEY_LENGTH + 16],
 #else
-		uint8_t m_Buffer[NTCP2_SESSION_REQUEST_MAX_SIZE], // for SessionRequest and SessionCreated
+		uint8_t m_Buffer[NTCP2_SESSION_HANDSHAKE_LONG_MAX_SIZE], // for SessionRequest and SessionCreated
 #endif
             * m_SessionConfirmedBuffer;
 		size_t m_BufferLen;
-
+		bool m_IsLongPadding;
 	};
 
 	class NTCP2Server;

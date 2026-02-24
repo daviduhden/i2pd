@@ -34,7 +34,7 @@ namespace i2p
 namespace transport
 {
 	NTCP2Establisher::NTCP2Establisher ():
-		m_SessionConfirmedBuffer (nullptr), m_BufferLen (0)
+		m_SessionConfirmedBuffer (nullptr), m_BufferLen (0), m_IsLongPadding (false)
 	{
         SetVersion (2);
 	}
@@ -168,7 +168,7 @@ namespace transport
 		offset += 32;
 		// encryption key for next block
 		if (!KDF1Alice ()) return false;
-		size_t maxMsgLength = NTCP2_SESSION_REQUEST_MAX_SIZE;
+		size_t maxMsgLength = m_IsLongPadding ? NTCP2_SESSION_HANDSHAKE_LONG_MAX_SIZE : NTCP2_SESSION_HANDSHAKE_MAX_SIZE;
 #if OPENSSL_PQ
         if (m_PQKeys)
         {
@@ -239,7 +239,7 @@ namespace transport
 		offset += 32;
 		// encryption key for next block (m_K)
 		if (!KDF2Bob ()) return false;
-		size_t maxMsgLength = NTCP2_SESSION_CREATED_MAX_SIZE;
+		size_t maxMsgLength = m_IsLongPadding ? NTCP2_SESSION_HANDSHAKE_LONG_MAX_SIZE : NTCP2_SESSION_HANDSHAKE_MAX_SIZE;
 #if OPENSSL_PQ
         if (m_PQKeys)
         {
@@ -380,6 +380,7 @@ namespace transport
 				paddingLen = bufbe16toh (options + 2);
 				m_BufferLen = paddingLen + offset;
 				// actual padding is not known yet, apply MixHash later
+				if (m_BufferLen > NTCP2_SESSION_HANDSHAKE_MAX_SIZE) m_IsLongPadding = true;
 				m3p2Len = bufbe16toh (options + 4);
 				if (m3p2Len < 16)
 				{
@@ -529,6 +530,7 @@ namespace transport
                 if (m_Server.GetVersion () > 2) // we support post quantum in config
                     m_Establisher->SetVersion (addr->v);
 #endif
+				if (addr->v > 2) m_Establisher->m_IsLongPadding = true;
 			}
 			else
 				LogPrint (eLogWarning, "NTCP2: Missing NTCP2 address");
@@ -726,9 +728,9 @@ namespace transport
 			else if (paddingLen > 0)
 			{
 #if OPENSSL_PQ
-                if (len + paddingLen <= NTCP2_SESSION_REQUEST_MAX_SIZE + i2p::crypto::MLKEM1024_KEY_LENGTH + 16)
+                if (len + paddingLen <= NTCP2_SESSION_HANDSHAKE_LONG_MAX_SIZE + i2p::crypto::MLKEM1024_KEY_LENGTH + 16)
 #else
-				if (len + paddingLen <= NTCP2_SESSION_REQUEST_MAX_SIZE) // session request is 287 bytes max
+				if (len + paddingLen <= NTCP2_SESSION_HANDSHAKE_LONG_MAX_SIZE)
 #endif
 				{
 					boost::asio::async_read (m_Socket, boost::asio::buffer(m_Establisher->m_Buffer + len, paddingLen), boost::asio::transfer_all (),
@@ -825,7 +827,11 @@ namespace transport
 		{
 			if (paddingLen > 0)
 			{
-				if (paddingLen <= NTCP2_SESSION_CREATED_MAX_SIZE - 64) // session created is 287 bytes max
+#if OPENSSL_PQ
+				if (paddingLen <= NTCP2_SESSION_HANDSHAKE_LONG_MAX_SIZE + i2p::crypto::MLKEM1024_KEY_LENGTH - 48)
+#else
+				if (paddingLen <= NTCP2_SESSION_HANDSHAKE_LONG_MAX_SIZE - 64)
+#endif
 				{
 					boost::asio::async_read (m_Socket, boost::asio::buffer(m_Establisher->m_Buffer + m_Establisher->m_BufferLen, paddingLen), boost::asio::transfer_all (),
 						std::bind(&NTCP2Session::HandleSessionCreatedPaddingReceived, shared_from_this (), std::placeholders::_1, std::placeholders::_2));
@@ -1622,7 +1628,7 @@ namespace transport
 
 	void NTCP2Session::ReadSomethingAndTerminate ()
 	{
-		size_t len = m_Server.GetRng ()() % NTCP2_SESSION_REQUEST_MAX_SIZE;
+		size_t len = m_Server.GetRng ()() % NTCP2_SESSION_HANDSHAKE_MAX_SIZE;
 		if (len > 0 && m_Establisher)
 			boost::asio::async_read (m_Socket, boost::asio::buffer(m_Establisher->m_Buffer, len), boost::asio::transfer_all (),
 				[s = shared_from_this()](const boost::system::error_code& ecode, size_t bytes_transferred)
