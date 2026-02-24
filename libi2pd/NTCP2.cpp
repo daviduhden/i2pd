@@ -168,7 +168,9 @@ namespace transport
 		offset += 32;
 		// encryption key for next block
 		if (!KDF1Alice ()) return false;
-		size_t maxMsgLength = m_IsLongPadding ? NTCP2_SESSION_HANDSHAKE_LONG_MAX_SIZE : NTCP2_SESSION_HANDSHAKE_MAX_SIZE;
+		size_t maxPaddingLength = m_IsLongPadding ? NTCP2_SESSION_HANDSHAKE_LONG_MAX_SIZE : NTCP2_SESSION_HANDSHAKE_MAX_SIZE;
+		maxPaddingLength -= 64;
+		size_t maxMsgSize = m_MaxMsgSize;
 #if OPENSSL_PQ
         if (m_PQKeys)
         {
@@ -184,11 +186,15 @@ namespace transport
 			}
 			MixHash (m_Buffer + offset, keyLen + 16); // h = SHA256(h || ciphertext)
 			offset += keyLen + 16;
-			maxMsgLength += keyLen + 16;
+			maxPaddingLength = offset + 32; // 32 bytes following options block size
+			// adjust max msg size because we might send smaller message that we can receive
+			maxMsgSize = NTCP2_SESSION_HANDSHAKE_LONG_MAX_SIZE + i2p::crypto::MLKEM1024_KEY_LENGTH + 16;
+			if (maxMsgSize > m_MaxMsgSize) maxMsgSize = m_MaxMsgSize;
         }
 #endif
         // calculate padding length
-		auto paddingLength = (offset + 32 < maxMsgLength) ? (rng () % (maxMsgLength - offset - 32)) : 0; // 32 bytes following options block size
+        if (offset + 32 + maxPaddingLength > maxMsgSize) maxPaddingLength = maxMsgSize - offset - 32;
+		auto paddingLength = maxPaddingLength ? rng () % maxPaddingLength : 0;
 		// fill options
 		uint8_t options[32]; // actual options size is 16 bytes
 		memset (options, 0, 16);
@@ -239,7 +245,9 @@ namespace transport
 		offset += 32;
 		// encryption key for next block (m_K)
 		if (!KDF2Bob ()) return false;
-		size_t maxMsgLength = m_IsLongPadding ? NTCP2_SESSION_HANDSHAKE_LONG_MAX_SIZE : NTCP2_SESSION_HANDSHAKE_MAX_SIZE;
+		size_t maxPaddingLength = m_IsLongPadding ? NTCP2_SESSION_HANDSHAKE_LONG_MAX_SIZE : NTCP2_SESSION_HANDSHAKE_MAX_SIZE;
+		maxPaddingLength -= 64;
+		size_t maxMsgSize = m_MaxMsgSize;
 #if OPENSSL_PQ
         if (m_PQKeys)
         {
@@ -255,13 +263,18 @@ namespace transport
 			MixHash (m_Buffer + offset, cipherTextLen + 16); // encrypt ML-KEM frame
 			MixKey (sharedSecret);
             offset += cipherTextLen + 16;
+            maxPaddingLength= offset + 32; // 32 bytes following options block size
+			// adjust max msg size because we might send smaller message that we can receive
+			maxMsgSize = NTCP2_SESSION_HANDSHAKE_LONG_MAX_SIZE + i2p::crypto::MLKEM1024_KEY_LENGTH + 16;
+			if (maxMsgSize > m_MaxMsgSize) maxMsgSize = m_MaxMsgSize;
         }
 #endif
-         // calculate padding length
-		auto paddingLen = (offset + 32 < maxMsgLength) ? (rng () % (maxMsgLength - offset - 32)) : 0; // 32 bytes following options block size
+		// calculate padding length
+		if (offset + 32 + maxPaddingLength > maxMsgSize) maxPaddingLength = maxMsgSize - offset - 32;
+		auto paddingLength = maxPaddingLength ? rng () % maxPaddingLength : 0;
 		uint8_t options[16];
 		memset (options, 0, 16);
-		htobe16buf (options + 2, paddingLen); // padLen
+		htobe16buf (options + 2, paddingLength); // padLen
 		htobe32buf (options + 8, (i2p::util::GetMillisecondsSinceEpoch () + 500)/1000); // tsB, rounded to seconds
 		// encrypt options
 		if (!Encrypt (options, m_Buffer + offset, 16))
@@ -272,12 +285,12 @@ namespace transport
 		MixHash (m_Buffer + offset, 32);	// encrypted options
 		offset += 32;
         // padding
-        if (paddingLen)
+        if (paddingLength)
         {
-            RAND_bytes (m_Buffer + offset, paddingLen);
-            MixHash (m_Buffer + offset, paddingLen);
+            RAND_bytes (m_Buffer + offset, paddingLength);
+            MixHash (m_Buffer + offset, paddingLength);
         }
-        m_BufferLen = offset + paddingLen;
+        m_BufferLen = offset + paddingLength;
 		return true;
 	}
 
@@ -530,7 +543,7 @@ namespace transport
                 if (m_Server.GetVersion () > 2) // we support post quantum in config
                     m_Establisher->SetVersion (addr->v);
 #endif
-				if (addr->v > 2) m_Establisher->m_IsLongPadding = true;
+				//if (addr->v > 2) m_Establisher->m_IsLongPadding = true; // TODO: check router version
 			}
 			else
 				LogPrint (eLogWarning, "NTCP2: Missing NTCP2 address");
@@ -727,11 +740,7 @@ namespace transport
 #endif
 			else if (paddingLen > 0)
 			{
-#if OPENSSL_PQ
-                if (len + paddingLen <= NTCP2_SESSION_HANDSHAKE_LONG_MAX_SIZE + i2p::crypto::MLKEM1024_KEY_LENGTH + 16)
-#else
-				if (len + paddingLen <= NTCP2_SESSION_HANDSHAKE_LONG_MAX_SIZE)
-#endif
+				if (len + paddingLen <= m_Establisher->m_MaxMsgSize)
 				{
 					boost::asio::async_read (m_Socket, boost::asio::buffer(m_Establisher->m_Buffer + len, paddingLen), boost::asio::transfer_all (),
 						std::bind(&NTCP2Session::HandleSessionRequestPaddingReceived, shared_from_this (), std::placeholders::_1, std::placeholders::_2));
@@ -828,9 +837,9 @@ namespace transport
 			if (paddingLen > 0)
 			{
 #if OPENSSL_PQ
-				if (paddingLen <= NTCP2_SESSION_HANDSHAKE_LONG_MAX_SIZE + i2p::crypto::MLKEM1024_KEY_LENGTH - 48)
+				if (paddingLen <= m_Establisher->m_MaxMsgSize - 80)
 #else
-				if (paddingLen <= NTCP2_SESSION_HANDSHAKE_LONG_MAX_SIZE - 64)
+				if (paddingLen <= m_Establisher->m_MaxMsgSize - 64)
 #endif
 				{
 					boost::asio::async_read (m_Socket, boost::asio::buffer(m_Establisher->m_Buffer + m_Establisher->m_BufferLen, paddingLen), boost::asio::transfer_all (),
