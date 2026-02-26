@@ -11,6 +11,7 @@
 
 #include <memory>
 #include <functional>
+#include <atomic>
 #include <map>
 #include <set>
 #include <list>
@@ -374,7 +375,7 @@ namespace transport
 			i2p::data::RouterInfo::CompatibleTransports m_RemoteTransports, m_RemotePeerTestTransports;
 			int m_RemoteVersion;
 			uint64_t m_DestConnID, m_SourceConnID;
-			SSU2SessionState m_State;
+			std::atomic<SSU2SessionState> m_State;
 			uint8_t m_KeyDataSend[64], m_KeyDataReceive[64];
 			uint32_t m_SendPacketNum, m_ReceivePacketNum, m_LastDatetimeSentPacketNum;
 			std::set<uint32_t> m_OutOfSequencePackets; // packet nums > receive packet num
@@ -392,7 +393,7 @@ namespace transport
 			size_t m_WindowSize, m_RTO;
 			uint32_t m_RelayTag; // between Bob and Charlie
 			OnEstablished m_OnEstablished; // callback from Established
-			boost::asio::deadline_timer m_ConnectTimer;
+			boost::asio::steady_timer m_ConnectTimer;
 			SSU2TerminationReason m_TerminationReason;
 			size_t m_MaxPayloadSize;
 			std::unique_ptr<std::pair<uint64_t, boost::asio::ip::udp::endpoint> > m_PathChallenge;

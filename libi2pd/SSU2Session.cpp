@@ -142,7 +142,7 @@ namespace transport
 	void SSU2Session::ScheduleConnectTimer ()
 	{
 		m_ConnectTimer.cancel ();
-		m_ConnectTimer.expires_from_now (boost::posix_time::seconds(SSU2_CONNECT_TIMEOUT));
+		m_ConnectTimer.expires_after (std::chrono::seconds(SSU2_CONNECT_TIMEOUT));
 		m_ConnectTimer.async_wait (std::bind (&SSU2Session::HandleConnectTimer,
 			shared_from_this (), std::placeholders::_1));
 	}
@@ -282,9 +282,9 @@ namespace transport
 
 	void SSU2Session::Terminate ()
 	{
-		if (m_State != eSSU2SessionStateTerminated)
+		auto state = m_State.exchange (eSSU2SessionStateTerminated);
+		if (state != eSSU2SessionStateTerminated)
 		{
-			m_State = eSSU2SessionStateTerminated;
 			m_ConnectTimer.cancel ();
 			m_OnEstablished = nullptr;
 			if (m_RelayTag)
