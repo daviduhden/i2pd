@@ -233,9 +233,10 @@ namespace data
 		bool isBad = false;
 		if (IsAlwaysDeclining () && m_NumTunnelsDeclined)
 			isBad = m_ProfilesRng () % m_NumTunnelsDeclined; // only zero means not bad
-		if (!isBad && IsLowPartcipationRate ())
+		else if (IsLowPartcipationRate ())
 		{
-			auto failed = m_NumTunnelsDeclined + (int)m_NumTunnelsNonReplied - m_NumTunnelsAgreed;
+			auto failed = m_NumTunnelsDeclined + (int)m_NumTunnelsNonReplied;
+			if (m_NumTunnelsAgreed > 0) failed /= m_NumTunnelsAgreed;
 			if (failed > 0)
 				isBad = m_ProfilesRng () % failed; // only zero means not bad
 		}
