@@ -15,6 +15,7 @@
 #include <map>
 #include <array>
 #include <random>
+#include <atomic>
 #include <openssl/bn.h>
 #include <openssl/evp.h>
 #include <boost/asio.hpp>
@@ -222,7 +223,7 @@ namespace transport
 			NTCP2Server& m_Server;
 			boost::asio::ip::tcp::socket m_Socket;
 			boost::asio::ip::tcp::endpoint m_RemoteEndpoint;
-			bool m_IsEstablished, m_IsTerminated;
+			std::atomic<bool> m_IsEstablished, m_IsTerminated;
 
 			std::unique_ptr<NTCP2Establisher> m_Establisher;
 			// data phase

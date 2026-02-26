@@ -563,9 +563,9 @@ namespace transport
 
 	void NTCP2Session::Terminate ()
 	{
-		if (!m_IsTerminated)
+		bool isTerminated = m_IsTerminated.exchange (true);
+		if (!isTerminated)
 		{
-			m_IsTerminated = true;
 			m_IsEstablished = false;
 			boost::system::error_code ec;
 			m_Socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
