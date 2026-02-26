@@ -529,7 +529,8 @@ namespace transport
 #endif
 		m_NextReceivedLen (0), m_NextReceivedBuffer (nullptr), m_NextSendBuffer (nullptr),
 		m_NextReceivedBufferSize (0), m_ReceiveSequenceNumber (0), m_SendSequenceNumber (0),
-		m_IsSending (false), m_IsReceiving (false), m_NextPaddingSize (16)
+		m_IsSending (false), m_IsReceiving (false), m_NextRouterInfoResendTime (0),
+		m_NextPaddingSize (16)
 	{
 		if (in_RemoteRouter) // Alice
 		{
@@ -548,8 +549,6 @@ namespace transport
 			else
 				LogPrint (eLogWarning, "NTCP2: Missing NTCP2 address");
 		}
-		m_NextRouterInfoResendTime = i2p::util::GetSecondsSinceEpoch () + NTCP2_ROUTERINFO_RESEND_INTERVAL +
-			m_Server.GetRng ()() % NTCP2_ROUTERINFO_RESEND_INTERVAL_THRESHOLD;
 	}
 
 	NTCP2Session::~NTCP2Session ()
@@ -614,6 +613,8 @@ namespace transport
 		m_IsEstablished = true;
 		m_Establisher.reset (nullptr);
 		SetTerminationTimeout (NTCP2_TERMINATION_TIMEOUT + m_Server.GetRng ()() % NTCP2_TERMINATION_TIMEOUT_VARIANCE);
+		m_NextRouterInfoResendTime = i2p::util::GetSecondsSinceEpoch () + NTCP2_ROUTERINFO_RESEND_INTERVAL +
+			m_Server.GetRng ()() % NTCP2_ROUTERINFO_RESEND_INTERVAL_THRESHOLD;
 		SendQueue ();
 		transports.PeerConnected (shared_from_this ());
 	}
@@ -1489,7 +1490,7 @@ namespace transport
 			UpdateNumSentBytes (bytes_transferred);
 			i2p::transport::transports.UpdateSentBytes (bytes_transferred);
 			LogPrint (eLogDebug, "NTCP2: Next frame sent ", bytes_transferred);
-			if (GetLastActivityTimestamp () > m_NextRouterInfoResendTime)
+			if (GetLastActivityTimestamp () > m_NextRouterInfoResendTime && m_NextRouterInfoResendTime)
 			{
 				m_NextRouterInfoResendTime += NTCP2_ROUTERINFO_RESEND_INTERVAL +
 					m_Server.GetRng ()() % NTCP2_ROUTERINFO_RESEND_INTERVAL_THRESHOLD;
