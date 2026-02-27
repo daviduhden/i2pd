@@ -44,6 +44,8 @@ namespace transport
 	const int SSU2_MAX_NUM_RECEIVED_I2NP_MSGIDS = 5000; // how many msgID we store for duplicates check
 	const int SSU2_RECEIVED_I2NP_MSGIDS_CLEANUP_TIMEOUT = 10; // in seconds
 	const int SSU2_DECAY_INTERVAL = 20; // in seconds
+	const int SSU2_ROUTERINFO_RESEND_INTERVAL = 20*60*1000; // in milliseconds
+	const int SSU2_ROUTERINFO_RESEND_INTERVAL_VARIANCE = 30*60*1000; // in milliseconds
 	const size_t SSU2_MIN_WINDOW_SIZE = 16; // in packets
 	const size_t SSU2_MAX_WINDOW_SIZE = 256; // in packets
 	const size_t SSU2_MIN_RTO = 100; // in milliseconds
@@ -398,7 +400,7 @@ namespace transport
 			size_t m_MaxPayloadSize;
 			std::unique_ptr<std::pair<uint64_t, boost::asio::ip::udp::endpoint> > m_PathChallenge;
 			std::unordered_map<uint32_t, uint32_t> m_ReceivedI2NPMsgIDs; // msgID -> timestamp in seconds
-			uint64_t m_LastResendTime, m_LastResendAttemptTime; // in milliseconds
+			uint64_t m_LastResendTime, m_LastResendAttemptTime, m_NextRouterInfoResendTime; // in milliseconds
 			int m_NumRanges;
 			uint8_t m_Ranges[SSU2_MAX_NUM_ACK_RANGES*2]; // ranges sent with previous Ack if any
 	};

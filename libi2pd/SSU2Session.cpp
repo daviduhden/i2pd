@@ -92,7 +92,7 @@ namespace transport
 		m_RTO (SSU2_INITIAL_RTO), m_RelayTag (0),m_ConnectTimer (server.GetService ()),
 		m_TerminationReason (eSSU2TerminationReasonNormalClose),
 		m_MaxPayloadSize (SSU2_MIN_PACKET_SIZE - IPV6_HEADER_SIZE - UDP_HEADER_SIZE - 32), // min size
-		m_LastResendTime (0), m_LastResendAttemptTime (0), m_NumRanges (0)
+		m_LastResendTime (0), m_LastResendAttemptTime (0), m_NextRouterInfoResendTime(0), m_NumRanges (0)
 	{
 		if (noise)
 			m_NoiseState.reset (new i2p::crypto::NoiseSymmetricState);
@@ -335,6 +335,8 @@ namespace transport
 		m_SentHandshakePacket.reset (nullptr);
 		m_ConnectTimer.cancel ();
 		SetTerminationTimeout (SSU2_TERMINATION_TIMEOUT);
+		m_NextRouterInfoResendTime = i2p::util::GetMillisecondsSinceEpoch () +
+			SSU2_ROUTERINFO_RESEND_INTERVAL + m_Server.GetRng ()() % SSU2_ROUTERINFO_RESEND_INTERVAL_VARIANCE;
 		SendQueue ();
 		transports.PeerConnected (shared_from_this ());
 
@@ -605,6 +607,12 @@ namespace transport
 			ResendHandshakePacket ();
 			m_SentHandshakePacket->sendTime = ts;
 			return 0;
+		}
+		// schedule resend local RouterInfo
+		if (m_NextRouterInfoResendTime && ts > m_NextRouterInfoResendTime)
+		{
+			SendLocalRouterInfo (true);
+			m_NextRouterInfoResendTime = ts + SSU2_ROUTERINFO_RESEND_INTERVAL + m_Server.GetRng ()() % SSU2_ROUTERINFO_RESEND_INTERVAL_VARIANCE;
 		}
 		// resend data packets
 		if (m_SentPackets.empty ()) return 0;
