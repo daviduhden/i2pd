@@ -544,7 +544,8 @@ namespace transport
                 if (m_Server.GetVersion () > 2) // we support post quantum in config
                     m_Establisher->SetVersion (addr->v);
 #endif
-				//if (addr->v > 2) m_Establisher->m_IsLongPadding = true; // TODO: check router version
+				if (addr->v > 2 && in_RemoteRouter->GetVersion () >= MAKE_VERSION_NUMBER(0, 9, 69)) // 0.9.69
+					m_Establisher->m_IsLongPadding = true;
 			}
 			else
 				LogPrint (eLogWarning, "NTCP2: Missing NTCP2 address");
@@ -614,7 +615,7 @@ namespace transport
 		m_Establisher.reset (nullptr);
 		SetTerminationTimeout (NTCP2_TERMINATION_TIMEOUT + m_Server.GetRng ()() % NTCP2_TERMINATION_TIMEOUT_VARIANCE);
 		m_NextRouterInfoResendTime = i2p::util::GetSecondsSinceEpoch () + NTCP2_ROUTERINFO_RESEND_INTERVAL +
-			m_Server.GetRng ()() % NTCP2_ROUTERINFO_RESEND_INTERVAL_THRESHOLD;
+			m_Server.GetRng ()() % NTCP2_ROUTERINFO_RESEND_INTERVAL_VARIANCE;
 		SendQueue ();
 		transports.PeerConnected (shared_from_this ());
 	}
@@ -1493,7 +1494,7 @@ namespace transport
 			if (GetLastActivityTimestamp () > m_NextRouterInfoResendTime && m_NextRouterInfoResendTime)
 			{
 				m_NextRouterInfoResendTime += NTCP2_ROUTERINFO_RESEND_INTERVAL +
-					m_Server.GetRng ()() % NTCP2_ROUTERINFO_RESEND_INTERVAL_THRESHOLD;
+					m_Server.GetRng ()() % NTCP2_ROUTERINFO_RESEND_INTERVAL_VARIANCE;
 				SendRouterInfo ();
 			}
 			else
