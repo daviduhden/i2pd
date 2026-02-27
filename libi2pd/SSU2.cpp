@@ -775,7 +775,11 @@ namespace transport
 				!i2p::transport::transports.IsBanned (senderEndpoint.address ()))
 			{
 				// assume new incoming session
-				auto queueSize = m_ReceivedPacketsQueue.size ();
+				size_t queueSize = 0;
+				{
+					std::lock_guard<std::mutex> l(m_ReceivedPacketsQueueMutex);
+					queueSize = m_ReceivedPacketsQueue.size ();
+				}
 				if (queueSize < SSU2_STOP_ACCEPTING_NEW_SESSIONS_QUEUE_SIZE)
 				{
 					auto session = std::make_shared<SSU2Session> (*this);
