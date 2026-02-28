@@ -1438,7 +1438,7 @@ namespace data
 			if (address.IsSSU2 ())
 			{
 				// write mtu
-				if (address.ssu && address.ssu->mtu)
+				if (address.ssu && address.ssu->mtu && address.ssu->mtu < (int)i2p::transport::SSU2_MAX_PACKET_SIZE) // omit if mtu = 1500
 				{
 					WriteString ("mtu", properties);
 					properties << '=';
