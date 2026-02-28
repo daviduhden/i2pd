@@ -287,13 +287,12 @@ namespace util
 			}
 			if(!restricted)
 				LogPrint(eLogError, "Daemon: No trusted routers of families specified");
-		}
-
-		bool hidden; i2p::config::GetOption("trust.hidden", hidden);
-		if (hidden)
-		{
-			LogPrint(eLogInfo, "Daemon: Hidden mode enabled");
-			i2p::context.SetHidden(true);
+			bool hidden; i2p::config::GetOption("trust.hidden", hidden);
+			if (hidden)
+			{
+				LogPrint(eLogInfo, "Daemon: Hidden mode enabled");
+				i2p::context.SetHidden(true);
+			}
 		}
 
 		std::string httpLang; i2p::config::GetOption("http.lang", httpLang);
