@@ -19,6 +19,7 @@
 #include "Log.h"
 #include "Timestamp.h"
 #include "NetDb.hpp"
+#include "Tunnel.h"
 #include "Profiling.h"
 
 namespace i2p
@@ -228,18 +229,19 @@ namespace data
 	{
 		if (IsUnreachable () || m_IsDuplicated) return true;
 		auto ts = i2p::util::GetSecondsSinceEpoch ();
-		if (ts > PEER_PROFILE_MAX_DECLINED_INTERVAL + m_LastDeclineTime) return false;
 		if (IsDeclinedRecently (ts)) return true;
-		bool isBad = false;
-		if (IsAlwaysDeclining () && m_NumTunnelsDeclined)
-			isBad = m_ProfilesRng () % m_NumTunnelsDeclined; // only zero means not bad
-		else if (IsLowPartcipationRate ())
+		bool checkIsKnown = i2p::tunnel::tunnels.GetPreciseTunnelCreationSuccessRate () < (m_ProfilesRng () % 100);
+		if (checkIsKnown)
 		{
-			auto failed = m_NumTunnelsDeclined + (int)m_NumTunnelsNonReplied;
-			if (m_NumTunnelsAgreed > 0) failed /= m_NumTunnelsAgreed;
-			if (failed > 0)
-				isBad = m_ProfilesRng () % failed; // only zero means not bad
+			if (!m_NumTunnelsAgreed && !m_NumTunnelsDeclined)
+			return true;
 		}
+		bool isBad = false;
+		auto total = m_NumTunnelsAgreed + m_NumTunnelsDeclined;
+		if (total)
+			isBad = m_NumTunnelsAgreed < m_ProfilesRng () % total;
+		else if ((int)m_NumTunnelsNonReplied)
+			isBad = m_ProfilesRng () % (int)m_NumTunnelsNonReplied;
 		if (isBad) m_NumTimesRejected++; else m_NumTimesTaken++;
 		return isBad;
 	}
