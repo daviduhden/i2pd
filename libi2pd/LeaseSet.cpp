@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -321,7 +321,7 @@ namespace data
 		if (readIdentity || !GetIdentity ())
 		{
 			identity = netdb.NewIdentity (buf, len);
-			if (!identity) return;
+			if (!identity || !identity->GetFullLen ()) return;
 			SetIdentity (identity);
 		}
 		else
@@ -401,8 +401,12 @@ namespace data
 	{
 		size_t offset = 0;
 		// properties
-		uint16_t propertiesLen = bufbe16toh (buf + offset); offset += 2;
-		offset += propertiesLen; // skip for now. TODO: implement properties
+		if (offset + 2 > len) return 0;
+		m_Properties.CleanUp ();
+		uint16_t propertiesLen = bufbe16toh (buf + offset);
+		if (propertiesLen)
+			m_Properties.FromBuffer (buf + offset, len - offset);
+		offset += propertiesLen + 2;
 		// key sections
 		CryptoKeyType preferredKeyType = m_EncryptionType;
 		m_EncryptionType = 0;
