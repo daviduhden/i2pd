@@ -12,6 +12,7 @@
 #include "Log.h"
 #include "RouterContext.h"
 #include "Transports.h"
+#include "Timestamp.h"
 #include "TunnelGateway.h"
 
 namespace i2p
@@ -190,10 +191,11 @@ namespace tunnel
 			{
 				m_NonZeroRandomBuffer = std::make_unique<std::array<uint8_t, TUNNEL_DATA_MAX_PAYLOAD_SIZE> >();
 				RAND_bytes (m_NonZeroRandomBuffer->data(), TUNNEL_DATA_MAX_PAYLOAD_SIZE);
+				m_Rng = std::make_unique<std::mt19937>(i2p::util::GetMonotonicMicroseconds ()%1000000LL);
 				for (auto& it: *m_NonZeroRandomBuffer)
-					if (!it) it = 1;
+					if (!it) it = (uint8_t)(((*m_Rng) ()) % 255 + 1);
 			}
-			auto randomOffset = rand () % (TUNNEL_DATA_MAX_PAYLOAD_SIZE - paddingSize + 1);
+			auto randomOffset = ((*m_Rng) ()) % (TUNNEL_DATA_MAX_PAYLOAD_SIZE - paddingSize + 1);
 			memcpy (buf + 24, m_NonZeroRandomBuffer->data() + randomOffset, paddingSize);
 		}
 

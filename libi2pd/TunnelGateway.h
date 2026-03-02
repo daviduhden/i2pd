@@ -13,6 +13,7 @@
 #include <array>
 #include <vector>
 #include <memory>
+#include <random>
 #include "I2NPProtocol.h"
 #include "TunnelBase.h"
 
@@ -40,6 +41,7 @@ namespace tunnel
 			std::shared_ptr<I2NPMessage> m_CurrentTunnelDataMsg;
 			size_t m_RemainingSize;
 			std::unique_ptr<std::array<uint8_t, TUNNEL_DATA_MAX_PAYLOAD_SIZE> > m_NonZeroRandomBuffer;
+			std::unique_ptr<std::mt19937> m_Rng;
 	};
 
 	class TunnelGateway
