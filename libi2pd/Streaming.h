@@ -78,6 +78,7 @@ namespace stream
 	const uint16_t DELAY_CHOKING = 60000; // in milliseconds
 	const uint16_t DELAY_CHOKING_JAVA = 61000; // in milliseconds
 	const uint16_t DELAY_CHOKING_2 = 65535; // in milliseconds
+	const uint16_t DELAY_CHOKING_3 = 65534; // in milliseconds
 	const uint64_t SEND_INTERVAL = 10000; // in microseconds
 	const uint64_t SEND_INTERVAL_VARIANCE = 2000; // in microseconds
 	const uint64_t REQUEST_IMMEDIATE_ACK_INTERVAL = 7500; // in milliseconds
@@ -274,7 +275,7 @@ namespace stream
 			int32_t m_LastConfirmedReceivedSequenceNumber; // for limit inbound speed
 			StreamStatus m_Status;
 			bool m_IsIncoming, m_IsAckSendScheduled, m_IsNAcked, m_IsFirstACK, m_IsResendNeeded,
-				m_IsFirstRttSample, m_IsSendTime, m_IsWinDropped, m_IsChoking2, m_IsClientChoked,
+				m_IsFirstRttSample, m_IsSendTime, m_IsWinDropped, m_IsChoking2, m_IsChoking3, m_IsClientChoked,
 				m_IsClientChoked2, m_IsTimeOutResend, m_IsImmediateAckRequested,
 				m_IsRemoteLeaseChangeInProgress, m_IsBufferEmpty, m_IsJavaClient, m_DontSign;
 			StreamingDestination& m_LocalDestination;
