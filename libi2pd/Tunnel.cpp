@@ -258,6 +258,12 @@ namespace tunnel
 		return ret;
 	}
 
+	bool Tunnel::IsEstablished () const
+	{
+		auto state = m_State.load ();
+		return state == eTunnelStateEstablished || state == eTunnelStateTestFailed;
+	}
+
 	void Tunnel::SetState(TunnelState state)
 	{
 		m_State = state;
