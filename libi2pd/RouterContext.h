@@ -271,7 +271,7 @@ namespace garlic
 			mutable std::mutex m_RouterInfoMutex;
 			std::shared_ptr<i2p::data::RouterInfo::Buffer> m_SaveBuffer;
 			std::mutex m_SaveBufferMutex; // TODO: make m_SaveBuffer atomic
-			std::atomic<bool> m_IsSaving;
+			std::atomic_flag m_IsSaving;
 	};
 
 	extern RouterContext context;

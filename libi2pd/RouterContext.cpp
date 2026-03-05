@@ -34,7 +34,10 @@ namespace i2p
 		m_ShareRatio (100), m_Status (eRouterStatusUnknown), m_StatusV6 (eRouterStatusUnknown),
 		m_Error (eRouterErrorNone), m_ErrorV6 (eRouterErrorNone),
 		m_Testing (false), m_TestingV6 (false), m_NetID (I2PD_NET_ID),
-		m_PublishReplyToken (0), m_IsHiddenMode (false), m_IsSaving (false)
+		m_PublishReplyToken (0), m_IsHiddenMode (false)
+#if __cplusplus < 202002L // C++20
+		, m_IsSaving (ATOMIC_FLAG_INIT)
+#endif
 	{
 	}
 
@@ -269,8 +272,8 @@ namespace i2p
 			std::lock_guard<std::mutex> l(m_SaveBufferMutex);
 			m_SaveBuffer = buffer;
 		}
-		bool isSaving = false;
-		if (m_IsSaving.compare_exchange_strong (isSaving, true)) // try to save only if not being saved
+		bool isSaving = m_IsSaving.test_and_set ();
+		if (!isSaving) // try to save only if not being saved
 		{
 			auto savingRouterInfo = std::async (std::launch::async, [this]()
 				{
@@ -285,7 +288,7 @@ namespace i2p
 						if (buffer)
 							i2p::data::RouterInfo::SaveToFile (i2p::fs::DataDirPath (ROUTER_INFO), buffer);
 					}
-					m_IsSaving = false;
+					m_IsSaving.clear ();
 				});
 		}
 		m_LastUpdateTime = i2p::util::GetSecondsSinceEpoch ();
