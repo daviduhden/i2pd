@@ -180,7 +180,7 @@ namespace client
 			std::shared_ptr<const Address> m_Address;
 			uint16_t m_DestinationPort;
 			uint32_t m_KeepAliveInterval;
-			std::unique_ptr<boost::asio::deadline_timer> m_KeepAliveTimer;
+			std::unique_ptr<boost::asio::steady_timer> m_KeepAliveTimer;
 	};
 
 	class I2PServerTunnel: public I2PService

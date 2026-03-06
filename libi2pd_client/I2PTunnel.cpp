@@ -693,7 +693,7 @@ namespace client
 	{
 		m_KeepAliveInterval = keepAliveInterval;
 		if (m_KeepAliveInterval)
-			m_KeepAliveTimer.reset (new boost::asio::deadline_timer (GetLocalDestination ()->GetService ()));
+			m_KeepAliveTimer.reset (new boost::asio::steady_timer (GetLocalDestination ()->GetService ()));
 	}
 
 	/* HACK: maybe we should create a caching IdentHash provider in AddressBook */
@@ -721,7 +721,7 @@ namespace client
 	{
 		if (m_KeepAliveTimer)
 		{
-			m_KeepAliveTimer->expires_from_now (boost::posix_time::seconds (m_KeepAliveInterval));
+			m_KeepAliveTimer->expires_after (std::chrono::seconds (m_KeepAliveInterval));
 			m_KeepAliveTimer->async_wait (std::bind (&I2PClientTunnel::HandleKeepAliveTimer,
 				this, std::placeholders::_1));
 		}

@@ -290,7 +290,7 @@ namespace stream
 			std::set<Packet *, PacketCmp> m_SavedPackets;
 			std::set<Packet *, PacketCmp> m_SentPackets;
 			std::set<Packet *, PacketCmp> m_NACKedPackets;
-			boost::asio::deadline_timer m_ReceiveTimer, m_SendTimer, m_ResendTimer, m_AckSendTimer;
+			boost::asio::steady_timer m_ReceiveTimer, m_SendTimer, m_ResendTimer, m_AckSendTimer;
 			size_t m_NumSentBytes, m_NumReceivedBytes;
 			uint16_t m_Port;
 
@@ -369,7 +369,7 @@ namespace stream
 			Acceptor m_Acceptor;
 			PongHandler m_PongHandler;
 			std::list<std::shared_ptr<Stream> > m_PendingIncomingStreams;
-			boost::asio::deadline_timer m_PendingIncomingTimer;
+			boost::asio::steady_timer m_PendingIncomingTimer;
 			std::unordered_map<uint32_t, std::list<Packet *> > m_SavedPackets; // receiveStreamID->packets, arrived before SYN
 
 			uint64_t m_LastCleanupTime; // in seconds
@@ -397,7 +397,7 @@ namespace stream
 			else
 			{
 				int t = (timeout > MAX_RECEIVE_TIMEOUT) ? MAX_RECEIVE_TIMEOUT : timeout;
-				s->m_ReceiveTimer.expires_from_now (boost::posix_time::seconds(t));
+				s->m_ReceiveTimer.expires_after (std::chrono::seconds(t));
 				int left = timeout - t;
 				s->m_ReceiveTimer.async_wait (
 					[s, buffer, handler, left](const boost::system::error_code & ec)
