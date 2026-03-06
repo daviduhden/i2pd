@@ -61,11 +61,11 @@ namespace i2p
 		{
 			m_Service.reset (new RouterService);
 			m_Service->Start ();
-			m_PublishTimer.reset (new boost::asio::deadline_timer (m_Service->GetService ()));
+			m_PublishTimer.reset (new boost::asio::steady_timer (m_Service->GetService ()));
 			ScheduleInitialPublish ();
-			m_CongestionUpdateTimer.reset (new boost::asio::deadline_timer (m_Service->GetService ()));
+			m_CongestionUpdateTimer.reset (new boost::asio::steady_timer (m_Service->GetService ()));
 			ScheduleCongestionUpdate ();
-			m_CleanupTimer.reset (new boost::asio::deadline_timer (m_Service->GetService ()));
+			m_CleanupTimer.reset (new boost::asio::steady_timer (m_Service->GetService ()));
 			ScheduleCleanupTimer ();
 		}
 	}
@@ -1426,7 +1426,7 @@ namespace i2p
 	{
 		if (m_PublishTimer)
 		{
-			m_PublishTimer->expires_from_now (boost::posix_time::seconds(ROUTER_INFO_INITIAL_PUBLISH_INTERVAL));
+			m_PublishTimer->expires_after (std::chrono::seconds(ROUTER_INFO_INITIAL_PUBLISH_INTERVAL));
 			m_PublishTimer->async_wait (std::bind (&RouterContext::HandleInitialPublishTimer,
 				this, std::placeholders::_1));
 		}
@@ -1456,7 +1456,7 @@ namespace i2p
 		if (m_PublishTimer)
 		{
 			m_PublishTimer->cancel ();
-			m_PublishTimer->expires_from_now (boost::posix_time::seconds(ROUTER_INFO_PUBLISH_INTERVAL +
+			m_PublishTimer->expires_after (std::chrono::seconds(ROUTER_INFO_PUBLISH_INTERVAL +
 				GetRng ()() % ROUTER_INFO_PUBLISH_INTERVAL_VARIANCE));
 			m_PublishTimer->async_wait (std::bind (&RouterContext::HandlePublishTimer,
 				this, std::placeholders::_1));
@@ -1547,7 +1547,7 @@ namespace i2p
 		if (m_PublishTimer)
 		{
 			m_PublishTimer->cancel ();
-			m_PublishTimer->expires_from_now (boost::posix_time::milliseconds(ROUTER_INFO_CONFIRMATION_TIMEOUT));
+			m_PublishTimer->expires_after (std::chrono::milliseconds(ROUTER_INFO_CONFIRMATION_TIMEOUT));
 			m_PublishTimer->async_wait (std::bind (&RouterContext::HandlePublishResendTimer,
 				this, std::placeholders::_1));
 		}
@@ -1570,7 +1570,7 @@ namespace i2p
 		if (m_CongestionUpdateTimer)
 		{
 			m_CongestionUpdateTimer->cancel ();
-			m_CongestionUpdateTimer->expires_from_now (boost::posix_time::seconds(
+			m_CongestionUpdateTimer->expires_after (std::chrono::seconds(
 				ROUTER_INFO_CONGESTION_UPDATE_INTERVAL + GetRng ()() % ROUTER_INFO_CONGESTION_UPDATE_INTERVAL_VARIANCE));
 			m_CongestionUpdateTimer->async_wait (std::bind (&RouterContext::HandleCongestionUpdateTimer,
 				this, std::placeholders::_1));
@@ -1610,7 +1610,7 @@ namespace i2p
 		if (m_CleanupTimer)
 		{
 			m_CleanupTimer->cancel ();
-			m_CleanupTimer->expires_from_now (boost::posix_time::seconds(ROUTER_INFO_CLEANUP_INTERVAL));
+			m_CleanupTimer->expires_after (std::chrono::seconds(ROUTER_INFO_CLEANUP_INTERVAL));
 			m_CleanupTimer->async_wait (std::bind (&RouterContext::HandleCleanupTimer,
 				this, std::placeholders::_1));
 		}

@@ -443,7 +443,7 @@ namespace stream
 				if (delayRequested < m_RTT)
 				{
 					m_IsAckSendScheduled = true;
-					m_AckSendTimer.expires_from_now (boost::posix_time::milliseconds(delayRequested));
+					m_AckSendTimer.expires_after (std::chrono::milliseconds(delayRequested));
 					m_AckSendTimer.async_wait (std::bind (&Stream::HandleAckSendTimer,
 						shared_from_this (), std::placeholders::_1));
 				}
@@ -1601,7 +1601,7 @@ namespace stream
 			m_SendTimer.cancel ();
 			uint64_t interval = SEND_INTERVAL + m_LocalDestination.GetRandom () % SEND_INTERVAL_VARIANCE;
 			if (interval < m_PacingTime) interval = m_PacingTime;
-			m_SendTimer.expires_from_now (boost::posix_time::microseconds(interval));
+			m_SendTimer.expires_after (std::chrono::microseconds(interval));
 			m_SendTimer.async_wait (std::bind (&Stream::HandleSendTimer,
 				shared_from_this (), std::placeholders::_1));
 		}
@@ -1694,7 +1694,7 @@ namespace stream
 			m_ResendTimer.cancel ();
 			// check for invalid value
 			if (m_RTO <= 0) m_RTO = INITIAL_RTO;
-			m_ResendTimer.expires_from_now (boost::posix_time::milliseconds(m_RTO));
+			m_ResendTimer.expires_after (std::chrono::milliseconds(m_RTO));
 			m_ResendTimer.async_wait (std::bind (&Stream::HandleResendTimer,
 				shared_from_this (), std::placeholders::_1));
 		}
@@ -1843,7 +1843,7 @@ namespace stream
 			m_AckSendTimer.cancel ();
 		m_IsAckSendScheduled = true;
 		if (timeout < MIN_SEND_ACK_TIMEOUT) timeout = MIN_SEND_ACK_TIMEOUT;
-		m_AckSendTimer.expires_from_now (boost::posix_time::milliseconds(timeout));
+		m_AckSendTimer.expires_after (std::chrono::milliseconds(timeout));
 		m_AckSendTimer.async_wait (std::bind (&Stream::HandleAckSendTimer,
 			shared_from_this (), std::placeholders::_1));
 	}
@@ -2209,7 +2209,7 @@ namespace stream
 					{
 						m_PendingIncomingStreams.push_back (incomingStream);
 						m_PendingIncomingTimer.cancel ();
-						m_PendingIncomingTimer.expires_from_now (boost::posix_time::seconds(PENDING_INCOMING_TIMEOUT));
+						m_PendingIncomingTimer.expires_after (std::chrono::seconds(PENDING_INCOMING_TIMEOUT));
 						m_PendingIncomingTimer.async_wait (std::bind (&StreamingDestination::HandlePendingIncomingTimer,
 							shared_from_this (), std::placeholders::_1));
 						LogPrint (eLogDebug, "Streaming: Pending incoming stream added, rSID=", receiveStreamID);
@@ -2238,8 +2238,8 @@ namespace stream
 				else
 				{
 					m_SavedPackets[receiveStreamID] = std::list<Packet *>{ packet };
-					auto timer = std::make_shared<boost::asio::deadline_timer> (m_Owner->GetService ());
-					timer->expires_from_now (boost::posix_time::seconds(PENDING_INCOMING_TIMEOUT));
+					auto timer = std::make_shared<boost::asio::steady_timer> (m_Owner->GetService ());
+					timer->expires_after (std::chrono::seconds(PENDING_INCOMING_TIMEOUT));
 					auto s = shared_from_this ();
 					timer->async_wait ([s,timer,receiveStreamID](const boost::system::error_code& ecode)
 					{
