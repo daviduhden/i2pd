@@ -32,8 +32,7 @@ namespace client
 
 	I2PTunnelConnection::I2PTunnelConnection (I2PService * owner, std::shared_ptr<boost::asio::ip::tcp::socket> socket,
 		std::shared_ptr<const i2p::data::LeaseSet> leaseSet, uint16_t port):
-		I2PServiceHandler(owner), m_Socket (socket), m_RemoteEndpoint (socket->remote_endpoint ()),
-		m_IsReceiving (false)
+		I2PServiceHandler(owner), m_Socket (socket), m_IsReceiving (false)
 	{
 		m_Stream = GetOwner()->GetLocalDestination ()->CreateStream (leaseSet, port);
 	}
@@ -42,10 +41,6 @@ namespace client
 		std::shared_ptr<boost::asio::ip::tcp::socket> socket, std::shared_ptr<i2p::stream::Stream> stream):
 		I2PServiceHandler(owner), m_Socket (socket), m_Stream (stream), m_IsReceiving (false)
 	{
-		boost::system::error_code ec;
-		m_RemoteEndpoint = socket->remote_endpoint(ec);
-		if (ec)
-			LogPrint (eLogInfo, "I2PTunnel: Connection socket error ", ec.message ());
 	}
 
 	I2PTunnelConnection::I2PTunnelConnection (I2PService * owner, std::shared_ptr<i2p::stream::Stream> stream,
