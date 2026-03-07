@@ -40,9 +40,12 @@ namespace client
 
 	I2PTunnelConnection::I2PTunnelConnection (I2PService * owner,
 		std::shared_ptr<boost::asio::ip::tcp::socket> socket, std::shared_ptr<i2p::stream::Stream> stream):
-		I2PServiceHandler(owner), m_Socket (socket), m_Stream (stream),
-		m_RemoteEndpoint (socket->remote_endpoint ()), m_IsReceiving (false)
+		I2PServiceHandler(owner), m_Socket (socket), m_Stream (stream), m_IsReceiving (false)
 	{
+		boost::system::error_code ec;
+		m_RemoteEndpoint = socket->remote_endpoint(ec);
+		if (ec)
+			LogPrint (eLogInfo, "I2PTunnel: Connection socket error ", ec.message ());
 	}
 
 	I2PTunnelConnection::I2PTunnelConnection (I2PService * owner, std::shared_ptr<i2p::stream::Stream> stream,
@@ -60,15 +63,17 @@ namespace client
 
 	void I2PTunnelConnection::I2PConnect (const uint8_t * msg, size_t len)
 	{
-		if (m_Stream)
+		if (m_Stream && m_Socket && m_Socket->is_open ())
 		{
 			if (msg)
 				m_Stream->Send (msg, len); // connect and send
 			else
 				m_Stream->Send (m_Buffer, 0); // connect
+			StreamReceive ();
+			Receive ();
 		}
-		StreamReceive ();
-		Receive ();
+		else
+			Terminate ();
 	}
 
 	boost::asio::ip::address GetLoopbackAddressFor(const i2p::data::IdentHash & addr)
@@ -158,12 +163,14 @@ namespace client
 		if (m_Stream)
 		{
 			m_Stream->Close ();
-			m_Stream.reset ();
+			m_Stream = nullptr;
 		}
-		boost::system::error_code ec;
-		m_Socket->shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec); // avoid RST
-		m_Socket->close ();
-
+		if (m_Socket && m_Socket->is_open ())
+		{
+			boost::system::error_code ec;
+			m_Socket->shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec); // avoid RST
+			m_Socket->close ();
+		}
 		Done(shared_from_this ());
 	}
 
