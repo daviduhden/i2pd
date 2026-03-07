@@ -97,7 +97,11 @@ namespace client
 	{
 		public:
 
-			I2PServiceHandler(I2PService * parent) : m_Service(parent), m_Dead(false) { }
+			I2PServiceHandler(I2PService * parent) : m_Service(parent)
+#if __cplusplus < 202002L // C++20
+				, m_Dead (ATOMIC_FLAG_INIT)
+#endif
+			{ }
 			virtual ~I2PServiceHandler() { }
 			//If you override this make sure you call it from the children
 			virtual void Handle() {}; //Start handling the socket
@@ -108,9 +112,7 @@ namespace client
 		protected:
 
 			// Call when terminating or handing over to avoid race conditions
-			inline bool Kill () { return m_Dead.exchange(true); }
-			// Call to know if the handler is dead
-			inline bool Dead () { return m_Dead; }
+			inline bool Kill () { return m_Dead.test_and_set (); }
 			// Call when done to clean up (make sure Kill is called first)
 			inline void Done (std::shared_ptr<I2PServiceHandler> me) { if(m_Service) m_Service->RemoveHandler(me); }
 			// Call to talk with the owner
@@ -119,7 +121,7 @@ namespace client
 		private:
 
 			I2PService *m_Service;
-			std::atomic<bool> m_Dead; //To avoid cleaning up multiple times
+			std::atomic_flag m_Dead; //To avoid cleaning up multiple times
 	};
 
 	const size_t SOCKETS_PIPE_BUFFER_SIZE = 8192 * 8;
