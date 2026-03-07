@@ -263,7 +263,7 @@ namespace stream
 			}
 			return;
 		}
-		
+
 		if (receivedSeqn == m_LastReceivedSequenceNumber + 1)
 		{
 			// we have received next in sequence message
@@ -1351,6 +1351,7 @@ namespace stream
 				}
 			break;
 			case eStreamStatusClosed:
+			case eStreamStatusNew:
 				// already closed
 				Terminate ();
 			break;
