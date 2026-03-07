@@ -35,7 +35,7 @@ namespace proxy
 
 			// Implements TCPIPAcceptor
 			std::shared_ptr<i2p::client::I2PServiceHandler> CreateHandler(std::shared_ptr<boost::asio::ip::tcp::socket> socket) override;
-			const char* GetName() { return m_Name.c_str (); }
+			const char* GetName()const override { return m_Name.c_str (); }
 
 		private:
 

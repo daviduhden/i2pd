@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -70,14 +70,14 @@ namespace client
 			std::shared_ptr<i2p::stream::Stream> GetStream () const { return m_Stream; };
 			std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket&> > GetSSL () const { return m_SSL; };
 			uint8_t * GetStreamBuffer () { return m_StreamBuffer; };
-		
+
 		private:
 
 			void HandleConnect (const boost::system::error_code& ecode);
 			void HandleHandshake (const boost::system::error_code& ecode);
 			void HandleReceive (const boost::system::error_code& ecode, std::size_t bytes_transferred);
 			void HandleWrite (const boost::system::error_code& ecode);
-			
+
 		private:
 
 			uint8_t m_Buffer[I2P_TUNNEL_CONNECTION_BUFFER_SIZE], m_StreamBuffer[I2P_TUNNEL_CONNECTION_STREAM_BUFFER_SIZE];
@@ -164,7 +164,7 @@ namespace client
 			void Start ();
 			void Stop ();
 
-			const char* GetName() { return m_Name.c_str (); }
+			const char* GetName() const override { return m_Name.c_str (); }
 			void SetKeepAliveInterval (uint32_t keepAliveInterval);
 
 		private:
@@ -208,7 +208,7 @@ namespace client
 			uint16_t GetLocalPort () const { return m_PortDestination->GetLocalPort (); };
 			const boost::asio::ip::tcp::endpoint& GetEndpoint () const { return m_Endpoint; }
 
-			const char* GetName() { return m_Name.c_str (); }
+			const char* GetName() const override { return m_Name.c_str (); }
 
 		private:
 

@@ -68,7 +68,7 @@ namespace client
 			virtual void Start () = 0;
 			virtual void Stop () = 0;
 
-			virtual const char* GetName() { return "Generic I2P Service"; }
+			virtual const char* GetName() const { return "Generic I2P Service"; }
 
 		private:
 
@@ -243,7 +243,7 @@ namespace client
 			}
 			const typename Protocol::endpoint& GetLocalEndpoint () const { return m_LocalEndpoint; };
 
-			const char* GetName() override { return "Generic TCP/IP accepting daemon"; }
+			const char* GetName() const override { return "Generic TCP/IP accepting daemon"; }
 
 		protected:
 
