@@ -153,7 +153,7 @@ namespace client
 		protected:
 
 			// Implements TCPIPAcceptor
-			std::shared_ptr<I2PServiceHandler> CreateHandler(std::shared_ptr<boost::asio::ip::tcp::socket> socket);
+			std::shared_ptr<I2PServiceHandler> CreateHandler(std::shared_ptr<boost::asio::ip::tcp::socket> socket) override;
 
 		public:
 
@@ -161,8 +161,8 @@ namespace client
 				const std::string& address, uint16_t port, std::shared_ptr<ClientDestination> localDestination, uint16_t destinationPort = 0);
 			~I2PClientTunnel () {}
 
-			void Start ();
-			void Stop ();
+			void Start () override;
+			void Stop () override;
 
 			const char* GetName() const override { return m_Name.c_str (); }
 			void SetKeepAliveInterval (uint32_t keepAliveInterval);
@@ -190,8 +190,8 @@ namespace client
 			I2PServerTunnel (const std::string& name, const std::string& address, uint16_t port,
 				std::shared_ptr<ClientDestination> localDestination, uint16_t inport = 0, bool gzip = true);
 
-			void Start ();
-			void Stop ();
+			void Start () override;
+			void Stop () override;
 
 			void SetAccessList (const std::set<i2p::data::IdentHash>& accessList);
 
