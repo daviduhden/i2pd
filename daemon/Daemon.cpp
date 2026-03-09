@@ -15,6 +15,7 @@
 #include "Config.h"
 #include "Log.h"
 #include "FS.h"
+#include "CPU.h"
 #include "Base.h"
 #include "version.h"
 #include "Transports.h"
@@ -198,7 +199,8 @@ namespace util
 				i2p::context.SetBandwidth (bandwidth[0]);
 				LogPrint(eLogInfo, "Daemon: Bandwidth set to ", i2p::context.GetBandwidthLimit (), "KBps");
 			}
-			else if (std::regex_match(bandwidth, bandWithMatch, BandwithRegex)) {
+			else if (std::regex_match(bandwidth, bandWithMatch, BandwithRegex))
+			{
 				const auto number = bandWithMatch[1].str();
 				const auto unit   = bandWithMatch[2].str();
 				int limit = std::atoi(number.c_str());
@@ -245,8 +247,21 @@ namespace util
 		}
 		else
 		{
+#if IS_X86_64
+			if (std::thread::hardware_concurrency() >= 4) // quad core or more
+			{
+				LogPrint(eLogInfo, "Daemon: bandwidth set to 'extra'");
+				i2p::context.SetBandwidth (i2p::data::CAPS_FLAG_EXTRA_BANDWIDTH1);
+			}
+			else
+			{
+				LogPrint(eLogInfo, "Daemon: bandwidth set to 'high'");
+				i2p::context.SetBandwidth (i2p::data::CAPS_FLAG_HIGH_BANDWIDTH);
+			}
+#else
 			LogPrint(eLogInfo, "Daemon: bandwidth set to 'low'");
 			i2p::context.SetBandwidth (i2p::data::CAPS_FLAG_LOW_BANDWIDTH2);
+#endif
 		}
 
 		int shareRatio; i2p::config::GetOption("share", shareRatio);
