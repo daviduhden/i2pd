@@ -36,7 +36,7 @@ namespace i2p
 		m_Testing (false), m_TestingV6 (false), m_NetID (I2PD_NET_ID),
 		m_PublishReplyToken (0), m_IsHiddenMode (false)
 #if __cplusplus < 202002L // C++20
-		, m_IsSaving (ATOMIC_FLAG_INIT)
+		, m_IsSaving ATOMIC_FLAG_INIT // {0}
 #endif
 	{
 	}

@@ -99,7 +99,7 @@ namespace client
 
 			I2PServiceHandler(I2PService * parent) : m_Service(parent)
 #if __cplusplus < 202002L // C++20
-				, m_Dead (ATOMIC_FLAG_INIT)
+				, m_Dead ATOMIC_FLAG_INIT // {0}
 #endif
 			{ }
 			virtual ~I2PServiceHandler() { }
