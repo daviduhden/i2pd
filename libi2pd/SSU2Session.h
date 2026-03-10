@@ -18,6 +18,7 @@
 #include <boost/asio.hpp>
 #include "version.h"
 #include "Crypto.h"
+#include "PostQuantum.h"
 #include "RouterInfo.h"
 #include "RouterContext.h"
 #include "TransportSession.h"
@@ -243,7 +244,7 @@ namespace transport
 		public:
 
 			SSU2Session (SSU2Server& server, std::shared_ptr<const i2p::data::RouterInfo> in_RemoteRouter = nullptr,
-				std::shared_ptr<const i2p::data::RouterInfo::Address> addr = nullptr, bool noise = true);
+				std::shared_ptr<const i2p::data::RouterInfo::Address> addr = nullptr, bool noise = true, uint8_t version = 2);
 			virtual ~SSU2Session ();
 
 			void SetRemoteEndpoint (const boost::asio::ip::udp::endpoint& ep) { m_RemoteEndpoint = ep; };
@@ -287,6 +288,7 @@ namespace transport
 		protected:
 
 			SSU2Server& GetServer () { return m_Server; }
+			uint8_t GetVersion () const { return m_Version; }
 			RouterStatus GetRouterStatus () const;
 			void SetRouterStatus (RouterStatus status) const;
 			size_t GetMaxPayloadSize () const { return m_MaxPayloadSize; }
@@ -321,7 +323,7 @@ namespace transport
 			void ProcessSessionRequest (Header& header, uint8_t * buf, size_t len);
 			void ProcessTokenRequest (Header& header, uint8_t * buf, size_t len);
 
-			void SendSessionRequest (uint64_t token = 0);
+			bool SendSessionRequest (uint64_t token = 0);
 			void SendSessionCreated (const uint8_t * X);
 			void SendSessionConfirmed (const uint8_t * Y);
 			void KDFDataPhase (uint8_t * keydata_ab, uint8_t * keydata_ba);
@@ -372,6 +374,9 @@ namespace transport
 			std::unique_ptr<i2p::crypto::NoiseSymmetricState> m_NoiseState;
 			std::unique_ptr<HandshakePacket> m_SessionConfirmedFragment; // for Bob if applicable or second fragment for Alice
 			std::unique_ptr<HandshakePacket> m_SentHandshakePacket; // SessionRequest, SessionCreated or SessionConfirmed
+#if OPENSSL_PQ
+			std::unique_ptr<i2p::crypto::MLKEMKeys> m_PQKeys;
+#endif
 			std::shared_ptr<const i2p::data::RouterInfo::Address> m_Address;
 			boost::asio::ip::udp::endpoint m_RemoteEndpoint;
 			i2p::data::RouterInfo::CompatibleTransports m_RemoteTransports, m_RemotePeerTestTransports;
@@ -403,6 +408,7 @@ namespace transport
 			uint64_t m_LastResendTime, m_LastResendAttemptTime, m_NextRouterInfoResendTime; // in milliseconds
 			int m_NumRanges;
 			uint8_t m_Ranges[SSU2_MAX_NUM_ACK_RANGES*2]; // ranges sent with previous Ack if any
+			uint8_t m_Version;
 	};
 
 	inline uint64_t CreateHeaderMask (const uint8_t * kh, const uint8_t * nonce)

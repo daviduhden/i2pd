@@ -165,7 +165,7 @@ namespace transport
 		header.h.connID = GetDestConnID (); // dest id
 		RAND_bytes (header.buf + 8, 4); // random packet num
 		header.h.type = eSSU2PeerTest;
-		header.h.flags[0] = 2; // ver
+		header.h.flags[0] = GetVersion (); // ver
 		header.h.flags[1] = (uint8_t)i2p::context.GetNetID (); // netID
 		header.h.flags[2] = 0; // flag
 		memcpy (h, header.buf, 16);
@@ -278,7 +278,7 @@ namespace transport
 		header.h.connID = GetDestConnID (); // dest id
 		RAND_bytes (header.buf + 8, 4); // random packet num
 		header.h.type = eSSU2HolePunch;
-		header.h.flags[0] = 2; // ver
+		header.h.flags[0] = GetVersion (); // ver
 		header.h.flags[1] = (uint8_t)i2p::context.GetNetID (); // netID
 		header.h.flags[2] = 0; // flag
 		memcpy (h, header.buf, 16);
