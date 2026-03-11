@@ -15,8 +15,8 @@ namespace i2p
 namespace transport
 {
 	SSU2PeerTestSession::SSU2PeerTestSession (SSU2Server& server, uint64_t sourceConnID, uint64_t destConnID):
-		SSU2Session (server, nullptr, nullptr, false),
-		m_MsgNumReceived (0), m_NumResends (0),m_IsConnectedRecently (false), m_IsStatusChanged (false),
+		SSU2Session (server),
+		m_MsgNumReceived (0), m_NumResends (0), m_IsConnectedRecently (false), m_IsStatusChanged (false),
 		m_PeerTestResendTimer (server.GetService ())
 	{
 		if (!sourceConnID) sourceConnID = ~destConnID;

@@ -244,7 +244,7 @@ namespace transport
 		public:
 
 			SSU2Session (SSU2Server& server, std::shared_ptr<const i2p::data::RouterInfo> in_RemoteRouter = nullptr,
-				std::shared_ptr<const i2p::data::RouterInfo::Address> addr = nullptr, bool noise = true, uint8_t version = 2);
+				std::shared_ptr<const i2p::data::RouterInfo::Address> addr = nullptr);
 			virtual ~SSU2Session ();
 
 			void SetRemoteEndpoint (const boost::asio::ip::udp::endpoint& ep) { m_RemoteEndpoint = ep; };

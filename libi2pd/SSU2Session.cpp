@@ -80,7 +80,7 @@ namespace transport
 	}
 
 	SSU2Session::SSU2Session (SSU2Server& server, std::shared_ptr<const i2p::data::RouterInfo> in_RemoteRouter,
-		std::shared_ptr<const i2p::data::RouterInfo::Address> addr, bool noise, uint8_t version):
+		std::shared_ptr<const i2p::data::RouterInfo::Address> addr):
 		TransportSession (in_RemoteRouter, SSU2_CONNECT_TIMEOUT),
 		m_Server (server), m_Address (addr), m_RemoteTransports (0), m_RemotePeerTestTransports (0),
 		m_RemoteVersion (0), m_DestConnID (0), m_SourceConnID (0), m_State (eSSU2SessionStateUnknown),
@@ -93,22 +93,11 @@ namespace transport
 		m_TerminationReason (eSSU2TerminationReasonNormalClose),
 		m_MaxPayloadSize (SSU2_MIN_PACKET_SIZE - IPV6_HEADER_SIZE - UDP_HEADER_SIZE - 32), // min size
 		m_LastResendTime (0), m_LastResendAttemptTime (0), m_NextRouterInfoResendTime(0),
-		m_NumRanges (0), m_Version (version)
+		m_NumRanges (0), m_Version (2)
 	{
-		if (noise)
-			m_NoiseState.reset (new i2p::crypto::NoiseSymmetricState);
 		if (in_RemoteRouter && m_Address)
 		{
 			// outgoing
-			if (noise)
-			{
-#if OPENSSL_PQ
-				if (m_Version > 2)
-					InitNoiseXKStateMLKEM1 (*m_NoiseState, (i2p::data::CryptoKeyType)(m_Version + 2), m_Address->s);
-				else
-#endif
-				InitNoiseXKState1 (*m_NoiseState, m_Address->s);
-			}
 			m_RemoteEndpoint = boost::asio::ip::udp::endpoint (m_Address->host, m_Address->port);
 			m_RemoteTransports = in_RemoteRouter->GetCompatibleTransports (false);
 			m_RemoteVersion = in_RemoteRouter->GetVersion ();
@@ -116,12 +105,6 @@ namespace transport
 			if (in_RemoteRouter->IsSSU2PeerTesting (false)) m_RemotePeerTestTransports |= i2p::data::RouterInfo::eSSU2V6;
 			RAND_bytes ((uint8_t *)&m_DestConnID, 8);
 			RAND_bytes ((uint8_t *)&m_SourceConnID, 8);
-		}
-		else
-		{
-			// incoming
-			if (noise)
-				InitNoiseXKState1 (*m_NoiseState, i2p::context.GetSSU2StaticPublicKey ());
 		}
 	}
 
@@ -773,11 +756,18 @@ namespace transport
 			}
 		}
 		payloadSize += CreatePaddingBlock (payload + payloadSize, 40 + offset - payloadSize, 1);
-		// KDF for session request
+		// create and init noise state
+		if (!m_NoiseState) m_NoiseState.reset (new i2p::crypto::NoiseSymmetricState);
 #if OPENSSL_PQ
 		if (m_Version > 2)
+		{
+			InitNoiseXKStateMLKEM1 (*m_NoiseState, (i2p::data::CryptoKeyType)(m_Version + 2), m_Address->s);
 			m_NoiseState->MixHash (GetRemoteIdentity ()->GetIdentHash (), 32); // h = SHA256(h || bhash)
+		}
+		else
 #endif
+			InitNoiseXKState1 (*m_NoiseState, m_Address->s);
+		// KDF for session request
 		m_NoiseState->MixHash ({ {header.buf, 16}, {headerX, 16} }); // h = SHA256(h || header)
 		m_NoiseState->MixHash (m_EphemeralKeys->GetPublicKey (), 32); // h = SHA256(h || aepk)
 		uint8_t sharedSecret[32];
@@ -850,6 +840,17 @@ namespace transport
 			SendRetry ();
 			return;
 		}
+		// create and init noise state
+		if (!m_NoiseState) m_NoiseState.reset (new i2p::crypto::NoiseSymmetricState);
+#if OPENSSL_PQ
+		if (m_Version > 2)
+		{
+			InitNoiseXKStateMLKEM1 (*m_NoiseState, (i2p::data::CryptoKeyType)(m_Version + 2), i2p::context.GetSSU2StaticPublicKey ());
+			m_NoiseState->MixHash (i2p::context.GetIdentHash (), 32); // h = SHA256(h || bhash)
+		}
+		else
+#endif
+			InitNoiseXKState1 (*m_NoiseState, i2p::context.GetSSU2StaticPublicKey ());
 		// KDF for session request
 		m_NoiseState->MixHash ( { {header.buf, 16}, {headerX, 16} } ); // h = SHA256(h || header)
 		m_NoiseState->MixHash (headerX + 16, 32); // h = SHA256(h || aepk);
@@ -950,6 +951,11 @@ namespace transport
 	bool SSU2Session::ProcessSessionCreated (uint8_t * buf, size_t len)
 	{
 		// we are Alice
+		if (!m_NoiseState)
+		{
+			LogPrint (eLogWarning, "SSU2: Unexpected SessionCreated message");
+			return false;
+		}
 		Header header;
 		memcpy (header.buf, buf, 16);
 		header.ll[0] ^= CreateHeaderMask (m_Address->i, buf + (len - 24));
@@ -1112,6 +1118,11 @@ namespace transport
 	bool SSU2Session::ProcessSessionConfirmed (uint8_t * buf, size_t len)
 	{
 		// we are Bob
+		if (!m_NoiseState)
+		{
+			LogPrint (eLogWarning, "SSU2: Unexpected SessionConfirmed message");
+			return false;
+		}
 		Header header;
 		memcpy (header.buf, buf, 16);
 		header.ll[0] ^= CreateHeaderMask (i2p::context.GetSSU2IntroKey (), buf + (len - 24));
@@ -1514,6 +1525,8 @@ namespace transport
 			LogPrint (eLogWarning, "SSU2: Retry token is zero");
 			return false;
 		}
+
+		if (!m_NoiseState) m_NoiseState.reset (new i2p::crypto::NoiseSymmetricState);
 #if OPENSSL_PQ
 		if (m_Version > 2)
 			InitNoiseXKStateMLKEM1 (*m_NoiseState, (i2p::data::CryptoKeyType)(m_Version + 2), m_Address->s);
