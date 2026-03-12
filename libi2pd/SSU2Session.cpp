@@ -823,9 +823,11 @@ namespace transport
 			LogPrint (eLogWarning, "SSU2: SessionRequest message too short ", len);
 			return;
 		}
-		if (header.h.flags[0] != 2) // ver
+		if (header.h.flags[0] <= m_Version) // ver
+			SetVersion (header.h.flags[0]);
+		else
 		{
-            LogPrint (eLogInfo, "SSU2: SessionRequest protocol version ", header.h.flags[0], " is not supported");
+            LogPrint (eLogWarning, "SSU2: SessionRequest protocol version ", header.h.flags[0], " is not supported");
             return;
 		}
 		const uint8_t nonce[12] = {0};
@@ -858,15 +860,37 @@ namespace transport
 		i2p::context.GetSSU2StaticKeys ().Agree (headerX + 16, sharedSecret);
 		m_NoiseState->MixKey (sharedSecret);
 		// decrypt
-		uint8_t * payload = buf + 64;
-		std::vector<uint8_t> decryptedPayload(len - 80);
-		if (!i2p::crypto::AEADChaCha20Poly1305 (payload, len - 80, m_NoiseState->m_H, 32,
-			m_NoiseState->m_CK + 32, nonce, decryptedPayload.data (), decryptedPayload.size (), false))
+		size_t offset = 64;
+#if OPENSSL_PQ
+        if (m_Version > 2)
+        {
+			auto cryptoType = (i2p::data::CryptoKeyType)(m_Version + 2);
+            auto keyLen = i2p::crypto::GetMLKEMPublicKeyLen (cryptoType);
+            std::vector<uint8_t> encapsKey(keyLen);
+            if (!m_NoiseState->Decrypt (buf + offset, encapsKey.data (), keyLen))
+            {
+				LogPrint (eLogWarning, "SSU2: SessionReauest ML-KEM ciphertext section AEAD decryption failed");
+				return;
+            }
+			m_NoiseState->MixHash (buf + offset, keyLen + 16);
+			offset += keyLen + 16;
+			m_PQKeys = i2p::crypto::CreateMLKEMKeys (cryptoType);
+			m_PQKeys->SetPublicKey (encapsKey.data ());
+        }
+#endif
+		if (offset + 16 > len)
+		{
+			LogPrint (eLogWarning, "SSU2: SessionRequest message is too short ", len);
+			return;
+		}
+		uint8_t * payload = buf + offset;
+		std::vector<uint8_t> decryptedPayload(len - offset - 16);
+		if (!m_NoiseState->Decrypt (payload, decryptedPayload.data (), decryptedPayload.size ()))
 		{
 			LogPrint (eLogWarning, "SSU2: SessionRequest AEAD verification failed ");
 			return;
 		}
-		m_NoiseState->MixHash (payload, len - 64); // h = SHA256(h || encrypted payload from Session Request) for SessionCreated
+		m_NoiseState->MixHash (payload, len - offset); // h = SHA256(h || encrypted payload from Session Request) for SessionCreated
 		// payload
 		m_State = eSSU2SessionStateSessionRequestReceived;
 		HandlePayload (decryptedPayload.data (), decryptedPayload.size ());
@@ -905,10 +929,29 @@ namespace transport
 		memcpy (headerX + 16, m_EphemeralKeys->GetPublicKey (), 32); // Y
 		// payload
 		size_t maxPayloadSize = m_MaxPayloadSize - 48;
-		payload[0] = eSSU2BlkDateTime;
-		htobe16buf (payload + 1, 4);
-		htobe32buf (payload + 3, (ts + 500)/1000);
-		size_t payloadSize = 7;
+		size_t payloadSize = 0, offset = 0;
+#if OPENSSL_PQ
+        if (m_Version > 2 && m_PQKeys)
+        {
+            size_t cipherTextLen = m_PQKeys->GetCTLen ();
+			std::vector<uint8_t> kemCiphertext(cipherTextLen);
+			uint8_t sharedSecret[32];
+			m_PQKeys->Encaps (kemCiphertext.data (), sharedSecret);
+			if (!m_NoiseState->Encrypt (kemCiphertext.data (), payload, cipherTextLen))
+			{
+				LogPrint (eLogWarning, "SSU2: SessionCreated ML-KEM ciphertext section AEAD encryption failed");
+				return;
+			}
+			offset = cipherTextLen + 16;
+			m_NoiseState->MixHash (payload, offset); // encrypt ML-KEM frame
+			m_NoiseState->MixKey (sharedSecret);
+            payloadSize += offset;
+        }
+#endif
+		payload[payloadSize] = eSSU2BlkDateTime;
+		htobe16buf (payload + payloadSize + 1, 4);
+		htobe32buf (payload + payloadSize + 3, (ts + 500)/1000);
+		payloadSize += 7;
 		payloadSize += CreateAddressBlock (payload + payloadSize, maxPayloadSize - payloadSize, m_RemoteEndpoint);
 		if (m_RelayTag)
 		{
@@ -935,7 +978,11 @@ namespace transport
 		m_NoiseState->MixKey (sharedSecret);
 		// encrypt
 		const uint8_t nonce[12] = {0}; // always zero
-		i2p::crypto::AEADChaCha20Poly1305 (payload, payloadSize, m_NoiseState->m_H, 32, m_NoiseState->m_CK + 32, nonce, payload, payloadSize + 16, true);
+		if (!m_NoiseState->Encrypt (payload + offset, payload + offset, payloadSize - offset))
+		{
+			LogPrint (eLogWarning, "SSU2: SessionCreated payload encryption failed ");
+			return;
+		}
 		payloadSize += 16;
 		m_NoiseState->MixHash (payload, payloadSize); // h = SHA256(h || encrypted Noise payload from Session Created)
 		header.ll[0] ^= CreateHeaderMask (i2p::context.GetSSU2IntroKey (), payload + (payloadSize - 24));
@@ -1010,10 +1057,9 @@ namespace transport
 		}
 		uint8_t * payload = buf + offset;
 		std::vector<uint8_t> decryptedPayload(len - offset - 16);
-		if (!i2p::crypto::AEADChaCha20Poly1305 (payload, len - offset - 16, m_NoiseState->m_H, 32,
-			m_NoiseState->m_CK + 32, nonce, decryptedPayload.data (), decryptedPayload.size (), false))
+		if (!m_NoiseState->Decrypt (payload, decryptedPayload.data (), decryptedPayload.size ()))
 		{
-			LogPrint (eLogWarning, "SSU2: SessionCreated AEAD verification failed ");
+			LogPrint (eLogWarning, "SSU2: SessionCreated AEAD verification failed");
 			if (GetRemoteIdentity ())
 				i2p::data::netdb.SetUnreachable (GetRemoteIdentity ()->GetIdentHash (), true);  // assume wrong s key
 			return false;
