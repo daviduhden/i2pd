@@ -938,6 +938,12 @@ namespace transport
 		memcpy (headerX, &m_SourceConnID, 8); // source id
 		memset (headerX + 8, 0, 8); // token = 0
 		memcpy (headerX + 16, m_EphemeralKeys->GetPublicKey (), 32); // Y
+		// KDF for SessionCreated
+		m_NoiseState->MixHash ( { {header.buf, 16}, {headerX, 16} } ); // h = SHA256(h || header)
+		m_NoiseState->MixHash (headerX + 16, 32); // h = SHA256(h || bepk);
+		uint8_t sharedSecret[32];
+		m_EphemeralKeys->Agree (X, sharedSecret);
+		m_NoiseState->MixKey (sharedSecret);
 		// payload
 		size_t maxPayloadSize = m_MaxPayloadSize - 48;
 		size_t payloadSize = 0, offset = 0;
@@ -946,7 +952,6 @@ namespace transport
         {
             size_t cipherTextLen = m_PQKeys->GetCTLen ();
 			std::vector<uint8_t> kemCiphertext(cipherTextLen);
-			uint8_t sharedSecret[32];
 			m_PQKeys->Encaps (kemCiphertext.data (), sharedSecret);
 			if (!m_NoiseState->Encrypt (kemCiphertext.data (), payload, cipherTextLen))
 			{
@@ -981,12 +986,6 @@ namespace transport
 			payloadSize += 15;
 		}
 		payloadSize += CreatePaddingBlock (payload + payloadSize, maxPayloadSize - payloadSize);
-		// KDF for SessionCreated
-		m_NoiseState->MixHash ( { {header.buf, 16}, {headerX, 16} } ); // h = SHA256(h || header)
-		m_NoiseState->MixHash (headerX + 16, 32); // h = SHA256(h || bepk);
-		uint8_t sharedSecret[32];
-		m_EphemeralKeys->Agree (X, sharedSecret);
-		m_NoiseState->MixKey (sharedSecret);
 		// encrypt
 		const uint8_t nonce[12] = {0}; // always zero
 		if (!m_NoiseState->Encrypt (payload + offset, payload + offset, payloadSize - offset))
@@ -1033,10 +1032,6 @@ namespace transport
 		uint8_t headerX[48];
 		m_Server.ChaCha20 (buf + 16, 48, kh2, nonce, headerX);
 		// KDF for SessionCreated
-#if OPENSSL_PQ
-		if (m_Version > 2)
-			m_NoiseState->MixHash (i2p::context.GetIdentHash (), 32); // h = SHA256(h || bhash)
-#endif
 		m_NoiseState->MixHash ( { {header.buf, 16}, {headerX, 16} } ); // h = SHA256(h || header)
 		m_NoiseState->MixHash (headerX + 16, 32); // h = SHA256(h || bepk);
 		uint8_t sharedSecret[32];
