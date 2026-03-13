@@ -153,7 +153,7 @@ namespace garlic
 			void UpdatePort (int port); // called from Daemon
 			void UpdateAddress (const boost::asio::ip::address& host); // called from SSU2 or Daemon
 			void PublishNTCP2Address (int port, bool publish, bool v4, bool v6, bool ygg, int version);
-			void PublishSSU2Address (int port, bool publish, bool v4, bool v6);
+			void PublishSSU2Address (int port, bool publish, bool v4, bool v6, int version);
 			bool AddSSU2Introducer (const i2p::data::RouterInfo::Introducer& introducer, bool v4);
 			void RemoveSSU2Introducer (const i2p::data::IdentHash& h, bool v4);
 			void UpdateSSU2Introducer (const i2p::data::IdentHash& h, bool v4, uint32_t iTag, uint32_t iExp);

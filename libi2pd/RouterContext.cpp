@@ -472,7 +472,7 @@ namespace i2p
 		}
 	}
 
-	void RouterContext::PublishSSU2Address (int port, bool publish, bool v4, bool v6)
+	void RouterContext::PublishSSU2Address (int port, bool publish, bool v4, bool v6, int version)
 	{
 		if (!m_SSU2Keys) return;
 		auto addresses = m_RouterInfo.GetAddresses ();
@@ -491,12 +491,14 @@ namespace i2p
 		bool updated = false;
 		for (auto& address : *addresses)
 		{
-			if (address && address->IsSSU2 () && (!address->port || address->port != port || address->published != publish) &&
+			if (address && address->IsSSU2 () && (!address->port || address->port != port ||
+				address->published != publish || address->v != version) &&
 				((v4 && address->IsV4 ()) || (v6 && address->IsV6 ())))
 			{
 				if (port) address->port = port;
 				else if (!address->port) address->port = newPort;
 				address->published = publish;
+				address->v = version;
 				if (publish)
 				{
                     UpdateSSU2AddressCapsTesting (address, true);

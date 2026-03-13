@@ -1482,14 +1482,18 @@ namespace transport
 			ssu2 = false; // don't enable ssu2 for yggdrasil only router
 		if (ssu2)
 		{
+			int ssu2version = 2;
+#if OPENSSL_PQ
+			i2p::config::GetOption("ssu2.version", ssu2version);
+#endif
 			uint16_t ssu2port; i2p::config::GetOption("ssu2.port", ssu2port);
 			if (!ssu2port && port) ssu2port = port;
 			bool published = false;
 			if (!stan) i2p::config::GetOption("ssu2.published", published);
 			if (published)
-				i2p::context.PublishSSU2Address (ssu2port, true, ipv4, ipv6); // publish
+				i2p::context.PublishSSU2Address (ssu2port, true, ipv4, ipv6, ssu2version); // publish
 			else
-				i2p::context.PublishSSU2Address (ssu2port, false, ipv4, ipv6); // unpublish
+				i2p::context.PublishSSU2Address (ssu2port, false, ipv4, ipv6, ssu2version); // unpublish
 		}
 		if (stan)
 			i2p::context.SetStatus (eRouterStatusStan);

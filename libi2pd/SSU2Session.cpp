@@ -2032,7 +2032,7 @@ namespace transport
 						{
 							i2p::context.SetError (eRouterErrorFullConeNAT); // TODO: Full-Cone NAT detection isn't working.
 							// i2p::context.PublishNTCP2Address (TCP_PORT, true, true, false, false); // TODO: TCP_PORT to be filled similar to ep.port()
-							i2p::context.PublishSSU2Address (ep.port(), true, true, false);
+							i2p::context.PublishSSU2Address (ep.port(), true, true, false, m_Server.GetVersion ());
 						}
 					}
 					else
@@ -2043,7 +2043,7 @@ namespace transport
 						{
 							i2p::context.SetErrorV6 (eRouterErrorFullConeNAT);
 							// i2p::context.PublishNTCP2Address (TCP_PORT, true, false, true, false); // TODO: TCP_PORT to be filled similar to ep.port()
-							i2p::context.PublishSSU2Address (ep.port(), true, false, true);
+							i2p::context.PublishSSU2Address (ep.port(), true, false, true, m_Server.GetVersion ());
 						}
 					}
 				}
