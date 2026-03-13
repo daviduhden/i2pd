@@ -219,7 +219,6 @@ namespace data
 			offset++; // cost, ignore
 			address->date = bufbe64toh (buf + offset); offset += 8; // date
 			bool isHost = false, isStaticKey = false, isV2 = false, isIntroKey = false;
-			int pq = 0;
 			auto transportStyle = ExtractString (buf + offset, len - offset); offset += transportStyle.length () + 1;
 			if (!transportStyle.compare (0, 4, "NTCP")) // NTCP or NTCP2
 				address->transportStyle = eTransportNTCP2;
@@ -308,14 +307,8 @@ namespace data
 				}
 				else if (key == "v")
 				{
-					if (value.size () == 1 && value[0] >= '2' && value[0] <= '5') // only 2,3,4,5 allowed
-					{
-                        if (pq >= 3 && pq <= 5)
-                            address->v = pq;
-                        else
-                            address->v = value[0] - '0';
+					if (value == "2") // only 2 is allowed
 						isV2 = true;
-					}
 					else
 					{
 						LogPrint (eLogWarning, "RouterInfo: Unexpected value ", value, " for v");
@@ -324,9 +317,16 @@ namespace data
 				}
 				else if (key == "pq")
 				{
-                    if (address->transportStyle == eTransportNTCP2 && // for NTCP2 only for now
-                        value.size () == 1 && value[0] >= '3' && value[0] <= '5') // only 3,4,5 allowed
-                            pq = value[0] - '0';
+                    if (address->transportStyle == eTransportNTCP2)
+					{
+                        if (value.size () == 1 && value[0] >= '3' && value[0] <= '5') // only 3,4,5 allowed
+                            address->v = value[0] - '0';
+					}
+					else if (address->transportStyle == eTransportSSU2)
+					{
+						if (value.size () == 1 && value[0] >= '3' && value[0] <= '4') // only 3,4 allowed
+                            address->v = value[0] - '0';
+					}
 				}
 				else if (key[0] == 'i')
 				{
@@ -1453,10 +1453,13 @@ namespace data
 				WriteString (std::to_string(address.port), properties);
 				properties << ';';
 			}
-			if (address.v >= 3 && address.v <= 5 && address.IsNTCP2 ()) // post quantum
+			if (address.v >= 3) // post quantum
 			{
-                WriteString ("pq", properties); properties << '=';
-                WriteString (std::to_string (address.v), properties); properties << ';';
+				if (address.v <= 4 || (address.v == 5 && address.IsNTCP2 ()))
+				{
+					WriteString ("pq", properties); properties << '=';
+					WriteString (std::to_string (address.v), properties); properties << ';';
+                }
 			}
 			if (address.IsNTCP2 () || address.IsSSU2 ())
 			{

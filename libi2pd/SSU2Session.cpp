@@ -710,6 +710,10 @@ namespace transport
 	bool SSU2Session::SendSessionRequest (uint64_t token)
 	{
 		// we are Alice
+#if OPENSSL_PQ
+		if (m_Server.GetVersion () > 2) // we support post quantum in config
+			SetVersion (m_Address->v);
+#endif
 		m_EphemeralKeys = i2p::transport::transports.GetNextX25519KeysPair ();
 		m_SentHandshakePacket.reset (new HandshakePacket);
 		auto ts = i2p::util::GetMillisecondsSinceEpoch ();
@@ -823,9 +827,16 @@ namespace transport
 			LogPrint (eLogWarning, "SSU2: SessionRequest message too short ", len);
 			return;
 		}
-		if (header.h.flags[0] <= m_Version) // ver
-			SetVersion (header.h.flags[0]);
+#if OPENSSL_PQ
+		if (header.h.flags[0] >= 2 && header.h.flags[0] <= 4) // ver
+		{
+			if (m_Version > 2)
+				SetVersion (header.h.flags[0]);
+		}
 		else
+#else
+		if (header.h.flags[0] != 2) // ver
+#endif
 		{
             LogPrint (eLogWarning, "SSU2: SessionRequest protocol version ", header.h.flags[0], " is not supported");
             return;
@@ -1423,13 +1434,17 @@ namespace transport
 	void SSU2Session::SendTokenRequest ()
 	{
 		// we are Alice
+#if OPENSSL_PQ
+		if (m_Server.GetVersion () > 2) // we support post quantum in config
+			SetVersion (m_Address->v);
+#endif
 		Header header;
 		uint8_t h[32], payload[41];
 		// fill packet
 		header.h.connID = m_DestConnID; // dest id
 		RAND_bytes (header.buf + 8, 4); // random packet num
 		header.h.type = eSSU2TokenRequest;
-		header.h.flags[0] = 2; // ver
+		header.h.flags[0] = GetVersion (); // ver
 		header.h.flags[1] = (uint8_t)i2p::context.GetNetID (); // netID
 		header.h.flags[2] = 0; // flag
 		memcpy (h, header.buf, 16);
@@ -1497,7 +1512,7 @@ namespace transport
 		header.h.connID = m_DestConnID; // dest id
 		RAND_bytes (header.buf + 8, 4); // random packet num
 		header.h.type = eSSU2Retry;
-		header.h.flags[0] = 2; // ver
+		header.h.flags[0] = GetVersion (); // ver
 		header.h.flags[1] = (uint8_t)i2p::context.GetNetID (); // netID
 		header.h.flags[2] = 0; // flag
 		memcpy (h, header.buf, 16);

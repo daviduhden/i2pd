@@ -165,7 +165,7 @@ namespace transport
 		header.h.connID = GetDestConnID (); // dest id
 		RAND_bytes (header.buf + 8, 4); // random packet num
 		header.h.type = eSSU2PeerTest;
-		header.h.flags[0] = GetVersion (); // ver
+		header.h.flags[0] = 2; // ver, always 2 even for post-quantum
 		header.h.flags[1] = (uint8_t)i2p::context.GetNetID (); // netID
 		header.h.flags[2] = 0; // flag
 		memcpy (h, header.buf, 16);
@@ -263,6 +263,10 @@ namespace transport
 		SetState (eSSU2SessionStateHolePunch);
 		SetRemoteEndpoint (remoteEndpoint);
 		SetAddress (addr);
+#if OPENSSL_PQ
+		if (server.GetVersion () > 2) // we support post quantum in config
+			SetVersion (addr->v);
+#endif
 		SetTerminationTimeout (SSU2_RELAY_NONCE_EXPIRATION_TIMEOUT);
 	}
 

@@ -26,7 +26,7 @@ namespace transport
 		m_IntroducersUpdateTimer (GetService ()), m_IntroducersUpdateTimerV6 (GetService ()),
 		m_IsPublished (true), m_IsSyncClockFromPeers (true), m_PendingTimeOffset (0),
 		m_Rng(i2p::util::GetMonotonicMicroseconds ()%1000000LL), m_IsForcedFirewalled4 (false),
-		m_IsForcedFirewalled6 (false), m_IsThroughProxy (false)
+		m_IsForcedFirewalled6 (false), m_Version (2), m_IsThroughProxy (false)
 	{
 	}
 
@@ -784,6 +784,7 @@ namespace transport
 				{
 					auto session = std::make_shared<SSU2Session> (*this);
 					session->SetRemoteEndpoint (senderEndpoint);
+					session->SetVersion (m_Version);
 					session->ProcessFirstIncomingMessage (connID, buf, len);
 				}
 				else
@@ -1557,6 +1558,13 @@ namespace transport
 	void SSU2Server::ChaCha20 (const uint8_t * msg, size_t msgLen, const uint8_t * key, const uint8_t * nonce, uint8_t * out)
 	{
 		m_ChaCha20 (msg, msgLen, key, nonce, out);
+	}
+
+	void SSU2Server::SetVersion (int version)
+	{
+#if OPENSSL_PQ
+        m_Version = version;
+#endif
 	}
 
 	void SSU2Server::SendThroughProxy (const uint8_t * header, size_t headerLen, const uint8_t * headerX, size_t headerXLen,

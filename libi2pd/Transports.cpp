@@ -197,9 +197,10 @@ namespace transport
 		m_IsRunning = true;
 		m_Thread = new std::thread (std::bind (&Transports::Run, this));
 		std::string ntcp2proxy; i2p::config::GetOption("ntcp2.proxy", ntcp2proxy);
-        int ntcp2version = 2;
+        int ntcp2version = 2, ssu2version = 2;
 #if OPENSSL_PQ
         i2p::config::GetOption("ntcp2.version", ntcp2version);
+        i2p::config::GetOption("ssu2.version", ssu2version);
 #endif
 		i2p::http::URL proxyurl;
 		// create NTCP2. TODO: move to acceptor
@@ -237,6 +238,7 @@ namespace transport
 		if (enableSSU2)
 		{
 			m_SSU2Server = new SSU2Server ();
+			m_SSU2Server->SetVersion (ssu2version);
 			std::string ssu2proxy; i2p::config::GetOption("ssu2.proxy", ssu2proxy);
 			if (!ssu2proxy.empty())
 			{

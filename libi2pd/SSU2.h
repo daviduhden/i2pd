@@ -139,6 +139,9 @@ namespace transport
 			i2p::util::MemoryPool<SSU2IncompleteMessage>& GetIncompleteMessagesPool () { return m_IncompleteMessagesPool; };
 			i2p::util::MemoryPool<SSU2IncompleteMessage::Fragment>& GetFragmentsPool () { return m_FragmentsPool; };
 
+			void SetVersion (int version);
+            int GetVersion () const { return m_Version; }
+
 		private:
 
 			boost::asio::ip::udp::socket& OpenSocket (const boost::asio::ip::udp::endpoint& localEndpoint);
@@ -215,6 +218,7 @@ namespace transport
 			i2p::crypto::AEADChaCha20Poly1305Decryptor m_Decryptor;
 			i2p::crypto::ChaCha20Context m_ChaCha20;
 			bool m_IsForcedFirewalled4, m_IsForcedFirewalled6;
+			int m_Version;
 
 			// proxy
 			bool m_IsThroughProxy;
