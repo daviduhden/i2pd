@@ -802,7 +802,7 @@ namespace transport
 		header.ll[1] ^= CreateHeaderMask (m_Address->i, payload + (payloadSize - 12));
 		const uint8_t nonce[12] = {0}; // always 0
 		m_Server.ChaCha20 (headerX, 48, m_Address->i, nonce, headerX);
-		m_NoiseState->MixHash (payload, payloadSize); // h = SHA256(h || encrypted payload from Session Request) for SessionCreated
+		m_NoiseState->MixHash (payload + offset, payloadSize - offset); // h = SHA256(h || encrypted payload from Session Request) for SessionCreated
 		m_SentHandshakePacket->payloadSize = payloadSize;
 		// send
 		if (m_State == eSSU2SessionStateTokenReceived || m_Server.AddPendingOutgoingSession (shared_from_this ()))
