@@ -38,6 +38,7 @@ namespace transport
 	const int SSU2_PEER_TEST_EXPIRATION_TIMEOUT = 60; // 60 seconds
 	const size_t SSU2_MAX_PACKET_SIZE = 1500;
 	const size_t SSU2_MIN_PACKET_SIZE = 1280;
+	const size_t SSU2_MLKEM768_MIN_PAYLOAD_SIZE = 1258;
 	const int SSU2_HANDSHAKE_RESEND_INTERVAL = 1000; // in milliseconds
 	const int SSU2_MAX_NUM_RESENDS = 5;
 	const int SSU2_RESEND_ATTEMPT_MIN_INTERVAL = 3; // in milliseconds
@@ -247,7 +248,7 @@ namespace transport
 				std::shared_ptr<const i2p::data::RouterInfo::Address> addr = nullptr);
 			virtual ~SSU2Session ();
 
-			void SetVersion (uint8_t version) { m_Version = (version >= 2 && version <= 4) ? version : 2; };
+			void SetVersion (uint8_t version);
 			void SetRemoteEndpoint (const boost::asio::ip::udp::endpoint& ep) { m_RemoteEndpoint = ep; };
 			const boost::asio::ip::udp::endpoint& GetRemoteEndpoint () const { return m_RemoteEndpoint; };
 			i2p::data::RouterInfo::CompatibleTransports GetRemoteTransports () const { return m_RemoteTransports; };

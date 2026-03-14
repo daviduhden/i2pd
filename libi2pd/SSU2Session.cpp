@@ -3407,5 +3407,21 @@ namespace transport
 	{
 		return m_RemoteEndpoint.address ().is_v4 () ? i2p::data::RouterInfo::eSSU2V4 : i2p::data::RouterInfo::eSSU2V6;
 	}
+
+	void SSU2Session::SetVersion (uint8_t version)
+	{
+		switch (version)
+		{
+			case 3:
+				m_Version = 3;
+			break;
+			case 4:
+				m_Version = (m_MaxPayloadSize >= SSU2_MLKEM768_MIN_PAYLOAD_SIZE) ? 4: 2;
+			break;
+			default:
+				m_Version = 2;
+		}
+		m_Version = (version >= 2 && version <= 4) ? version : 2;
+	}
 }
 }
