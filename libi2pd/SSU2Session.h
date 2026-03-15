@@ -248,7 +248,7 @@ namespace transport
 				std::shared_ptr<const i2p::data::RouterInfo::Address> addr = nullptr);
 			virtual ~SSU2Session ();
 
-			void SetVersion (uint8_t version);
+			bool SetVersion (uint8_t version);
 			void SetRemoteEndpoint (const boost::asio::ip::udp::endpoint& ep) { m_RemoteEndpoint = ep; };
 			const boost::asio::ip::udp::endpoint& GetRemoteEndpoint () const { return m_RemoteEndpoint; };
 			i2p::data::RouterInfo::CompatibleTransports GetRemoteTransports () const { return m_RemoteTransports; };

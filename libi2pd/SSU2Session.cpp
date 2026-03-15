@@ -831,7 +831,14 @@ namespace transport
 		if (header.h.flags[0] >= 2 && header.h.flags[0] <= 4) // ver
 		{
 			if (m_Version > 2)
-				SetVersion (header.h.flags[0]);
+			{
+				if (!SetVersion (header.h.flags[0]))
+				{
+					m_TerminationReason = eSSU2TerminationReasonIncompatibleVersion;
+					SendRetry ();
+					return;
+				}
+			}
 		}
 		else
 #else
@@ -1583,6 +1590,8 @@ namespace transport
 		}
 
 		if (!m_NoiseState) m_NoiseState.reset (new i2p::crypto::NoiseSymmetricState);
+		if (m_TerminationReason == eSSU2TerminationReasonIncompatibleVersion)
+			m_Version = 2; // fallback to non-PQ
 #if OPENSSL_PQ
 		if (m_Version > 2)
 			InitNoiseXKStateMLKEM1 (*m_NoiseState, (i2p::data::CryptoKeyType)(m_Version + 2), m_Address->s);
@@ -1590,6 +1599,7 @@ namespace transport
 #endif
 		InitNoiseXKState1 (*m_NoiseState, m_Address->s); // reset Noise TODO: check state
 
+		m_TerminationReason = eSSU2TerminationReasonNormalClose;
 		return SendSessionRequest (token);
 	}
 
@@ -1772,6 +1782,8 @@ namespace transport
 								m_State = eSSU2SessionStateClosingConfirmed;
 							Done ();
 						}
+						else
+							m_TerminationReason = (SSU2TerminationReason)rsn;
 					}
 					else
 						LogPrint(eLogWarning, "SSU2: Unexpected termination block size ", size);
@@ -3408,7 +3420,7 @@ namespace transport
 		return m_RemoteEndpoint.address ().is_v4 () ? i2p::data::RouterInfo::eSSU2V4 : i2p::data::RouterInfo::eSSU2V6;
 	}
 
-	void SSU2Session::SetVersion (uint8_t version)
+	bool SSU2Session::SetVersion (uint8_t version)
 	{
 		switch (version)
 		{
@@ -3421,7 +3433,7 @@ namespace transport
 			default:
 				m_Version = 2;
 		}
-		m_Version = (version >= 2 && version <= 4) ? version : 2;
+		return m_Version == version;
 	}
 }
 }
