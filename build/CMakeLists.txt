@@ -356,6 +356,8 @@ message(STATUS "  THREADSANITIZER  : ${WITH_THREADSANITIZER}")
 message(STATUS "  UNDEFSANITIZER   : ${WITH_UNDEFSANITIZER}")
 message(STATUS "---------------------------------------")
 
+target_link_libraries(libi2pd PUBLIC ZLIB::ZLIB OpenSSL::SSL OpenSSL::Crypto ${Boost_LIBRARIES} Threads::Threads)
+
 if(WITH_BINARY)
   if(WIN32)
     add_executable("${PROJECT_NAME}" WIN32 ${DAEMON_SRC} ${WIN32_RC})
