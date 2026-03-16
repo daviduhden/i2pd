@@ -106,6 +106,7 @@ namespace transport
 			RAND_bytes ((uint8_t *)&m_DestConnID, 8);
 			RAND_bytes ((uint8_t *)&m_SourceConnID, 8);
 		}
+		AdjustMaxPayloadSize ();
 	}
 
 	SSU2Session::~SSU2Session ()
@@ -1083,7 +1084,6 @@ namespace transport
 		HandlePayload (decryptedPayload.data (), decryptedPayload.size ());
 
 		m_Server.AddSession (shared_from_this ());
-		AdjustMaxPayloadSize ();
 		SendSessionConfirmed (headerX + 16);
 		KDFDataPhase (m_KeyDataSend, m_KeyDataReceive);
 
