@@ -822,7 +822,7 @@ namespace transport
 	void SSU2Session::ProcessSessionRequest (Header& header, uint8_t * buf, size_t len)
 	{
 		// we are Bob
-		if (len < 88)
+		if (len < 87)
 		{
 			LogPrint (eLogWarning, "SSU2: SessionRequest message too short ", len);
 			return;
@@ -845,7 +845,7 @@ namespace transport
 		if (header.h.flags[0] != 2) // ver
 #endif
 		{
-            LogPrint (eLogWarning, "SSU2: SessionRequest protocol version ", header.h.flags[0], " is not supported");
+            LogPrint (eLogWarning, "SSU2: SessionRequest protocol version ", (int)header.h.flags[0], " is not supported");
             return;
 		}
 		const uint8_t nonce[12] = {0};
@@ -887,7 +887,7 @@ namespace transport
             std::vector<uint8_t> encapsKey(keyLen);
             if (!m_NoiseState->Decrypt (buf + offset, encapsKey.data (), keyLen))
             {
-				LogPrint (eLogWarning, "SSU2: SessionReauest ML-KEM ciphertext section AEAD decryption failed");
+				LogPrint (eLogWarning, "SSU2: SessionRequest ML-KEM ciphertext section AEAD decryption failed");
 				return;
             }
 			m_NoiseState->MixHash (buf + offset, keyLen + 16);
