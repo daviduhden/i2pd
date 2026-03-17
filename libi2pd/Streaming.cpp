@@ -1635,45 +1635,37 @@ namespace stream
 					float maxWinSize = m_MaxWindowSize;
 					if (m_LastWindowIncTime)
 						maxWinSize = (ts - m_LastWindowIncTime) / (m_RTT / MAX_WINDOW_SIZE_INC_PER_RTT) + winSize;
-					for (int i = 0; i < m_NumPacketsToSend; i++)
+
+					int windowIncCounter = std::min (m_NumPacketsToSend, m_WindowIncCounter);
+					if (m_WindowDropTargetSize)
 					{
-						if (m_WindowIncCounter)
-						{
-							if (m_WindowDropTargetSize)
-							{
-								if (m_LastWindowDropSize && (m_LastWindowDropSize >= m_WindowDropTargetSize))
-									m_WindowDropTargetSize += 1 - (1 / ((m_LastWindowDropSize + PREV_SPEED_KEEP_TIME_COEFF) / m_WindowDropTargetSize)); // some magic here
-								else if (m_LastWindowDropSize && (m_LastWindowDropSize < m_WindowDropTargetSize))
-									m_WindowDropTargetSize += (m_WindowDropTargetSize - (m_LastWindowDropSize - PREV_SPEED_KEEP_TIME_COEFF)) / m_WindowDropTargetSize; // some magic here
-								else
-									m_WindowDropTargetSize += (m_WindowDropTargetSize - (1 - PREV_SPEED_KEEP_TIME_COEFF)) / m_WindowDropTargetSize;
-								if (m_WindowDropTargetSize > m_MaxWindowSize) m_WindowDropTargetSize = m_MaxWindowSize;
-								m_WindowIncCounter--;
-								if (m_WindowDropTargetSize >= maxWinSize)
-								{
-									m_WindowDropTargetSize = maxWinSize;
-									break;
-								}
-							}
-							else
-							{
-								if (m_LastWindowDropSize && (m_LastWindowDropSize >= m_WindowSize))
-									m_WindowSize += 1 - (1 / ((m_LastWindowDropSize + PREV_SPEED_KEEP_TIME_COEFF) / m_WindowSize)); // some magic here
-								else if (m_LastWindowDropSize && (m_LastWindowDropSize < m_WindowSize))
-									m_WindowSize += (m_WindowSize - (m_LastWindowDropSize - PREV_SPEED_KEEP_TIME_COEFF)) / m_WindowSize; // some magic here
-								else
-									m_WindowSize += (m_WindowSize - (1 - PREV_SPEED_KEEP_TIME_COEFF)) / m_WindowSize;
-								if (m_WindowSize > m_MaxWindowSize) m_WindowSize = m_MaxWindowSize;
-								m_WindowIncCounter--;
-								if (m_WindowSize >= maxWinSize)
-								{
-									m_WindowSize = maxWinSize;
-									break;
-								}
-							}
-						}
+						if (m_LastWindowDropSize && (m_LastWindowDropSize >= m_WindowDropTargetSize))
+							m_WindowDropTargetSize += windowIncCounter*(1 - (1 / ((m_LastWindowDropSize + PREV_SPEED_KEEP_TIME_COEFF) / m_WindowDropTargetSize))); // some magic here
+						else if (m_LastWindowDropSize && (m_LastWindowDropSize < m_WindowDropTargetSize))
+							m_WindowDropTargetSize += windowIncCounter*((m_WindowDropTargetSize - (m_LastWindowDropSize - PREV_SPEED_KEEP_TIME_COEFF))) / m_WindowDropTargetSize; // some magic here
 						else
-							break;
+							m_WindowDropTargetSize += windowIncCounter*((m_WindowDropTargetSize - (1 - PREV_SPEED_KEEP_TIME_COEFF)) / m_WindowDropTargetSize);
+						if (m_WindowDropTargetSize > m_MaxWindowSize) m_WindowDropTargetSize = m_MaxWindowSize;
+						m_WindowIncCounter -= windowIncCounter;
+						if (m_WindowDropTargetSize >= maxWinSize)
+						{
+							m_WindowDropTargetSize = maxWinSize;
+						}
+					}
+					else
+					{
+						if (m_LastWindowDropSize && (m_LastWindowDropSize >= m_WindowSize))
+							m_WindowSize += windowIncCounter*(1 - (1 / ((m_LastWindowDropSize + PREV_SPEED_KEEP_TIME_COEFF) / m_WindowSize))); // some magic here
+						else if (m_LastWindowDropSize && (m_LastWindowDropSize < m_WindowSize))
+							m_WindowSize += windowIncCounter*((m_WindowSize - (m_LastWindowDropSize - PREV_SPEED_KEEP_TIME_COEFF)) / m_WindowSize); // some magic here
+						else
+							m_WindowSize += windowIncCounter*((m_WindowSize - (1 - PREV_SPEED_KEEP_TIME_COEFF)) / m_WindowSize);
+						if (m_WindowSize > m_MaxWindowSize) m_WindowSize = m_MaxWindowSize;
+						m_WindowIncCounter -= windowIncCounter;
+						if (m_WindowSize >= maxWinSize)
+						{
+							m_WindowSize = maxWinSize;
+						}
 					}
 					UpdatePacingTime ();
 				}
