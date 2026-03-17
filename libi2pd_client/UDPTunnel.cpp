@@ -159,14 +159,18 @@ namespace client
 
 	void UDPConnection::Acked (uint32_t seqn)
 	{
-		if (!m_AckTimerSeqn) seqn = m_UnackedDatagrams.back ().first;	// if we recieve ack after paht change, clear window and send new datagrams
 		m_IsFirstPacket = false;	// first packet confirmed
-		if (m_AckTimerSeqn && seqn >= m_AckTimerSeqn)
+		if (m_AckTimerSeqn)
 		{
-			m_AckTimerSeqn = 0;
-			m_AckTimer.cancel ();
+			if (seqn >= m_AckTimerSeqn)
+			{
+				m_AckTimerSeqn = 0;
+				m_AckTimer.cancel ();
+			}
 		}
-		if (m_UnackedDatagrams.empty () && seqn < m_UnackedDatagrams.front ().first) return;
+		else if (!m_UnackedDatagrams.empty ())
+			seqn = m_UnackedDatagrams.back ().first;	// if we receive ack after path change, clear window and send new datagrams
+		if (m_UnackedDatagrams.empty () || seqn < m_UnackedDatagrams.front ().first) return;
 		bool acknowledged = false;
 		auto it = m_UnackedDatagrams.begin ();
 		while (it != m_UnackedDatagrams.end ())
