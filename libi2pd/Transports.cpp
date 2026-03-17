@@ -896,10 +896,12 @@ namespace transport
 		m_X25519KeysPairSupplier.Return (pair);
 	}
 
-	void Transports::PeerConnected (std::shared_ptr<TransportSession> session)
+	void Transports::PeerConnected (std::weak_ptr<TransportSession> session)
 	{
-		boost::asio::post (*m_Service, [session, this]()
+		boost::asio::post (*m_Service, [weakSession = std::move(session), this]()
 		{
+			auto session = weakSession.lock();
+			if (!session) return;
 			auto remoteIdentity = session->GetRemoteIdentity ();
 			if (!remoteIdentity) return;
 			auto ident = remoteIdentity->GetIdentHash ();
@@ -973,10 +975,12 @@ namespace transport
 		});
 	}
 
-	void Transports::PeerDisconnected (std::shared_ptr<TransportSession> session)
+	void Transports::PeerDisconnected (std::weak_ptr<TransportSession> session)
 	{
-		boost::asio::post (*m_Service, [session, this]()
+		boost::asio::post (*m_Service, [weakSession = std::move(session), this]()
 		{
+			auto session = weakSession.lock();
+			if (!session) return;
 			auto remoteIdentity = session->GetRemoteIdentity ();
 			if (!remoteIdentity) return;
 			auto ident = remoteIdentity->GetIdentHash ();

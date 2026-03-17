@@ -156,8 +156,8 @@ namespace transport
 			std::future<std::shared_ptr<TransportSession> > SendMessage (const i2p::data::IdentHash& ident, std::shared_ptr<i2p::I2NPMessage> msg);
 			std::future<std::shared_ptr<TransportSession> > SendMessages (const i2p::data::IdentHash& ident, std::list<std::shared_ptr<i2p::I2NPMessage> >&& msgs);
 
-			void PeerConnected (std::shared_ptr<TransportSession> session);
-			void PeerDisconnected (std::shared_ptr<TransportSession> session);
+			void PeerConnected (std::weak_ptr<TransportSession> session);
+			void PeerDisconnected (std::weak_ptr<TransportSession> session);
 			bool IsConnected (const i2p::data::IdentHash& ident) const;
 			void UpdatePeerParams (std::shared_ptr<const i2p::data::RouterInfo> r);
 
