@@ -251,6 +251,7 @@ namespace transport
 			bool SetVersion (uint8_t version);
 			void SetRemoteEndpoint (const boost::asio::ip::udp::endpoint& ep) { m_RemoteEndpoint = ep; };
 			const boost::asio::ip::udp::endpoint& GetRemoteEndpoint () const { return m_RemoteEndpoint; };
+			void AdjustMaxPayloadSize (size_t maxMtu = SSU2_MAX_PACKET_SIZE);
 			i2p::data::RouterInfo::CompatibleTransports GetRemoteTransports () const { return m_RemoteTransports; };
 			i2p::data::RouterInfo::CompatibleTransports GetRemotePeerTestTransports () const { return m_RemotePeerTestTransports; };
 			int GetRemoteVersion () const { return m_RemoteVersion; };
@@ -344,7 +345,6 @@ namespace transport
 			virtual void HandleAddress (const uint8_t * buf, size_t len);
 			size_t CreateEndpoint (uint8_t * buf, size_t len, const boost::asio::ip::udp::endpoint& ep);
 			std::shared_ptr<const i2p::data::RouterInfo::Address> FindLocalAddress () const;
-			void AdjustMaxPayloadSize (size_t maxMtu = SSU2_MAX_PACKET_SIZE);
 			bool GetTestingState () const;
 			void SetTestingState(bool testing) const;
 			std::shared_ptr<const i2p::data::RouterInfo> ExtractRouterInfo (const uint8_t * buf, size_t size);

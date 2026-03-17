@@ -784,6 +784,7 @@ namespace transport
 				{
 					auto session = std::make_shared<SSU2Session> (*this);
 					session->SetRemoteEndpoint (senderEndpoint);
+					session->AdjustMaxPayloadSize ();
 					session->SetVersion (m_Version);
 					session->ProcessFirstIncomingMessage (connID, buf, len);
 				}

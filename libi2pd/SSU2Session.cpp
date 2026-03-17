@@ -91,7 +91,7 @@ namespace transport
 		m_WindowSize (SSU2_MIN_WINDOW_SIZE),
 		m_RTO (SSU2_INITIAL_RTO), m_RelayTag (0),m_ConnectTimer (server.GetService ()),
 		m_TerminationReason (eSSU2TerminationReasonNormalClose),
-		m_MaxPayloadSize (SSU2_MIN_PACKET_SIZE - IPV6_HEADER_SIZE - UDP_HEADER_SIZE - 32), // min size
+		m_MaxPayloadSize (SSU2_MAX_PACKET_SIZE - IPV6_HEADER_SIZE - UDP_HEADER_SIZE - 32), // max size
 		m_LastResendTime (0), m_LastResendAttemptTime (0), m_NextRouterInfoResendTime(0),
 		m_NumRanges (0), m_Version (2)
 	{
@@ -105,8 +105,8 @@ namespace transport
 			if (in_RemoteRouter->IsSSU2PeerTesting (false)) m_RemotePeerTestTransports |= i2p::data::RouterInfo::eSSU2V6;
 			RAND_bytes ((uint8_t *)&m_DestConnID, 8);
 			RAND_bytes ((uint8_t *)&m_SourceConnID, 8);
+			AdjustMaxPayloadSize ();
 		}
-		AdjustMaxPayloadSize ();
 	}
 
 	SSU2Session::~SSU2Session ()
@@ -1582,6 +1582,8 @@ namespace transport
 		}
 		m_State = eSSU2SessionStateTokenReceived;
 		HandlePayload (payload, len - 48);
+		if (m_TerminationReason == eSSU2TerminationReasonIncompatibleVersion)
+			m_Version = 2; // fallback to non-PQ
 		if (!token)
 		{
 			// we should handle payload even for zero token to handle Datetime block and adjust clock in case of clock skew
@@ -1590,8 +1592,6 @@ namespace transport
 		}
 
 		if (!m_NoiseState) m_NoiseState.reset (new i2p::crypto::NoiseSymmetricState);
-		if (m_TerminationReason == eSSU2TerminationReasonIncompatibleVersion)
-			m_Version = 2; // fallback to non-PQ
 #if OPENSSL_PQ
 		if (m_Version > 2)
 			InitNoiseXKStateMLKEM1 (*m_NoiseState, (i2p::data::CryptoKeyType)(m_Version + 2), m_Address->s);
