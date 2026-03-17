@@ -831,7 +831,7 @@ namespace transport
 #if OPENSSL_PQ
 		if (header.h.flags[0] >= 2 && header.h.flags[0] <= 4) // ver
 		{
-			if (m_Version > 2)
+			if (m_Server.GetVersion () > 2)
 			{
 				if (!SetVersion (header.h.flags[0]))
 				{
@@ -2775,7 +2775,7 @@ namespace transport
 		if (addr && addr->ssu)
 		{
 			int mtu = addr->ssu->mtu;
-			if (!mtu && addr->IsV4 ()) mtu = SSU2_MAX_PACKET_SIZE;
+			if (!mtu) mtu = SSU2_MAX_PACKET_SIZE;
 			if (mtu > (int)maxMtu) mtu = maxMtu;
 			if (m_Address && m_Address->ssu && m_Address->ssu->mtu && (!mtu || m_Address->ssu->mtu < mtu))
 				mtu = m_Address->ssu->mtu;
