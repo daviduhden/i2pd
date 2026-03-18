@@ -1002,7 +1002,7 @@ namespace transport
 			return;
 		}
 		payloadSize += 16;
-		m_NoiseState->MixHash (payload, payloadSize); // h = SHA256(h || encrypted Noise payload from Session Created)
+		m_NoiseState->MixHash (payload + offset, payloadSize - offset); // h = SHA256(h || encrypted Noise payload from Session Created)
 		header.ll[0] ^= CreateHeaderMask (i2p::context.GetSSU2IntroKey (), payload + (payloadSize - 24));
 		header.ll[1] ^= CreateHeaderMask (kh2, payload + (payloadSize - 12));
 		m_Server.ChaCha20 (headerX, 48, kh2, nonce, headerX);
@@ -1123,17 +1123,14 @@ namespace transport
 		m_NoiseState->MixHash (header.buf, 16); // h = SHA256(h || header)
 		// Encrypt part 1
 		uint8_t * part1 = m_SentHandshakePacket->headerX;
-		uint8_t nonce[12];
-		CreateNonce (1, nonce); // always one
-		i2p::crypto::AEADChaCha20Poly1305 (i2p::context.GetSSU2StaticPublicKey (), 32, m_NoiseState->m_H, 32, m_NoiseState->m_CK + 32, nonce, part1, 48, true);
+		m_NoiseState->Encrypt (i2p::context.GetSSU2StaticPublicKey (), part1, 32);
 		m_NoiseState->MixHash (part1, 48); // h = SHA256(h || ciphertext);
 		// KDF for Session Confirmed part 2
 		uint8_t sharedSecret[32];
 		i2p::context.GetSSU2StaticKeys ().Agree (Y, sharedSecret);
 		m_NoiseState->MixKey (sharedSecret);
 		// Encrypt part2
-		memset (nonce, 0, 12); // always zero
-		i2p::crypto::AEADChaCha20Poly1305 (payload, payloadSize, m_NoiseState->m_H, 32, m_NoiseState->m_CK + 32, nonce, payload, payloadSize + 16, true);
+		m_NoiseState->Encrypt (payload, payload, payloadSize);
 		payloadSize += 16;
 		m_NoiseState->MixHash (payload, payloadSize); // h = SHA256(h || ciphertext);
 		m_SentHandshakePacket->payloadSize = payloadSize;
@@ -1273,11 +1270,8 @@ namespace transport
 		// KDF for Session Confirmed part 1
 		m_NoiseState->MixHash (header.buf, 16); // h = SHA256(h || header)
 		// decrypt part1
-		uint8_t nonce[12];
-		CreateNonce (1, nonce);
 		uint8_t S[32];
-		if (!i2p::crypto::AEADChaCha20Poly1305 (buf + 16, 32, m_NoiseState->m_H, 32,
-			m_NoiseState->m_CK + 32, nonce, S, 32, false))
+		if (!m_NoiseState->Decrypt (buf + 16, S, 32))
 		{
 			LogPrint (eLogWarning, "SSU2: SessionConfirmed part 1 AEAD verification failed ");
 			if (m_SessionConfirmedFragment) m_SessionConfirmedFragment.reset (nullptr);
@@ -1290,11 +1284,9 @@ namespace transport
 		m_NoiseState->MixKey (sharedSecret);
 		KDFDataPhase (m_KeyDataReceive, m_KeyDataSend);
 		// decrypt part2
-		memset (nonce, 0, 12);
 		uint8_t * payload = buf + 64;
 		std::vector<uint8_t> decryptedPayload(len - 80);
-		if (!i2p::crypto::AEADChaCha20Poly1305 (payload, len - 80, m_NoiseState->m_H, 32,
-			m_NoiseState->m_CK + 32, nonce, decryptedPayload.data (), decryptedPayload.size (), false))
+		if (!m_NoiseState->Decrypt (payload, decryptedPayload.data (), len - 80))
 		{
 			LogPrint (eLogWarning, "SSU2: SessionConfirmed part 2 AEAD verification failed ");
 			if (m_SessionConfirmedFragment) m_SessionConfirmedFragment.reset (nullptr);
