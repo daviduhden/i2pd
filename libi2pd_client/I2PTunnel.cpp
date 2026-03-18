@@ -318,12 +318,12 @@ namespace client
 	{
 		if (ecode)
 		{
-			LogPrint (eLogError, "I2PTunnel: Connect error: ", ecode.message ());
+			LogPrint (eLogError, "I2PTunnel: Connect error to ", m_RemoteEndpoint, " : ", ecode.message ());
 			Terminate ();
 		}
 		else
 		{
-			LogPrint (eLogDebug, "I2PTunnel: Connected");
+			LogPrint (eLogDebug, "I2PTunnel: Connected to ", m_RemoteEndpoint);
 			if (m_SSL)
 				m_SSL->async_handshake (boost::asio::ssl::stream_base::client,
 					std::bind (&I2PTunnelConnection::HandleHandshake, shared_from_this (), std::placeholders::_1));
