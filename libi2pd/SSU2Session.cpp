@@ -833,7 +833,19 @@ namespace transport
 		{
 			if (m_Server.GetVersion () > 2)
 			{
-				if (!SetVersion (header.h.flags[0]))
+				if (SetVersion (header.h.flags[0]))
+				{
+					if (m_Version > 2)
+					{
+						auto keyLen = i2p::crypto::GetMLKEMPublicKeyLen ((i2p::data::CryptoKeyType)(m_Version + 2));
+						if (len < keyLen + 16 + 87)
+						{
+							LogPrint (eLogWarning, "SSU2: SessionRequest version ", m_Version, " message too short ", len);
+							return;
+						}
+					}
+				}
+				else
 				{
 					m_TerminationReason = eSSU2TerminationReasonIncompatibleVersion;
 					SendRetry ();
@@ -1476,6 +1488,20 @@ namespace transport
 		{
 			LogPrint (eLogWarning, "SSU2: Incorrect TokenRequest len ", len);
 			return;
+		}
+#if OPENSSL_PQ
+		if (header.h.flags[0] >= 2 && header.h.flags[0] <= 4) // ver
+		{
+			if (m_Server.GetVersion () > 2)
+				SetVersion (header.h.flags[0]);
+		}
+		else
+#else
+		if (header.h.flags[0] != 2) // ver
+#endif
+		{
+            LogPrint (eLogWarning, "SSU2: TokenRequest protocol version ", (int)header.h.flags[0], " is not supported");
+            return;
 		}
 		uint8_t nonce[12] = {0};
 		uint8_t h[32];
