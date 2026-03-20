@@ -793,18 +793,6 @@ namespace data
 			LogPrint (eLogError, "NetDb: Requests is null");
 	}
 
-	void NetDb::HandleNTCP2RouterInfoMsg (std::shared_ptr<const I2NPMessage> m)
-	{
-		uint8_t flood = m->GetPayload ()[0] & NTCP2_ROUTER_INFO_FLAG_REQUEST_FLOOD;
-		bool updated;
-		auto ri = AddRouterInfo (m->GetPayload () + 1, m->GetPayloadLength () - 1, updated); // without flags
-		if (flood && updated && context.IsFloodfill () && ri)
-		{
-			auto floodMsg = CreateDatabaseStoreMsg (ri, 0); // replyToken = 0
-			Flood (ri->GetIdentHash (), floodMsg);
-		}
-	}
-
 	void NetDb::HandleDatabaseStoreMsg (std::shared_ptr<const I2NPMessage> m)
 	{
 		const uint8_t * buf = m->GetPayload ();

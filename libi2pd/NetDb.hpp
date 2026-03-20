@@ -165,7 +165,6 @@ namespace data
 
 			void HandleDatabaseStoreMsg (std::shared_ptr<const I2NPMessage> msg);
 			void HandleDatabaseLookupMsg (std::shared_ptr<const I2NPMessage> msg);
-			void HandleNTCP2RouterInfoMsg (std::shared_ptr<const I2NPMessage> m);
 
 		private:
 
