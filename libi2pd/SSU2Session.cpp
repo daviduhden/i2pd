@@ -677,10 +677,10 @@ namespace transport
 		switch (header.h.type)
 		{
 			case eSSU2SessionRequest:
-				ProcessSessionRequest (header, buf, len);
+				return ProcessSessionRequest (header, buf, len);
 			break;
 			case eSSU2TokenRequest:
-				ProcessTokenRequest (header, buf, len);
+				return ProcessTokenRequest (header, buf, len);
 			break;
 			case eSSU2PeerTest:
 			{
@@ -820,13 +820,13 @@ namespace transport
 		return true;
 	}
 
-	void SSU2Session::ProcessSessionRequest (Header& header, uint8_t * buf, size_t len)
+	bool SSU2Session::ProcessSessionRequest (Header& header, uint8_t * buf, size_t len)
 	{
 		// we are Bob
-		if (len < 87)
+		if (len < 90)
 		{
 			LogPrint (eLogWarning, "SSU2: SessionRequest message too short ", len);
-			return;
+			return false;
 		}
 #if OPENSSL_PQ
 		if (header.h.flags[0] >= 2 && header.h.flags[0] <= 4) // ver
@@ -838,10 +838,10 @@ namespace transport
 					if (m_Version > 2)
 					{
 						auto keyLen = i2p::crypto::GetMLKEMPublicKeyLen ((i2p::data::CryptoKeyType)(m_Version + 2));
-						if (len < keyLen + 16 + 87)
+						if (len < keyLen + 16 + 90)
 						{
 							LogPrint (eLogWarning, "SSU2: SessionRequest version ", m_Version, " message too short ", len);
-							return;
+							return false;
 						}
 					}
 				}
@@ -849,7 +849,7 @@ namespace transport
 				{
 					m_TerminationReason = eSSU2TerminationReasonIncompatibleVersion;
 					SendRetry ();
-					return;
+					return true;
 				}
 			}
 		}
@@ -859,7 +859,7 @@ namespace transport
 #endif
 		{
             LogPrint (eLogWarning, "SSU2: SessionRequest protocol version ", (int)header.h.flags[0], " is not supported");
-            return;
+            return false;
 		}
 		const uint8_t nonce[12] = {0};
 		uint8_t headerX[48];
@@ -871,7 +871,7 @@ namespace transport
 		{
 			LogPrint (eLogDebug, "SSU2: SessionRequest token mismatch. Retry");
 			SendRetry ();
-			return;
+			return true;
 		}
 		// create and init noise state
 		if (!m_NoiseState) m_NoiseState.reset (new i2p::crypto::NoiseSymmetricState);
@@ -901,7 +901,7 @@ namespace transport
             if (!m_NoiseState->Decrypt (buf + offset, encapsKey.data (), keyLen))
             {
 				LogPrint (eLogWarning, "SSU2: SessionRequest ML-KEM ciphertext section AEAD decryption failed");
-				return;
+				return false;
             }
 			m_NoiseState->MixHash (buf + offset, keyLen + 16);
 			offset += keyLen + 16;
@@ -912,14 +912,14 @@ namespace transport
 		if (offset + 16 > len)
 		{
 			LogPrint (eLogWarning, "SSU2: SessionRequest message is too short ", len);
-			return;
+			return false;
 		}
 		uint8_t * payload = buf + offset;
 		std::vector<uint8_t> decryptedPayload(len - offset - 16);
 		if (!m_NoiseState->Decrypt (payload, decryptedPayload.data (), decryptedPayload.size ()))
 		{
 			LogPrint (eLogWarning, "SSU2: SessionRequest AEAD verification failed ");
-			return;
+			return false;
 		}
 		m_NoiseState->MixHash (payload, len - offset); // h = SHA256(h || encrypted payload from Session Request) for SessionCreated
 		// payload
@@ -933,6 +933,7 @@ namespace transport
 		}
 		else
 			SendRetry ();
+		return true;
 	}
 
 	void SSU2Session::SendSessionCreated (const uint8_t * X)
@@ -1481,13 +1482,13 @@ namespace transport
 		}
 	}
 
-	void SSU2Session::ProcessTokenRequest (Header& header, uint8_t * buf, size_t len)
+	bool SSU2Session::ProcessTokenRequest (Header& header, uint8_t * buf, size_t len)
 	{
 		// we are Bob
 		if (len < 48)
 		{
 			LogPrint (eLogWarning, "SSU2: Incorrect TokenRequest len ", len);
-			return;
+			return false;
 		}
 #if OPENSSL_PQ
 		if (header.h.flags[0] >= 2 && header.h.flags[0] <= 4) // ver
@@ -1501,7 +1502,7 @@ namespace transport
 #endif
 		{
             LogPrint (eLogWarning, "SSU2: TokenRequest protocol version ", (int)header.h.flags[0], " is not supported");
-            return;
+            return false;
 		}
 		uint8_t nonce[12] = {0};
 		uint8_t h[32];
@@ -1515,12 +1516,13 @@ namespace transport
 			i2p::context.GetSSU2IntroKey (), nonce, payload, len - 48, false))
 		{
 			LogPrint (eLogWarning, "SSU2: TokenRequest AEAD verification failed ");
-			return;
+			return false;
 		}
 		// payload
 		m_State = eSSU2SessionStateTokenRequestReceived;
 		HandlePayload (payload, len - 48);
 		SendRetry ();
+		return true;
 	}
 
 	void SSU2Session::SendRetry ()

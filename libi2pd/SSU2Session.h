@@ -323,8 +323,8 @@ namespace transport
 			void ResendHandshakePacket ();
 			void ConnectAfterIntroduction ();
 
-			void ProcessSessionRequest (Header& header, uint8_t * buf, size_t len);
-			void ProcessTokenRequest (Header& header, uint8_t * buf, size_t len);
+			bool ProcessSessionRequest (Header& header, uint8_t * buf, size_t len);
+			bool ProcessTokenRequest (Header& header, uint8_t * buf, size_t len);
 
 			bool SendSessionRequest (uint64_t token = 0);
 			void SendSessionCreated (const uint8_t * X);
