@@ -815,17 +815,36 @@ namespace proxy
 		if (upstreamSock)
 		{
 			auto s = shared_from_this ();
-			i2p::transport::Socks5Handshake (*upstreamSock, std::make_pair(m_address.dns.ToString (), m_port),
-			    [s, &upstreamSock](const boost::system::error_code& ec)
-			    {
-					if (!ec)
-						s->SocksUpstreamSuccess(upstreamSock);
-					else
-					{
-						s->SocksRequestFailed(SOCKS5_NET_UNREACH);
-						LogPrint(eLogError, "SOCKS: Upstream proxy failure: ", ec.message ());
-					}
-				});
+			auto onHandshake = [s, &upstreamSock](const boost::system::error_code& ec)
+			{
+				if (!ec)
+					s->SocksUpstreamSuccess(upstreamSock);
+				else
+				{
+					s->SocksRequestFailed(SOCKS5_NET_UNREACH);
+					LogPrint(eLogError, "SOCKS: Upstream proxy failure: ", ec.message ());
+				}
+			};
+			switch (m_addrtype)
+			{
+				case ADDR_DNS:
+					i2p::transport::Socks5Handshake (*upstreamSock, std::make_pair(m_address.dns.ToString (), m_port), onHandshake);
+				break;
+				case ADDR_IPV4:
+					i2p::transport::Socks5Handshake (*upstreamSock, boost::asio::ip::tcp::endpoint (
+						boost::asio::ip::address_v4(m_address.ip), m_port), onHandshake);
+				break;
+				case ADDR_IPV6:
+				{
+					boost::asio::ip::address_v6::bytes_type bytes;
+					memcpy (bytes.data (), m_address.ipv6, 16);
+					i2p::transport::Socks5Handshake (*upstreamSock, boost::asio::ip::tcp::endpoint (
+						boost::asio::ip::address_v6(bytes), m_port), onHandshake);
+					break;
+				}
+				default:
+					LogPrint(eLogError, "SOCKS: Upstream proxy unknown address type: ", m_addrtype);
+			}
 		}
 		else
 			LogPrint(eLogError, "SOCKS: No upstream socket to send handshake to");
