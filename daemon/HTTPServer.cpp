@@ -952,7 +952,7 @@ namespace http {
 				if (it->GetSendQueueSize () > 0)
 					tmp_s << " [queue:" << it->GetSendQueueSize () << "]";
 				if (it->IsSlow ()) tmp_s << " [slow]";
-				if (it->GetVersion () > 2) tmp_s << " [pq=" << it->GetVersion () << "]";
+				if (it->GetVersion () > 2) tmp_s << " [pq=" << (int)it->GetVersion () << "]";
 				tmp_s << "</div>\r\n" << std::endl;
 				cnt++;
 			}
