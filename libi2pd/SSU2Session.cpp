@@ -7,6 +7,7 @@
 */
 
 #include <string.h>
+#include <algorithm>
 #include <openssl/rand.h>
 #include "Log.h"
 #include "Transports.h"
@@ -760,7 +761,13 @@ namespace transport
 				payloadSize += 3;
 			}
 		}
-		payloadSize += CreatePaddingBlock (payload + payloadSize, 40 + offset - payloadSize, 1);
+		if (payloadSize <= m_MaxPayloadSize - 48)
+			payloadSize += CreatePaddingBlock (payload + payloadSize, std::min (m_MaxPayloadSize - payloadSize - 48, (size_t)32));
+		else
+		{
+			LogPrint (eLogError, "SSU2: SessionRequest max payload size is too small ", m_MaxPayloadSize);
+			return false;
+		}
 		// create and init noise state
 		if (!m_NoiseState) m_NoiseState.reset (new i2p::crypto::NoiseSymmetricState);
 #if OPENSSL_PQ
@@ -1006,7 +1013,13 @@ namespace transport
 			memcpy (payload + payloadSize + 7, &token.first, 8); // token
 			payloadSize += 15;
 		}
-		payloadSize += CreatePaddingBlock (payload + payloadSize, maxPayloadSize - payloadSize);
+		if (payloadSize <= maxPayloadSize)
+			payloadSize += CreatePaddingBlock (payload + payloadSize, std::min (maxPayloadSize - payloadSize, (size_t)64));
+		else
+		{
+			LogPrint (eLogError, "SSU2: SessionCreated max payload size is too small ", maxPayloadSize);
+			return;
+		}
 		// encrypt
 		const uint8_t nonce[12] = {0}; // always zero
 		if (!m_NoiseState->Encrypt (payload + offset, payload + offset, payloadSize - offset))
