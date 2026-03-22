@@ -93,7 +93,7 @@ namespace transport
 		m_TerminationReason (eSSU2TerminationReasonNormalClose),
 		m_MaxPayloadSize (SSU2_MAX_PACKET_SIZE - IPV6_HEADER_SIZE - UDP_HEADER_SIZE - 32), // max size
 		m_LastResendTime (0), m_LastResendAttemptTime (0), m_NextRouterInfoResendTime(0),
-		m_NumRanges (0), m_Version (2)
+		m_NumRanges (0)
 	{
 		if (in_RemoteRouter && m_Address)
 		{

@@ -291,7 +291,6 @@ namespace transport
 		protected:
 
 			SSU2Server& GetServer () { return m_Server; }
-			uint8_t GetVersion () const { return m_Version; }
 			RouterStatus GetRouterStatus () const;
 			void SetRouterStatus (RouterStatus status) const;
 			size_t GetMaxPayloadSize () const { return m_MaxPayloadSize; }
@@ -410,7 +409,6 @@ namespace transport
 			uint64_t m_LastResendTime, m_LastResendAttemptTime, m_NextRouterInfoResendTime; // in milliseconds
 			int m_NumRanges;
 			uint8_t m_Ranges[SSU2_MAX_NUM_ACK_RANGES*2]; // ranges sent with previous Ack if any
-			uint8_t m_Version;
 	};
 
 	inline uint64_t CreateHeaderMask (const uint8_t * kh, const uint8_t * nonce)

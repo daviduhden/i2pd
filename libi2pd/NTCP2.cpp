@@ -612,6 +612,7 @@ namespace transport
 	void NTCP2Session::Established ()
 	{
 		m_IsEstablished = true;
+		m_Version = (uint8_t)m_Establisher->m_CryptoType - 2;
 		m_Establisher.reset (nullptr);
 		SetTerminationTimeout (NTCP2_TERMINATION_TIMEOUT + m_Server.GetRng ()() % NTCP2_TERMINATION_TIMEOUT_VARIANCE);
 		m_NextRouterInfoResendTime = i2p::util::GetSecondsSinceEpoch () + NTCP2_ROUTERINFO_RESEND_INTERVAL +
