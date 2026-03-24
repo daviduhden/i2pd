@@ -159,6 +159,7 @@ namespace transport
 
 			bool IsEstablished () const override { return m_IsEstablished; };
 			i2p::data::RouterInfo::SupportedTransports GetTransportType () const override;
+			boost::asio::ip::address GetRemoteAddress () const override { return m_RemoteEndpoint.address (); };
 			bool IsTerminated () const { return m_IsTerminated; };
 
 			void ClientLogin (); // Alice

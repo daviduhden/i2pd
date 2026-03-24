@@ -216,6 +216,7 @@ namespace transport
 
 			template<typename Filter>
 				std::shared_ptr<const i2p::data::RouterInfo> GetRandomPeer (Filter filter) const;
+			boost::asio::ip::address GetNetworkAddress (std::shared_ptr<TransportSession> session) const;
 
 		private:
 
@@ -230,6 +231,7 @@ namespace transport
 			NTCP2Server * m_NTCP2Server;
 			mutable std::mutex m_PeersMutex;
 			std::unordered_map<i2p::data::IdentHash, std::shared_ptr<Peer> > m_Peers;
+			std::map<boost::asio::ip::address, int> m_ConnectedNetworks; // /24 or /56 adresss -> count
 
 			X25519KeysPairSupplier m_X25519KeysPairSupplier;
 

@@ -972,6 +972,8 @@ namespace transport
 				std::lock_guard<std::mutex> l(m_PeersMutex);
 				m_Peers.emplace (ident, peer);
 			}
+			auto [it1, inserted] = m_ConnectedNetworks.try_emplace (GetNetworkAddress (session), 0);
+			it1->second++;
 		});
 	}
 
@@ -1009,6 +1011,13 @@ namespace transport
 						if (r && !r->IsUpdated ()) r->ScheduleBufferToDelete ();
 					}
 				}
+			}
+			auto it1 = m_ConnectedNetworks.find (GetNetworkAddress (session));
+			if (it1 != m_ConnectedNetworks.end ())
+			{
+				it1->second--;
+				if (it1->second <= 0)
+					m_ConnectedNetworks.erase (it1);
 			}
 		});
 	}
@@ -1364,6 +1373,22 @@ namespace transport
 		auto ts = i2p::util::GetMonotonicSeconds () + IP_BAN_TIME + m_Rng () % IP_BAN_TIME_VARIANCE;
 		std::lock_guard<std::mutex> l(m_BanListMutex);
 		return m_BanList.emplace (addr, ts).second;
+	}
+
+	boost::asio::ip::address Transports::GetNetworkAddress (std::shared_ptr<TransportSession> session) const
+	{
+		if (session)
+		{
+			auto networkAddr = session->GetRemoteAddress ();
+			if (!networkAddr.is_unspecified ())
+			{
+				if (networkAddr.is_v4 ())
+					return boost::asio::ip::network_v4 (networkAddr.to_v4 (), 24).network (); // /24
+				else
+					return boost::asio::ip::network_v6 (networkAddr.to_v6 (), 56).network (); // /56
+			}
+		}
+		return boost::asio::ip::address ();
 	}
 
 	void InitAddressFromIface ()

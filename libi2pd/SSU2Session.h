@@ -276,6 +276,7 @@ namespace transport
 			uint64_t GetLastResendTime () const { return m_LastResendTime; };
 			bool IsEstablished () const override { return m_State == eSSU2SessionStateEstablished; };
 			i2p::data::RouterInfo::SupportedTransports GetTransportType () const override;
+			boost::asio::ip::address GetRemoteAddress () const override { return m_RemoteEndpoint.address (); };
 			uint64_t GetConnID () const { return m_SourceConnID; };
 			SSU2SessionState GetState () const { return m_State; };
 			void SetState (SSU2SessionState state) { m_State = state; };
