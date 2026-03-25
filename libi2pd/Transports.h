@@ -115,6 +115,7 @@ namespace transport
 	const int MAX_NUM_DELAYED_MESSAGES = 150;
 	const int CHECK_PROFILE_NUM_DELAYED_MESSAGES = 15; // check profile after
 	const int NUM_X25519_PRE_GENERATED_KEYS = 25; // pre-generated x25519 keys pairs
+	const int MAX_NUM_CONNECTIONS_FROM_SUBNET_FOR_PEER = 3; // for first hop selection
 
 	const int IP_BAN_TIME = 1800; // in seconds
 	const int IP_BAN_TIME_VARIANCE = 540; // in seconds

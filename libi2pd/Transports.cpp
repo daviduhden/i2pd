@@ -1228,13 +1228,19 @@ namespace transport
 	std::shared_ptr<const i2p::data::RouterInfo> Transports::GetRandomPeer (bool isHighBandwidth) const
 	{
 		return GetRandomPeer (
-			[isHighBandwidth](std::shared_ptr<const Peer> peer)->bool
+			[isHighBandwidth, this](std::shared_ptr<const Peer> peer)->bool
 			{
-				// connected, not overloaded and not slow
-				return !peer->router && peer->IsConnected () && peer->isEligible &&
-					peer->sessions.front ()->GetSendQueueSize () <= PEER_ROUTER_INFO_OVERLOAD_QUEUE_SIZE &&
-					!peer->sessions.front ()->IsSlow () && !peer->sessions.front ()->IsBandwidthExceeded (peer->isHighBandwidth) &&
-					(!isHighBandwidth || peer->isHighBandwidth);
+				// check if connected and high bandwidth if required
+				if (peer->router || !peer->IsConnected () || !peer->isEligible ||
+					peer->sessions.empty () || (isHighBandwidth && !peer->isHighBandwidth)) return false;
+				auto session = peer->sessions.front ();
+				// check if session not overloaded, slow or bandwidth exceeded
+				if (session->GetSendQueueSize () > PEER_ROUTER_INFO_OVERLOAD_QUEUE_SIZE ||
+					session->IsSlow () || session->IsBandwidthExceeded (peer->isHighBandwidth)) return false;
+				// check if max num connections from subnet is not exceeded
+				auto it = m_ConnectedNetworks.find (GetNetworkAddress (session));
+				if (it != m_ConnectedNetworks.end () && it->second > MAX_NUM_CONNECTIONS_FROM_SUBNET_FOR_PEER) return false;
+				return true;
 			});
 	}
 
