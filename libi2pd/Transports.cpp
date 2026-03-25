@@ -972,8 +972,11 @@ namespace transport
 				std::lock_guard<std::mutex> l(m_PeersMutex);
 				m_Peers.emplace (ident, peer);
 			}
-			auto [it1, inserted] = m_ConnectedNetworks.try_emplace (GetNetworkAddress (session), 0);
-			it1->second++;
+			if (IsCheckReserved ())
+			{
+				auto [it1, inserted] = m_ConnectedNetworks.try_emplace (GetNetworkAddress (session), 0);
+				it1->second++;
+			}
 		});
 	}
 
@@ -1012,12 +1015,15 @@ namespace transport
 					}
 				}
 			}
-			auto it1 = m_ConnectedNetworks.find (GetNetworkAddress (session));
-			if (it1 != m_ConnectedNetworks.end ())
+			if (IsCheckReserved ())
 			{
-				it1->second--;
-				if (it1->second <= 0)
-					m_ConnectedNetworks.erase (it1);
+				auto it1 = m_ConnectedNetworks.find (GetNetworkAddress (session));
+				if (it1 != m_ConnectedNetworks.end ())
+				{
+					it1->second--;
+					if (it1->second <= 0)
+						m_ConnectedNetworks.erase (it1);
+				}
 			}
 		});
 	}
@@ -1237,9 +1243,12 @@ namespace transport
 				// check if session not overloaded, slow or bandwidth exceeded
 				if (session->GetSendQueueSize () > PEER_ROUTER_INFO_OVERLOAD_QUEUE_SIZE ||
 					session->IsSlow () || session->IsBandwidthExceeded (peer->isHighBandwidth)) return false;
-				// check if max num connections from subnet is not exceeded
-				auto it = m_ConnectedNetworks.find (GetNetworkAddress (session));
-				if (it != m_ConnectedNetworks.end () && it->second > MAX_NUM_CONNECTIONS_FROM_SUBNET_FOR_PEER) return false;
+				if (IsCheckReserved ())
+				{
+					// check if max num connections from subnet is not exceeded
+					auto it = m_ConnectedNetworks.find (GetNetworkAddress (session));
+					if (it != m_ConnectedNetworks.end () && it->second > MAX_NUM_CONNECTIONS_FROM_SUBNET_FOR_PEER) return false;
+				}
 				return true;
 			});
 	}
@@ -1391,7 +1400,16 @@ namespace transport
 				if (networkAddr.is_v4 ())
 					return boost::asio::ip::network_v4 (networkAddr.to_v4 (), 24).network (); // /24
 				else
+				{
+					if (i2p::util::net::IsYggdrasilAddress (networkAddr))
+					{
+						// change to 2xx range
+						auto bytes = networkAddr.to_v6 ().to_bytes ();
+						bytes[0] = 0x02;
+						return  boost::asio::ip::network_v6 (boost::asio::ip::address_v6 (bytes), 64).network (); // /64
+					}
 					return boost::asio::ip::network_v6 (networkAddr.to_v6 (), 56).network (); // /56
+				}
 			}
 		}
 		return boost::asio::ip::address ();
