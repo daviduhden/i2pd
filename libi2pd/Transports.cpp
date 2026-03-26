@@ -974,8 +974,13 @@ namespace transport
 			}
 			if (IsCheckReserved ())
 			{
-				auto [it1, inserted] = m_ConnectedNetworks.try_emplace (GetNetworkAddress (session), 0);
-				it1->second++;
+				auto addr = GetNetworkAddress (session);
+				if (!addr.is_unspecified ())
+				{
+					std::lock_guard<std::mutex> l( m_ConnectedNetworksMutex);
+					auto [it1, inserted] = m_ConnectedNetworks.try_emplace (addr, 0);
+					it1->second++;
+				}
 			}
 		});
 	}
@@ -1017,12 +1022,17 @@ namespace transport
 			}
 			if (IsCheckReserved ())
 			{
-				auto it1 = m_ConnectedNetworks.find (GetNetworkAddress (session));
-				if (it1 != m_ConnectedNetworks.end ())
+				auto addr = GetNetworkAddress (session);
+				if (!addr.is_unspecified ())
 				{
-					it1->second--;
-					if (it1->second <= 0)
-						m_ConnectedNetworks.erase (it1);
+					std::lock_guard<std::mutex> l( m_ConnectedNetworksMutex);
+					auto it1 = m_ConnectedNetworks.find (addr);
+					if (it1 != m_ConnectedNetworks.end ())
+					{
+						it1->second--;
+						if (it1->second <= 0)
+							m_ConnectedNetworks.erase (it1);
+					}
 				}
 			}
 		});
@@ -1246,8 +1256,13 @@ namespace transport
 				if (IsCheckReserved ())
 				{
 					// check if max num connections from subnet is not exceeded
-					auto it = m_ConnectedNetworks.find (GetNetworkAddress (session));
-					if (it != m_ConnectedNetworks.end () && it->second > MAX_NUM_CONNECTIONS_FROM_SUBNET_FOR_PEER) return false;
+					auto addr = GetNetworkAddress (session);
+					if (!addr.is_unspecified ())
+					{
+						std::lock_guard<std::mutex> l( m_ConnectedNetworksMutex);
+						auto it = m_ConnectedNetworks.find (addr);
+						if (it != m_ConnectedNetworks.end () && it->second > MAX_NUM_CONNECTIONS_FROM_SUBNET_FOR_PEER) return false;
+					}
 				}
 				return true;
 			});
