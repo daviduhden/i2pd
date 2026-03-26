@@ -60,6 +60,7 @@ namespace transport
             break;
             default:
                 m_CryptoType = i2p::data::CRYPTO_KEY_TYPE_ECIES_X25519_AEAD;
+                m_IsLongPadding = false;
         }
 #else
         m_CryptoType = i2p::data::CRYPTO_KEY_TYPE_ECIES_X25519_AEAD;
@@ -1144,6 +1145,8 @@ namespace transport
 
 	void NTCP2Session::ClientLogin ()
 	{
+		if (m_Establisher->m_CryptoType > i2p::data::CRYPTO_KEY_TYPE_ECIES_X25519_AEAD && !(m_Server.GetRng ()() & 0x03))
+			m_Establisher->SetVersion (2); // switch to non-PQ  with a probability of one in four
 		m_Establisher->CreateEphemeralKey ();
 		boost::asio::post (m_Server.GetEstablisherService (),
 		    [s = shared_from_this ()] ()
