@@ -578,7 +578,8 @@ namespace tunnel
 				i2p::data::netdb.GetRandomRouter (prevHop, reverse, endpoint, false);
 			if (hop)
 			{
-				if (!hop->HasProfile () || !hop->GetProfile ()->IsBad ())
+				if ((!hop->HasProfile () || !hop->GetProfile ()->IsBad ()) &&
+					(prevHop != i2p::context.GetSharedRouterInfo () || !i2p::transport::transports.IsTooManyConnectionsFromSubnet (hop)))
 					break;
 			}
 			else if (tryClient)

@@ -199,6 +199,8 @@ namespace transport
 			bool IsBanned (const boost::asio::ip::address& addr);
 			bool AddBan (const boost::asio::ip::address& addr);
 
+			bool IsTooManyConnectionsFromSubnet (std::shared_ptr<const i2p::data::RouterInfo> r) const;
+
 		private:
 
 			void Run ();
@@ -218,6 +220,7 @@ namespace transport
 			template<typename Filter>
 				std::shared_ptr<const i2p::data::RouterInfo> GetRandomPeer (Filter filter) const;
 			boost::asio::ip::address GetNetworkAddress (std::shared_ptr<TransportSession> session) const;
+			boost::asio::ip::address GetNetworkAddress (const boost::asio::ip::address& addr) const;
 
 		private:
 

@@ -1405,29 +1405,51 @@ namespace transport
 		return m_BanList.emplace (addr, ts).second;
 	}
 
-	boost::asio::ip::address Transports::GetNetworkAddress (std::shared_ptr<TransportSession> session) const
+	boost::asio::ip::address Transports::GetNetworkAddress (const boost::asio::ip::address& addr) const
 	{
-		if (session)
+		if (!addr.is_unspecified ())
 		{
-			auto networkAddr = session->GetRemoteAddress ();
-			if (!networkAddr.is_unspecified ())
+			if (addr.is_v4 ())
+				return boost::asio::ip::network_v4 (addr.to_v4 (), 24).network (); // /24
+			else
 			{
-				if (networkAddr.is_v4 ())
-					return boost::asio::ip::network_v4 (networkAddr.to_v4 (), 24).network (); // /24
-				else
+				if (i2p::util::net::IsYggdrasilAddress (addr))
 				{
-					if (i2p::util::net::IsYggdrasilAddress (networkAddr))
-					{
-						// change to 2xx range
-						auto bytes = networkAddr.to_v6 ().to_bytes ();
-						bytes[0] = 0x02;
-						return  boost::asio::ip::network_v6 (boost::asio::ip::address_v6 (bytes), 64).network (); // /64
-					}
-					return boost::asio::ip::network_v6 (networkAddr.to_v6 (), 56).network (); // /56
+					// change to 2xx range
+					auto bytes = addr.to_v6 ().to_bytes ();
+					bytes[0] = 0x02;
+					return  boost::asio::ip::network_v6 (boost::asio::ip::address_v6 (bytes), 64).network (); // /64
 				}
+				return boost::asio::ip::network_v6 (addr.to_v6 (), 56).network (); // /56
 			}
 		}
 		return boost::asio::ip::address ();
+	}
+
+	boost::asio::ip::address Transports::GetNetworkAddress (std::shared_ptr<TransportSession> session) const
+	{
+		if (session)
+			return GetNetworkAddress (session->GetRemoteAddress ());
+		return boost::asio::ip::address ();
+	}
+
+	bool Transports::IsTooManyConnectionsFromSubnet (std::shared_ptr<const i2p::data::RouterInfo> r) const
+	{
+		if (!r && !IsCheckReserved ()) return false;
+		auto addresses = r->GetAddresses ();
+		if (!addresses) return false;
+		for (auto& address : *addresses)
+			if (address && !address->host.is_unspecified ())
+			{
+				auto networkAddr = GetNetworkAddress (address->host);
+				if (!networkAddr.is_unspecified ())
+				{
+					std::lock_guard<std::mutex> l( m_ConnectedNetworksMutex);
+					auto it = m_ConnectedNetworks.find (networkAddr);
+					if (it != m_ConnectedNetworks.end () && it->second > MAX_NUM_CONNECTIONS_FROM_SUBNET_FOR_PEER) return true;
+				}
+			}
+		return false;
 	}
 
 	void InitAddressFromIface ()
