@@ -1435,7 +1435,7 @@ namespace transport
 
 	bool Transports::IsTooManyConnectionsFromSubnet (std::shared_ptr<const i2p::data::RouterInfo> r) const
 	{
-		if (!r && !IsCheckReserved ()) return false;
+		if (!r || !IsCheckReserved ()) return false;
 		auto addresses = r->GetAddresses ();
 		if (!addresses) return false;
 		for (auto& address : *addresses)
