@@ -16,6 +16,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <boost/algorithm/string/predicate.hpp>
 
 namespace i2p
 {
@@ -23,6 +24,17 @@ namespace http
 {
 	constexpr std::string_view CRLF = "\r\n";         /**< HTTP line terminator */
 	constexpr std::string_view HTTP_EOH = "\r\n\r\n"; /**< HTTP end-of-headers mark */
+
+	// case-insensitive comparator for HTTP header names (RFC 7230)
+	struct CaseInsensitiveLess
+	{
+		using is_transparent = void;
+
+		bool operator() (std::string_view a, std::string_view b) const
+		{
+			return boost::ilexicographical_compare(a, b);
+		}
+	};
 
 	struct URL
 	{
@@ -66,7 +78,7 @@ namespace http
 
 	struct HTTPMsg
 	{
-		std::map<std::string, std::string> headers;
+		std::map<std::string, std::string, CaseInsensitiveLess> headers;
 
 		void add_header(const char *name, const std::string & value, bool replace = false);
 		void add_header(const char *name, const char *value, bool replace = false);
