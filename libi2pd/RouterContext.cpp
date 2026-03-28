@@ -651,7 +651,7 @@ namespace i2p
                 m_RouterInfo.UpdateFloodfillProperty (true);
                 if (addresses)
                 {
-                    // diable introducer for all floodfill's SSU2 addresses
+                    // disable introducer for all floodfill's SSU2 addresses
                     UpdateSSU2AddressCapsIntroducer ((*addresses)[i2p::data::RouterInfo::eSSU2V4Idx], false);
                     UpdateSSU2AddressCapsIntroducer ((*addresses)[i2p::data::RouterInfo::eSSU2V6Idx], false);
                 }

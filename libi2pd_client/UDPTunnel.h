@@ -40,7 +40,7 @@ namespace client
 	{
 		i2p::datagram::DatagramDestination * m_Destination;
 		std::weak_ptr<i2p::datagram::DatagramSession> m_LastDatagramSession;
-		uint64_t m_LastRepliableDatagramTime; // millseconds
+		uint64_t m_LastRepliableDatagramTime; // milliseconds
 		i2p::data::IdentHash Identity;
 		bool isIdentity = false;
 		uint32_t m_NextSendPacketNum = 1, m_LastReceivedPacketNum = 0;

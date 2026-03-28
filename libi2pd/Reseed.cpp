@@ -756,7 +756,7 @@ namespace data
 		}
 
 		if ((res.code == 301 || res.code == 302 || res.code == 307) && follow) {
-			LogPrint(eLogDebug, "Reseed: Recieved redirect from ", uri);
+			LogPrint(eLogDebug, "Reseed: Received redirect from ", uri);
 
 			std::string location = res.get_header("Location");
 			if (location.length() == 0) {
