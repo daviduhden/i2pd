@@ -148,7 +148,7 @@ namespace transport
 			bool IsOnline() const { return m_IsOnline; };
 			void SetOnline (bool online);
 
-			int GetLocalDelay () const; // in millseconds
+			int GetLocalDelay () const; // in milliseconds
 
 			auto& GetService () { return *m_Service; };
 			std::shared_ptr<i2p::crypto::X25519Keys> GetNextX25519KeysPair ();
@@ -236,7 +236,7 @@ namespace transport
 			mutable std::mutex m_PeersMutex;
 			std::unordered_map<i2p::data::IdentHash, std::shared_ptr<Peer> > m_Peers;
 			mutable std::mutex m_ConnectedNetworksMutex;
-			std::map<boost::asio::ip::address, int> m_ConnectedNetworks; // /24 or /56 adresss -> count
+			std::map<boost::asio::ip::address, int> m_ConnectedNetworks; // /24 or /56 address -> count
 
 			X25519KeysPairSupplier m_X25519KeysPairSupplier;
 

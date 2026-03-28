@@ -200,7 +200,7 @@ namespace transport
 		uint8_t options[32]; // actual options size is 16 bytes
 		memset (options, 0, 16);
 		options[0] = i2p::context.GetNetID (); // network ID
-		options[1] = 2; // ver, always 2 regradless actual version
+		options[1] = 2; // ver, always 2 regardless actual version
 		htobe16buf (options + 2, paddingLength); // padLen
 		// calculate m3p2Len
 		auto riBuffer = i2p::context.CopyRouterInfoBuffer ();
