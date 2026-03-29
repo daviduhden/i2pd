@@ -511,11 +511,6 @@ namespace data
 		return true;
 	}
 
-	bool RouterInfo::IsFamily (FamilyID famid) const
-	{
-		return m_FamilyID == famid;
-	}
-
 	void RouterInfo::ExtractCaps (std::string_view value)
 	{
 		for (auto cap: value)

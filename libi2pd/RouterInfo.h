@@ -322,7 +322,8 @@ namespace data
 			bool IsNewer (const uint8_t * buf, size_t len) const;
 
 			/** return true if we are in a router family and the signature is valid */
-			bool IsFamily (FamilyID famid) const;
+			bool IsFamily (FamilyID famid) const { return m_FamilyID && m_FamilyID == famid; };
+			bool IsSameFamily (const RouterInfo& other) const { return IsFamily (other.m_FamilyID); };
 
 			// implements RoutingDestination
 			std::shared_ptr<const IdentityEx> GetIdentity () const { return m_RouterIdentity; };

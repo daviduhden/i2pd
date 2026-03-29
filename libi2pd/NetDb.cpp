@@ -1155,7 +1155,7 @@ namespace data
 						router->IsReachableFrom (*compatibleWith)) && !router->IsNAT2NATOnly (*compatibleWith) &&
 					router->GetVersion () >= NETDB_MIN_ALLOWED_VERSION &&
 					router->IsECIES () && !router->IsHighCongestion (clientTunnel) &&
-					(!i2p::transport::transports.IsCheckReserved () || !router->IsSameSubnet (*compatibleWith)) &&
+					(!i2p::transport::transports.IsCheckReserved () || (!router->IsSameFamily (*compatibleWith) && !router->IsSameSubnet (*compatibleWith))) &&
 					(!checkIsReal || router->GetProfile ()->IsReal ()) &&
 					(!endpoint || (router->IsV4 () && (!reverse || router->IsPublished (true)))); // endpoint must be ipv4 and published if inbound(reverse)
 			});
@@ -1195,7 +1195,7 @@ namespace data
 					(router->GetCaps () & RouterInfo::eHighBandwidth) &&
 					router->GetVersion () >= NETDB_MIN_HIGHBANDWIDTH_VERSION &&
 					router->IsECIES () && !router->IsHighCongestion (true) &&
-					(!i2p::transport::transports.IsCheckReserved () || !router->IsSameSubnet (*compatibleWith)) &&
+					(!i2p::transport::transports.IsCheckReserved () || (!router->IsSameFamily (*compatibleWith) && !router->IsSameSubnet (*compatibleWith))) &&
 					(!checkIsReal || router->GetProfile ()->IsReal ()) &&
 					(!endpoint || (router->IsV4 () && (!reverse || router->IsPublished (true)))); // endpoint must be ipv4 and published if inbound(reverse)
 
