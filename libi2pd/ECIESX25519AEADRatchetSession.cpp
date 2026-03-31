@@ -944,7 +944,7 @@ namespace garlic
 		else
 		{
 			moreTags = (receiveTagset->GetTagSetID () > 0) ? ECIESX25519_MAX_NUM_GENERATED_TAGS : // for non first tagset
-				(ECIESX25519_MIN_NUM_GENERATED_TAGS + (index >> 1)); // N/2
+				(ECIESX25519_MIN_NUM_GENERATED_TAGS + 2*index); // 2*N
 			if (moreTags > ECIESX25519_MAX_NUM_GENERATED_TAGS) moreTags = ECIESX25519_MAX_NUM_GENERATED_TAGS;
 			moreTags -= (receiveTagset->GetNextIndex () - index);
 			index -= ECIESX25519_MAX_NUM_GENERATED_TAGS; // trim behind
