@@ -150,11 +150,11 @@ namespace datagram
 			void HandleDataMessagePayload (uint16_t fromPort, uint16_t toPort,
 			 	const uint8_t * buf, size_t len, uint8_t protocolType, i2p::garlic::ECIESX25519AEADRatchetSession * from);
 
-			void SetReceiver (const Receiver& receiver, uint16_t port);
-			void ResetReceiver (uint16_t port);
+			void SetReceiver (const Receiver& receiver, uint16_t port = 0);
+			void ResetReceiver (uint16_t port = 0);
 
-			void SetRawReceiver (const RawReceiver& receiver, uint16_t port);
-			void ResetRawReceiver (uint16_t port);
+			void SetRawReceiver (const RawReceiver& receiver, uint16_t port = 0);
+			void ResetRawReceiver (uint16_t port = 0);
 
 			std::shared_ptr<DatagramSession::Info> GetInfoForRemote(const i2p::data::IdentHash & remote);
 

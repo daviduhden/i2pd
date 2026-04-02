@@ -426,13 +426,10 @@ namespace client
 		dgram->SetReceiver (std::bind (&I2PUDPClientTunnel::HandleRecvFromI2P, this,
 			std::placeholders::_1, std::placeholders::_2,
 			std::placeholders::_3, std::placeholders::_4,
-			std::placeholders::_5, std::placeholders::_6),
-			RemotePort
-		);
+			std::placeholders::_5, std::placeholders::_6));
+
 		dgram->SetRawReceiver (std::bind (&I2PUDPClientTunnel::HandleRecvFromI2PRaw, this,
-			std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4),
-			RemotePort
-		);
+			std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
 
 		m_LocalDest->Start ();
 		if (m_ResolveThread == nullptr)
@@ -443,9 +440,10 @@ namespace client
 	void I2PUDPClientTunnel::Stop ()
 	{
 		auto dgram = m_LocalDest->GetDatagramDestination ();
-		if (dgram) {
-			dgram->ResetReceiver (RemotePort);
-			dgram->ResetRawReceiver (RemotePort);
+		if (dgram)
+		{
+			dgram->ResetReceiver ();
+			dgram->ResetRawReceiver ();
 		}
 		m_cancel_resolve = true;
 

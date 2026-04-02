@@ -21,7 +21,7 @@ namespace datagram
 	DatagramDestination::DatagramDestination (std::shared_ptr<i2p::client::ClientDestination> owner,
 	    bool gzip, DatagramVersion version):
 		m_Owner (owner), m_DefaultReceiver (nullptr), m_DefaultRawReceiver (nullptr),
-		m_Gzip (gzip), m_Version (version)
+		m_DefaultReceiverPort (0), m_DefaultRawReceiverPort (0), m_Gzip (gzip), m_Version (version)
 	{
 		if (m_Gzip)
 			m_Deflator.reset (new i2p::data::GzipDeflator);
@@ -353,8 +353,9 @@ namespace datagram
 	void DatagramDestination::SetReceiver (const Receiver& receiver, uint16_t port)
 	{
 		std::lock_guard<std::mutex> lock(m_ReceiversMutex);
-		m_ReceiversByPorts[port] = receiver;
-		if (!m_DefaultReceiver) {
+		if (port) m_ReceiversByPorts[port] = receiver;
+		if (!m_DefaultReceiver)
+		{
 			m_DefaultReceiver = receiver;
 			m_DefaultReceiverPort = port;
 		}
@@ -363,8 +364,9 @@ namespace datagram
 	void DatagramDestination::ResetReceiver (uint16_t port)
 	{
 		std::lock_guard<std::mutex> lock(m_ReceiversMutex);
-		m_ReceiversByPorts.erase (port);
-		if (m_DefaultReceiverPort == port) {
+		if (port) m_ReceiversByPorts.erase (port);
+		if (!port || m_DefaultReceiverPort == port)
+		{
 			m_DefaultReceiver = nullptr;
 			m_DefaultReceiverPort = 0;
 		}
@@ -374,8 +376,9 @@ namespace datagram
 	void DatagramDestination::SetRawReceiver (const RawReceiver& receiver, uint16_t port)
 	{
 		std::lock_guard<std::mutex> lock(m_RawReceiversMutex);
-		m_RawReceiversByPorts[port] = receiver;
-		if (!m_DefaultRawReceiver) {
+		if (port) m_RawReceiversByPorts[port] = receiver;
+		if (!m_DefaultRawReceiver)
+		{
 			m_DefaultRawReceiver = receiver;
 			m_DefaultRawReceiverPort = port;
 		}
@@ -384,8 +387,9 @@ namespace datagram
 	void DatagramDestination::ResetRawReceiver (uint16_t port)
 	{
 		std::lock_guard<std::mutex> lock(m_RawReceiversMutex);
-		m_RawReceiversByPorts.erase (port);
-		if (m_DefaultRawReceiverPort == port) {
+		if (port) m_RawReceiversByPorts.erase (port);
+		if (!port || m_DefaultRawReceiverPort == port)
+		{
 			m_DefaultRawReceiver = nullptr;
 			m_DefaultRawReceiverPort = 0;
 		}
