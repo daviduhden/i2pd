@@ -21,20 +21,16 @@ namespace client
 	I2PService::I2PService (std::shared_ptr<ClientDestination> localDestination):
 		m_LocalDestination (localDestination ? localDestination :
 			i2p::client::context.CreateNewLocalDestination (false, I2P_SERVICE_DEFAULT_KEY_TYPE)),
-			m_ReadyTimer(m_LocalDestination->GetService()),
-			m_ReadyTimerTriggered(false),
-			m_ConnectTimeout(0),
+			m_ReadyTimer(m_LocalDestination->GetService()), m_ReadyTimerTriggered(false),
+			m_ConnectTimeout(0), m_CloseIdleTime (0), m_LastActivityTime (0),
 			isUpdated (true)
 	{
 		m_LocalDestination->Acquire ();
 	}
 
 	I2PService::I2PService (i2p::data::SigningKeyType kt):
-		m_LocalDestination (i2p::client::context.CreateNewLocalDestination (false, kt)),
-		m_ReadyTimer(m_LocalDestination->GetService()),
-		m_ConnectTimeout(0), isUpdated (true)
+		I2PService (i2p::client::context.CreateNewLocalDestination (false, kt))
 	{
-		m_LocalDestination->Acquire ();
 	}
 
 	I2PService::~I2PService ()
@@ -56,6 +52,12 @@ namespace client
 	void I2PService::SetConnectTimeout(uint64_t timeout)
 	{
 		m_ConnectTimeout = timeout;
+	}
+
+	void I2PService::UpdateLastActivityTime ()
+	{
+		if (m_CloseIdleTime)
+			m_LastActivityTime = i2p::util::GetMonotonicMilliseconds ();
 	}
 
 	void I2PService::AddReadyCallback(ReadyCallback cb)

@@ -244,7 +244,8 @@ namespace client
 					else
 						s->Terminate ();
 				});
-			}
+			GetOwner ()->UpdateLastActivityTime ();
+		}
 	}
 
 	void I2PTunnelConnection::HandleWrite (const boost::system::error_code& ecode)
@@ -312,6 +313,7 @@ namespace client
 		else
 			boost::asio::async_write (*m_Socket, boost::asio::buffer (buf, len), boost::asio::transfer_all (),
 				std::bind (&I2PTunnelConnection::HandleWrite, shared_from_this (), std::placeholders::_1));
+		GetOwner ()->UpdateLastActivityTime ();
 	}
 
 	void I2PTunnelConnection::HandleConnect (const boost::system::error_code& ecode)

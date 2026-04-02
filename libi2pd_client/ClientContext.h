@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -49,6 +49,7 @@ namespace client
 	const char I2P_CLIENT_TUNNEL_MATCH_TUNNELS[] = "matchtunnels";
 	const char I2P_CLIENT_TUNNEL_CONNECT_TIMEOUT[] = "connecttimeout";
 	const char I2P_CLIENT_TUNNEL_KEEP_ALIVE_INTERVAL[] = "keepaliveinterval";
+	const char I2P_CLIENT_TUNNEL_CLOSE_IDLE_TIME[] = "i2cp.closeIdleTime";
 	const char I2P_SERVER_TUNNEL_HOST[] = "host";
 	const char I2P_SERVER_TUNNEL_HOST_OVERRIDE[] = "hostoverride";
 	const char I2P_SERVER_TUNNEL_I2P_HEADERS[] = "i2pheaders";
@@ -64,7 +65,7 @@ namespace client
 	const char I2P_SERVER_TUNNEL_ENABLE_UNIQUE_LOCAL[] = "enableuniquelocal";
 	const char I2P_SERVER_TUNNEL_SSL[] = "ssl";
 	const char UDP_CLIENT_TUNNEL_DATAGRAM_VERSION[] = "datagramversion";
-	
+
 	class ClientContext
 	{
 		public:

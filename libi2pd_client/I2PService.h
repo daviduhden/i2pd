@@ -50,6 +50,8 @@ namespace client
 			void ClearHandlers ();
 
 			void SetConnectTimeout(uint64_t timeout);
+			void SetCloseIdleTime (uint64_t idleTime) { m_CloseIdleTime = idleTime; };
+			void UpdateLastActivityTime ();
 
 			void AddReadyCallback(ReadyCallback cb);
 
@@ -83,9 +85,11 @@ namespace client
 			std::vector<std::pair<ReadyCallback, uint64_t> > m_ReadyCallbacks;
 			boost::asio::steady_timer m_ReadyTimer;
 			bool m_ReadyTimerTriggered;
-			uint64_t m_ConnectTimeout;
+			uint64_t m_ConnectTimeout; // in seconds
+			uint64_t m_CloseIdleTime; // in milliseconds
+			uint64_t m_LastActivityTime; // monotonic milliseconds
 
-			const size_t NEVER_TIMES_OUT = 0;
+			static constexpr size_t NEVER_TIMES_OUT = 0;
 
 		public:
 
