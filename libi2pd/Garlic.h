@@ -245,6 +245,8 @@ namespace garlic
 
 			void CleanUp ();
 			std::mt19937& GetRng () { return m_Rng; };
+			bool IsIdling () const { return m_IsIdling; };
+			void SetIsIdling (bool isIdling) { m_IsIdling = isIdling; };
 			void SetNumTags (int numTags) { m_NumTags = numTags; };
 			int GetNumTags () const { return m_NumTags; };
 			void SetNumRatchetInboundTags (int numTags) { m_NumRatchetInboundTags = numTags; };
@@ -308,6 +310,7 @@ namespace garlic
 		private:
 
 			std::mt19937 m_Rng;
+			bool m_IsIdling;
 			// outgoing sessions
 			int m_NumTags;
 			std::mutex m_SessionsMutex;

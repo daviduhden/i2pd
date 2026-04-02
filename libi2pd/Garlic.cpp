@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -105,8 +105,8 @@ namespace garlic
 		for (auto& msg: msgs)
 			ret.push_back (WrapSingleMessage(msg));
 		return ret;
-	}	
-		
+	}
+
 	ElGamalAESSession::ElGamalAESSession (GarlicDestination * owner,
 		std::shared_ptr<const i2p::data::RoutingDestination> destination, int numTags, bool attachLeaseSet):
 		GarlicRoutingSession (owner, attachLeaseSet),
@@ -435,8 +435,8 @@ namespace garlic
 
 	GarlicDestination::GarlicDestination ():
 		m_Rng(i2p::util::GetMonotonicMicroseconds () % 1000000LL),
-		m_NumTags (32), // 32 tags by default
-		m_PayloadBuffer (nullptr), m_LastIncomingSessionTimestamp (0), 
+		m_IsIdling (false), m_NumTags (32), // 32 tags by default
+		m_PayloadBuffer (nullptr), m_LastIncomingSessionTimestamp (0),
 		m_NumRatchetInboundTags (0) // 0 means standard
 	{
 	}
@@ -550,8 +550,8 @@ namespace garlic
 				{
 					// otherwise ECIESx25519
 					auto ts = i2p::util::GetMillisecondsSinceEpoch ();
-					if (ts > m_LastIncomingSessionTimestamp + INCOMING_SESSIONS_MINIMAL_INTERVAL) 
-					{	
+					if (ts > m_LastIncomingSessionTimestamp + INCOMING_SESSIONS_MINIMAL_INTERVAL)
+					{
 						auto session = std::make_shared<ECIESX25519AEADRatchetSession> (this, false); // incoming
 						if (session->HandleNextMessage (buf, length, nullptr, 0))
 							m_LastIncomingSessionTimestamp = ts;
@@ -761,7 +761,7 @@ namespace garlic
 		if (destination->GetEncryptionType () >= i2p::data::CRYPTO_KEY_TYPE_ECIES_X25519_AEAD)
 		{
 			if (SupportsEncryptionType (destination->GetEncryptionType ()))
-			{	
+			{
 				ECIESX25519AEADRatchetSessionPtr session;
 				uint8_t staticKey[32];
 				destination->Encrypt (nullptr, staticKey); // we are supposed to get static key
@@ -1125,11 +1125,11 @@ namespace garlic
 	{
 		return m_Encryptor.Encrypt (msg, msgLen, ad, adLen, key, nonce, buf, len);
 	}
-		
+
 	bool GarlicDestination::AEADChaCha20Poly1305Decrypt (const uint8_t * msg, size_t msgLen, const uint8_t * ad, size_t adLen,
 		const uint8_t * key, const uint8_t * nonce, uint8_t * buf, size_t len)
 	{
 		return m_Decryptor.Decrypt (msg, msgLen, ad, adLen, key, nonce, buf, len);
-	}	
+	}
 }
 }

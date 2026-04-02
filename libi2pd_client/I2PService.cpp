@@ -54,10 +54,28 @@ namespace client
 		m_ConnectTimeout = timeout;
 	}
 
+	void I2PService::SetCloseIdleTime (uint64_t idleTime)
+	{
+		if (idleTime > 0 && idleTime < I2P_SERVICE_MIN_CLOSE_IDLE_TIME) idleTime = I2P_SERVICE_MIN_CLOSE_IDLE_TIME;
+		m_CloseIdleTime = idleTime;
+		if (m_CloseIdleTime)
+		{
+			if (!m_IdleCheckTimer) m_IdleCheckTimer.reset (new boost::asio::steady_timer(m_LocalDestination->GetService ()));
+			ScheduleIdleCheckTimer ();
+		}
+	}
+
 	void I2PService::UpdateLastActivityTime ()
 	{
 		if (m_CloseIdleTime)
+		{
 			m_LastActivityTime = i2p::util::GetMonotonicMilliseconds ();
+			if (m_LocalDestination->IsIdling ())
+			{
+				m_LocalDestination->SetIsIdling (false);
+				ScheduleIdleCheckTimer ();
+			}
+		}
 	}
 
 	void I2PService::AddReadyCallback(ReadyCallback cb)
@@ -106,6 +124,25 @@ namespace client
 			TriggerReadyCheckTimer();
 		else
 			m_ReadyTimerTriggered = false;
+	}
+
+	void I2PService::ScheduleIdleCheckTimer ()
+	{
+		if (!m_IdleCheckTimer || !m_CloseIdleTime) return;
+		m_IdleCheckTimer->expires_after(std::chrono::milliseconds (m_CloseIdleTime/2));
+		m_IdleCheckTimer->async_wait(std::bind(&I2PService::HandleIdleCheckTimer, shared_from_this (), std::placeholders::_1));
+	}
+
+	void I2PService::HandleIdleCheckTimer(const boost::system::error_code & ec)
+	{
+		if (ec != boost::asio::error::operation_aborted)
+		{
+			auto ts = i2p::util::GetMonotonicMilliseconds ();
+			if (ts > m_LastActivityTime + m_CloseIdleTime)
+				m_LocalDestination->SetIsIdling (true);
+			else
+				ScheduleIdleCheckTimer ();
+		}
 	}
 
 	void I2PService::CreateStream (StreamRequestComplete streamRequestComplete, std::string_view dest, uint16_t port) {
