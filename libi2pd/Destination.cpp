@@ -162,8 +162,8 @@ namespace client
 	}
 
 
-	bool
-	LeaseSetDestination::Reconfigure(const i2p::util::Mapping &params) {
+	bool LeaseSetDestination::Reconfigure (const i2p::util::Mapping& params)
+	{
 		bool dontPublishLeaseSet = !m_IsPublic;
 		params.Get(I2CP_PARAM_DONT_PUBLISH_LEASESET, dontPublishLeaseSet);
 		m_IsPublic = !dontPublishLeaseSet;
