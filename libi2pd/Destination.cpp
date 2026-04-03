@@ -67,7 +67,9 @@ namespace client
 				if (m_Nickname.empty ()) // try outbound
 					m_Nickname = (*params)[I2CP_PARAM_OUTBOUND_NICKNAME];
 				// otherwise we set default nickname in Start when we know local address
-				params->Get (I2CP_PARAM_DONT_PUBLISH_LEASESET, m_IsPublic); // override isPublic
+				bool dontPublishLeaseSet = true;
+				if (params->Get (I2CP_PARAM_DONT_PUBLISH_LEASESET, dontPublishLeaseSet))
+					m_IsPublic = !dontPublishLeaseSet; // override isPublic
 				params->Get (I2CP_PARAM_LEASESET_TYPE, m_LeaseSetType);
 				if (m_LeaseSetType == i2p::data::NETDB_STORE_TYPE_ENCRYPTED_LEASESET2)
 				{
