@@ -739,7 +739,10 @@ namespace client
 						}
 						uint64_t closeIdleTime = section.second.get<uint64_t>(I2P_CLIENT_TUNNEL_CLOSE_IDLE_TIME, 0);
 						if (closeIdleTime)
+						{
 							clientTunnel->SetCloseIdleTime(closeIdleTime);
+							clientTunnel->SetNewDestOnResume(section.second.get<bool>(I2P_CLIENT_TUNNEL_NEW_DEST_ON_RESUME, false));
+						}
 
 						auto ins = m_ClientTunnels.insert (std::make_pair (clientEndpoint, clientTunnel));
 						if (ins.second)

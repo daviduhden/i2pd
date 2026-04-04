@@ -250,6 +250,7 @@ namespace client
 			void Stop () override;
 
 			const i2p::data::PrivateKeys& GetPrivateKeys () const { return m_Keys; };
+			void SetPrivateKeys (const i2p::data::PrivateKeys& keys) { m_Keys = keys; };
 			void Sign (const uint8_t * buf, int len, uint8_t * signature) const { m_Keys.Sign (buf, len, signature); };
 
 			// ref counter

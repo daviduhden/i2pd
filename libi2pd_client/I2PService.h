@@ -52,6 +52,7 @@ namespace client
 
 			void SetConnectTimeout(uint64_t timeout);
 			void SetCloseIdleTime (uint64_t idleTime);
+			void SetNewDestOnResume (bool newDestOnResume) { m_NewDestOnResume = newDestOnResume; }
 			void UpdateLastActivityTime ();
 
 			void AddReadyCallback(ReadyCallback cb);
@@ -79,6 +80,7 @@ namespace client
 			void HandleReadyCheckTimer(const boost::system::error_code & ec);
 			void ScheduleIdleCheckTimer ();
 			void HandleIdleCheckTimer(const boost::system::error_code & ec);
+			void Resume ();
 
 		private:
 
@@ -90,6 +92,7 @@ namespace client
 			bool m_ReadyTimerTriggered;
 			uint64_t m_ConnectTimeout; // in seconds
 			uint64_t m_CloseIdleTime; // in milliseconds
+			bool m_NewDestOnResume;
 			uint64_t m_LastActivityTime; // monotonic milliseconds
 			std::unique_ptr<boost::asio::steady_timer> m_IdleCheckTimer;
 

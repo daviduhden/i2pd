@@ -50,6 +50,7 @@ namespace client
 	const char I2P_CLIENT_TUNNEL_CONNECT_TIMEOUT[] = "connecttimeout";
 	const char I2P_CLIENT_TUNNEL_KEEP_ALIVE_INTERVAL[] = "keepaliveinterval";
 	const char I2P_CLIENT_TUNNEL_CLOSE_IDLE_TIME[] = "i2cp.closeIdleTime";
+	const char I2P_CLIENT_TUNNEL_NEW_DEST_ON_RESUME[] = "i2cp.newDestOnResume";
 	const char I2P_SERVER_TUNNEL_HOST[] = "host";
 	const char I2P_SERVER_TUNNEL_HOST_OVERRIDE[] = "hostoverride";
 	const char I2P_SERVER_TUNNEL_I2P_HEADERS[] = "i2pheaders";

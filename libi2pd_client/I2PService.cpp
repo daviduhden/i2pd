@@ -22,7 +22,7 @@ namespace client
 		m_LocalDestination (localDestination ? localDestination :
 			i2p::client::context.CreateNewLocalDestination (false, I2P_SERVICE_DEFAULT_KEY_TYPE)),
 			m_ReadyTimer(m_LocalDestination->GetService()), m_ReadyTimerTriggered(false),
-			m_ConnectTimeout(0), m_CloseIdleTime (0), m_LastActivityTime (0),
+			m_ConnectTimeout(0), m_CloseIdleTime (0), m_NewDestOnResume (false), m_LastActivityTime (0),
 			isUpdated (true)
 	{
 		m_LocalDestination->Acquire ();
@@ -71,11 +71,24 @@ namespace client
 		{
 			m_LastActivityTime = i2p::util::GetMonotonicMilliseconds ();
 			if (m_LocalDestination->IsIdling ())
-			{
-				m_LocalDestination->SetIsIdling (false);
-				ScheduleIdleCheckTimer ();
-			}
+				Resume ();
 		}
+	}
+
+	void I2PService::Resume ()
+	{
+		if (m_CloseIdleTime)
+		{
+			if (m_NewDestOnResume)
+			{
+				auto ident = m_LocalDestination->GetPrivateKeys ().GetPublic ();
+				if (ident)
+					m_LocalDestination->SetPrivateKeys (i2p::data::PrivateKeys::CreateRandomKeys (
+						ident->GetSigningKeyType (), ident->GetCryptoKeyType (), true));
+			}
+			ScheduleIdleCheckTimer ();
+		}
+		m_LocalDestination->SetIsIdling (false);
 	}
 
 	void I2PService::AddReadyCallback(ReadyCallback cb)
