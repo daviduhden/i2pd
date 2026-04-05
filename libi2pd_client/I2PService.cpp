@@ -83,8 +83,11 @@ namespace client
 			{
 				auto ident = m_LocalDestination->GetPrivateKeys ().GetPublic ();
 				if (ident)
+				{
 					m_LocalDestination->SetPrivateKeys (i2p::data::PrivateKeys::CreateRandomKeys (
 						ident->GetSigningKeyType (), ident->GetCryptoKeyType (), true));
+					i2p::client::context.ReplaceLocalDestinationHash (ident->GetIdentHash (), m_LocalDestination->GetIdentHash ());
+				}
 			}
 			ScheduleIdleCheckTimer ();
 		}

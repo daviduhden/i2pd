@@ -369,25 +369,39 @@ namespace client
 
 	void ClientContext::AddLocalDestination (std::shared_ptr<ClientDestination> localDestination)
 	{
-		std::unique_lock<std::mutex> l(m_DestinationsMutex);
-		m_Destinations[localDestination->GetIdentHash ()] = localDestination;
-		localDestination->Start ();
+		bool added = false;
+		{
+			std::unique_lock<std::mutex> l(m_DestinationsMutex);
+			added = m_Destinations.emplace (localDestination->GetIdentHash (), localDestination).second;
+		}
+		if (added)
+			localDestination->Start ();
 	}
 
 	void ClientContext::DeleteLocalDestination (std::shared_ptr<ClientDestination> destination)
 	{
 		if (!destination) return;
-		auto it = m_Destinations.find (destination->GetIdentHash ());
-		if (it != m_Destinations.end ())
+		bool removed = false;
 		{
-			auto d = it->second;
-			{
-				std::unique_lock<std::mutex> l(m_DestinationsMutex);
-				m_Destinations.erase (it);
-			}
-			d->Stop ();
+			std::unique_lock<std::mutex> l(m_DestinationsMutex);
+			removed = m_Destinations.erase (destination->GetIdentHash ()) > 0;
 		}
+		if (removed)
+			destination->Stop ();
 	}
+
+	bool ClientContext::ReplaceLocalDestinationHash (const i2p::data::IdentHash& oldIdentHash, const i2p::data::IdentHash& newIdentHash)
+	{
+		std::unique_lock<std::mutex> l(m_DestinationsMutex);
+		auto it = m_Destinations.find (oldIdentHash);
+		if (it == m_Destinations.end ()) return false;
+		auto dest = it->second;
+		if (!dest) return false;
+		m_Destinations.erase (it);
+		m_Destinations.emplace (newIdentHash, dest);
+		return true;
+	}
+
 
 	std::shared_ptr<ClientDestination> ClientContext::CreateNewLocalDestination (const i2p::data::PrivateKeys& keys, bool isPublic,
 		const i2p::util::Mapping * params)
