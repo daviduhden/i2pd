@@ -359,6 +359,7 @@ namespace config {
 		persist.add_options()
 			("persist.profiles", value<bool>()->default_value(true),       "Persist peer profiles (default: true)")
 			("persist.addressbook", value<bool>()->default_value(true),    "Persist full addresses (default: true)")
+			("persist.netdbinterval", value<int>()->default_value(60),     "NetDb persist interval in seconds (default: 60)")
 		;
 
 		options_description cpuext("CPU encryption extensions options. Deprecated");

@@ -60,6 +60,8 @@ namespace data
 	const int NETDB_EXPLORATORY_SELECTION_UPDATE_INTERVAL = 82; // in seconds. for floodfill
 	const int NETDB_NEXT_DAY_ROUTER_INFO_THRESHOLD = 45; // in minutes
 	const int NETDB_NEXT_DAY_LEASESET_THRESHOLD = 10; // in minutes
+	const int NETDB_MIN_PERSIST_INTERVAL = 15; // 15 secs in seconds
+	const int NETDB_MAX_PERSIST_INTERVAL = 1800; // 30 minutes in seconds
 
 	/** function for visiting a leaseset stored in a floodfill */
 	typedef std::function<void(const IdentHash, std::shared_ptr<LeaseSet>)> LeaseSetVisitor;
@@ -195,6 +197,7 @@ namespace data
 
 			bool m_PersistProfiles;
 			std::future<void> m_SavingProfiles, m_DeletingProfiles, m_ApplyingProfileUpdates, m_PersistingRouters;
+			uint64_t m_NetDbPersistInterval; // in milliseconds
 
 			std::vector<std::shared_ptr<const RouterInfo> > m_ExploratorySelection;
 			uint64_t m_LastExploratorySelectionUpdateTime; // in monotonic seconds

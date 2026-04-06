@@ -39,6 +39,7 @@ namespace data
 
 	NetDb::NetDb (): m_IsRunning (false), m_Thread (nullptr), m_Reseeder (nullptr),
 		m_Storage("netDb", "r", "routerInfo-", "dat"), m_PersistProfiles (true),
+		m_NetDbPersistInterval (NETDB_MIN_PERSIST_INTERVAL*1000LL),
 		m_LastExploratorySelectionUpdateTime (0), m_Rng(i2p::util::GetMonotonicMicroseconds () % 1000000LL)
 	{
 	}
@@ -84,6 +85,12 @@ namespace data
 			m_Floodfills.Insert (i2p::context.GetSharedRouterInfo ());
 
 		i2p::config::GetOption("persist.profiles", m_PersistProfiles);
+
+		int persistInterval = 0;
+		i2p::config::GetOption("persist.netdbinterval", persistInterval);
+		if (persistInterval < NETDB_MIN_PERSIST_INTERVAL) persistInterval = NETDB_MIN_PERSIST_INTERVAL;
+		if (persistInterval > NETDB_MAX_PERSIST_INTERVAL) persistInterval = NETDB_MAX_PERSIST_INTERVAL;
+		m_NetDbPersistInterval = persistInterval*1000LL;
 
 		m_IsRunning = true;
 		m_Thread = new std::thread (std::bind (&NetDb::Run, this));
@@ -154,7 +161,7 @@ namespace data
 					continue; // don't manage netdb when offline or transports are not running
 
 				uint64_t mts = i2p::util::GetMonotonicMilliseconds ();
-				if (mts >= lastManage + 60000) // manage routers and leasesets every minute
+				if (mts >= lastManage + m_NetDbPersistInterval) // manage routers and leasesets every persist.netdbinterval
 				{
 					if (lastManage)
 					{
