@@ -637,6 +637,7 @@ namespace client
 
 	void I2PClientTunnelHandler::Handle()
 	{
+		GetOwner ()->UpdateLastActivityTime ();
 		GetOwner()->CreateStream (
 			std::bind (&I2PClientTunnelHandler::HandleStreamRequestComplete, shared_from_this(), std::placeholders::_1),
 			m_Address, m_DestinationPort);
