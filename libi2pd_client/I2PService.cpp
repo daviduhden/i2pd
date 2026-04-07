@@ -84,9 +84,14 @@ namespace client
 				auto ident = m_LocalDestination->GetPrivateKeys ().GetPublic ();
 				if (ident)
 				{
+					auto streamingDest = m_LocalDestination->GetStreamingDestination ();
+					if (streamingDest) streamingDest->Stop ();
+					auto pool = m_LocalDestination->GetTunnelPool ();
+					if (pool) pool->DetachTunnels ();
 					m_LocalDestination->SetPrivateKeys (i2p::data::PrivateKeys::CreateRandomKeys (
 						ident->GetSigningKeyType (), ident->GetCryptoKeyType (), true));
 					i2p::client::context.ReplaceLocalDestinationHash (ident->GetIdentHash (), m_LocalDestination->GetIdentHash ());
+					if (streamingDest) streamingDest->Start ();
 				}
 			}
 			ScheduleIdleCheckTimer ();
