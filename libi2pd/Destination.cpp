@@ -1136,6 +1136,23 @@ namespace client
 		LogPrint(eLogDebug, "Destination: -> Stopping done");
 	}
 
+	void ClientDestination::SetPrivateKeys (const i2p::data::PrivateKeys& keys)
+	{
+		if (m_StreamingDestination) m_StreamingDestination->Stop (); // close all streams
+		CleanUp (); // delete sessions and tags
+		auto pool = GetTunnelPool ();
+		if (pool) pool->DetachTunnels ();
+		m_Keys = keys;
+		// update static keys
+		for (auto it: m_EncryptionKeys)
+			if (it.second)
+			{
+				it.second->GenerateKeys ();
+				it.second->CreateDecryptor ();
+			}
+		if (m_StreamingDestination) m_StreamingDestination->Start ();
+	}
+
 	void ClientDestination::HandleDataMessage (const uint8_t * buf, size_t len,
 		i2p::garlic::ECIESX25519AEADRatchetSession * from)
 	{
