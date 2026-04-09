@@ -674,6 +674,8 @@ namespace garlic
 #if OPENSSL_PQ
 		if (m_PQKeys)
 		{
+			m_NSRCK = std::make_unique<std::array<uint8_t, 64> >();
+			memcpy (m_NSRCK->data (), m_CK, 64);
 			size_t cipherTextLen = i2p::crypto::GetMLKEMCipherTextLen (m_RemoteStaticKeyType);
 			std::vector<uint8_t> kemCiphertext(cipherTextLen);
 			m_PQKeys->Encaps (kemCiphertext.data (), sharedSecret);
@@ -683,8 +685,6 @@ namespace garlic
 				LogPrint (eLogWarning, "Garlic: NSR ML-KEM ciphertext section AEAD encryption failed");
 				return false;
 			}
-			m_NSREncodedPQKey = std::make_unique<std::vector<uint8_t> > (cipherTextLen + 16);
-			memcpy (m_NSREncodedPQKey->data (), out + offset, cipherTextLen + 16);
 			MixHash (out + offset, cipherTextLen + 16);
 			MixKey (sharedSecret);
 			offset += cipherTextLen + 16;
@@ -745,16 +745,26 @@ namespace garlic
 #if OPENSSL_PQ
 		if (m_PQKeys)
 		{
-			if (m_NSREncodedPQKey)
+			if (m_NSRCK)
 			{
 				size_t cipherTextLen = i2p::crypto::GetMLKEMCipherTextLen (m_RemoteStaticKeyType);
-				memcpy (out + offset, m_NSREncodedPQKey->data (), cipherTextLen + 16);
+				std::vector<uint8_t> kemCiphertext(cipherTextLen);
+				uint8_t sharedSecret[32];
+				m_PQKeys->Encaps (kemCiphertext.data (), sharedSecret);
+
+				memcpy (m_CK, m_NSRCK->data (), 64); // restore key
+				if (!Encrypt (kemCiphertext.data (), out + offset, cipherTextLen))
+				{
+					LogPrint (eLogWarning, "Garlic: Next NSR ML-KEM ciphertext section AEAD encryption failed");
+					return false;
+				}
 				MixHash (out + offset, cipherTextLen + 16);
+				MixKey (sharedSecret);
 				offset += cipherTextLen + 16;
 			}
 			else
 			{
-				LogPrint (eLogWarning, "Garlic: No stored ML-KEM keys");
+				LogPrint (eLogWarning, "Garlic: No stored CK");
 				return false;
 			}
 		}
@@ -968,7 +978,7 @@ namespace garlic
 				m_EphemeralKeys = nullptr;
 #if OPENSSL_PQ
 				m_PQKeys = nullptr;
-				m_NSREncodedPQKey = nullptr;
+				m_NSRCK = nullptr;
 #endif
 				[[fallthrough]];
 			case eSessionStateEstablished:
