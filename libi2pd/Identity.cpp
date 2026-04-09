@@ -139,17 +139,6 @@ namespace data
 					memcpy (m_StandardIdentity.signingKey, signingKey, i2p::crypto::GOSTR3410_512_PUBLIC_KEY_LENGTH);
 					break;
 				}
-#if OPENSSL_PQ
-				case SIGNING_KEY_TYPE_MLDSA44:
-				{
-					memcpy (m_StandardIdentity, signingKey, 384);
-					excessLen = i2p::crypto::MLDSA44_PUBLIC_KEY_LENGTH - 384;
-					excessBuf = new uint8_t[excessLen];
-					memcpy (excessBuf, signingKey + 384, excessLen);
-					cryptoType = 0xFF; // crypto key is not used
-					break;
-				}
-#endif
 				default:
 					LogPrint (eLogError, "Identity: Signing key type ", (int)type, " is not supported");
 			}
@@ -422,10 +411,6 @@ namespace data
 				return new i2p::crypto::GOSTR3410_512_Verifier (i2p::crypto::eGOSTR3410TC26A512);
 			case SIGNING_KEY_TYPE_REDDSA_SHA512_ED25519:
 				return new i2p::crypto::RedDSA25519Verifier ();
-#if OPENSSL_PQ
-			case SIGNING_KEY_TYPE_MLDSA44:
-				return new i2p::crypto::MLDSA44Verifier ();
-#endif
 			case SIGNING_KEY_TYPE_RSA_SHA256_2048:
 			case SIGNING_KEY_TYPE_RSA_SHA384_3072:
 			case SIGNING_KEY_TYPE_RSA_SHA512_4096:
@@ -711,11 +696,6 @@ namespace data
 			case SIGNING_KEY_TYPE_REDDSA_SHA512_ED25519:
 				return new i2p::crypto::RedDSA25519Signer (priv);
 			break;
-#if OPENSSL_PQ
-			case SIGNING_KEY_TYPE_MLDSA44:
-				return new i2p::crypto::MLDSA44Signer (priv);
-			break;
-#endif
 			default:
 				LogPrint (eLogError, "Identity: Signing key type ", (int)keyType, " is not supported");
 		}
@@ -825,11 +805,6 @@ namespace data
 			case SIGNING_KEY_TYPE_REDDSA_SHA512_ED25519:
 				i2p::crypto::CreateRedDSA25519RandomKeys (priv, pub);
 			break;
-#if OPENSSL_PQ
-			case SIGNING_KEY_TYPE_MLDSA44:
-				i2p::crypto::CreateMLDSA44RandomKeys (priv, pub);
-			break;
-#endif
 			default:
 				LogPrint (eLogWarning, "Identity: Signing key type ", (int)type, " is not supported. Create DSA-SHA1");
 				i2p::crypto::CreateDSARandomKeys (priv, pub); // DSA-SHA1
