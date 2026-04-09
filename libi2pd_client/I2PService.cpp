@@ -61,6 +61,7 @@ namespace client
 		if (m_CloseIdleTime)
 		{
 			if (!m_IdleCheckTimer) m_IdleCheckTimer.reset (new boost::asio::steady_timer(m_LocalDestination->GetService ()));
+			m_LastActivityTime = i2p::util::GetMonotonicMilliseconds ();
 			ScheduleIdleCheckTimer ();
 		}
 	}

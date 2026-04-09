@@ -538,6 +538,7 @@ namespace proxy
 		m_send_buf.append(m_recv_buf);
 		/* connect to destination */
 		LogPrint(eLogDebug, "HTTPProxy: Connecting to host ", dest_host, ":", dest_port);
+		GetOwner ()->UpdateLastActivityTime ();
 		GetOwner()->CreateStream (std::bind (&HTTPReqHandler::HandleStreamRequestComplete,
 			shared_from_this(), std::placeholders::_1), dest_host, dest_port);
 		return true;

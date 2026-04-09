@@ -646,6 +646,7 @@ namespace proxy
 					{
 						case CMD_CONNECT:
 							//make an i2p session
+							GetOwner ()->UpdateLastActivityTime ();
 							GetOwner()->CreateStream ( std::bind (&SOCKSHandler::HandleStreamRequestComplete,
 								shared_from_this(), std::placeholders::_1), m_address.dns.ToString(), m_port);
 						break;
