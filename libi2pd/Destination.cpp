@@ -1494,7 +1494,7 @@ namespace client
 					if (it.first == m_PreferredCryptoType)
 						preferredSection = it.second;
 					else
-						keySections.push_back (it.second);
+						keySections.push_front (it.second); // higher key type should appear first
 			}
 			if (preferredSection)
 				keySections.push_front (preferredSection); // make preferred first
