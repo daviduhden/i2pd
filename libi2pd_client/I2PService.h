@@ -69,8 +69,8 @@ namespace client
 			void CreateStream(StreamRequestComplete complete, std::shared_ptr<const Address> address, uint16_t port);
 			auto& GetService () { return m_LocalDestination->GetService (); }
 
-			virtual void Start () = 0;
-			virtual void Stop () = 0;
+			virtual void Start ();
+			virtual void Stop ();
 
 			virtual const char* GetName() const { return "Generic I2P Service"; }
 
@@ -237,6 +237,7 @@ namespace client
 			virtual ~ServiceAcceptor () { Stop(); }
 			void Start () override
 			{
+				I2PService::Start ();
 				m_Acceptor.reset (new typename Protocol::acceptor (GetService (), m_LocalEndpoint));
 				// update the local end point in case port has been set zero and got updated now
 				m_LocalEndpoint = m_Acceptor->local_endpoint();
@@ -251,6 +252,7 @@ namespace client
 					m_Acceptor.reset (nullptr);
 				}
 				ClearHandlers();
+				I2PService::Stop ();
 			}
 			const typename Protocol::endpoint& GetLocalEndpoint () const { return m_LocalEndpoint; };
 

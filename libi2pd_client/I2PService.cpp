@@ -39,6 +39,30 @@ namespace client
 		if (m_LocalDestination) m_LocalDestination->Release ();
 	}
 
+	void I2PService::Start ()
+	{
+		if (m_CloseIdleTime)
+		{
+			if (m_LocalDestination && m_LocalDestination->GetRefCounter () <= 1)
+			{
+				if (!m_IdleCheckTimer) m_IdleCheckTimer.reset (new boost::asio::steady_timer(m_LocalDestination->GetService ()));
+				m_LastActivityTime = i2p::util::GetMonotonicMilliseconds ();
+				ScheduleIdleCheckTimer ();
+			}
+			else
+				LogPrint (eLogError, "I2PService: i2cp.closeIdleTime can't be set for ", GetName (), " on shared destination");
+		}
+	}
+
+	void I2PService::Stop ()
+	{
+		if (m_IdleCheckTimer)
+		{
+			m_IdleCheckTimer->cancel ();
+			m_IdleCheckTimer = nullptr;
+		}
+	}
+
 	void I2PService::ClearHandlers ()
 	{
 		if(m_ConnectTimeout)
@@ -58,12 +82,6 @@ namespace client
 	{
 		if (idleTime > 0 && idleTime < I2P_SERVICE_MIN_CLOSE_IDLE_TIME) idleTime = I2P_SERVICE_MIN_CLOSE_IDLE_TIME;
 		m_CloseIdleTime = idleTime;
-		if (m_CloseIdleTime)
-		{
-			if (!m_IdleCheckTimer) m_IdleCheckTimer.reset (new boost::asio::steady_timer(m_LocalDestination->GetService ()));
-			m_LastActivityTime = i2p::util::GetMonotonicMilliseconds ();
-			ScheduleIdleCheckTimer ();
-		}
 	}
 
 	void I2PService::UpdateLastActivityTime ()
