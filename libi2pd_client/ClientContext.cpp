@@ -985,6 +985,13 @@ namespace client
 			{
 				m_HttpProxy = new i2p::proxy::HTTPProxy("HTTP Proxy", httpProxyAddr, httpProxyPort,
 					httpOutProxyURL, httpAddresshelper, httpSendUserAgent, localDestination);
+				uint64_t closeIdleTime; i2p::config::GetOption("httpproxy.i2cp.closeIdleTime", closeIdleTime);
+				if (closeIdleTime)
+				{
+					m_HttpProxy->SetCloseIdleTime(closeIdleTime);
+					bool newDestOnResume; i2p::config::GetOption("httpproxy.i2cp.newDestOnResume", newDestOnResume);
+					m_HttpProxy->SetNewDestOnResume(newDestOnResume);
+				}
 				m_HttpProxy->Start();
 			}
 			catch (std::exception& e)
@@ -1040,6 +1047,13 @@ namespace client
 			{
 				m_SocksProxy = new i2p::proxy::SOCKSProxy("SOCKS", socksProxyAddr, socksProxyPort,
 					socksOutProxy, socksOutProxyAddr, socksOutProxyPort, localDestination);
+				uint64_t closeIdleTime; i2p::config::GetOption("socksproxy.i2cp.closeIdleTime", closeIdleTime);
+				if (closeIdleTime)
+				{
+					m_SocksProxy->SetCloseIdleTime(closeIdleTime);
+					bool newDestOnResume; i2p::config::GetOption("socksproxy.i2cp.newDestOnResume", newDestOnResume);
+					m_SocksProxy->SetNewDestOnResume(newDestOnResume);
+				}
 				m_SocksProxy->Start();
 			}
 			catch (std::exception& e)
