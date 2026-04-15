@@ -1006,7 +1006,9 @@ namespace garlic
 
 	std::shared_ptr<I2NPMessage> ECIESX25519AEADRatchetSession::WrapSingleMessage (std::shared_ptr<const I2NPMessage> msg)
 	{
-		uint8_t * payload = GetOwner ()->GetPayloadBuffer ();
+		auto owner = GetOwner();
+		if (!owner) return nullptr;
+		uint8_t * payload = owner->GetPayloadBuffer ();
 		if (!payload) return nullptr;
 		size_t len = CreatePayload (msg, m_State != eSessionStateEstablished, payload);
 		if (!len) return nullptr;
