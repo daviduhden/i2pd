@@ -274,9 +274,14 @@ namespace client
 		{
 			if (!m_UnackedDatagrams.empty () && m_NextSendPacketNum > m_UnackedDatagrams.front ().first + I2P_UDP_MAX_NUM_UNACKED_DATAGRAMS)
 			{
-				// window is full, drop packet
-				Receive ();
-				return;
+				// window is full, try to delete expired unacked datagrams first
+				DeleteExpiredUnackedDatagrams ();
+				if (!m_UnackedDatagrams.empty () && m_NextSendPacketNum > m_UnackedDatagrams.front ().first + I2P_UDP_MAX_NUM_UNACKED_DATAGRAMS)
+				{
+					// window is full, drop packet
+					Receive ();
+					return;
+				}
 			}
 			LogPrint(eLogDebug, "UDPSession: Forward ", len, "B from ", FromEndpoint);
 			auto ts = i2p::util::GetMillisecondsSinceEpoch();
