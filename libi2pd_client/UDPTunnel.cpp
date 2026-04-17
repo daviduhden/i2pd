@@ -484,11 +484,21 @@ namespace client
 			RecvFromLocal ();
 			return; // drop, remote not resolved
 		}
-		if ((!m_UnackedDatagrams.empty () && m_NextSendPacketNum > m_UnackedDatagrams.front ().first + I2P_UDP_MAX_NUM_UNACKED_DATAGRAMS) || !m_IsSendingAllowed)
+		if (!m_IsSendingAllowed)
 		{
-			// window is full, drop packet
 			RecvFromLocal ();
 			return;
+		}
+		if (!m_UnackedDatagrams.empty () && m_NextSendPacketNum > m_UnackedDatagrams.front ().first + I2P_UDP_MAX_NUM_UNACKED_DATAGRAMS)
+		{
+			// window is full, try to delete expired unacked datagrams first
+			DeleteExpiredUnackedDatagrams ();
+			if (!m_UnackedDatagrams.empty () && m_NextSendPacketNum > m_UnackedDatagrams.front ().first + I2P_UDP_MAX_NUM_UNACKED_DATAGRAMS)
+			{
+				// window is still full, drop packet
+				RecvFromLocal ();
+				return;
+			}
 		}
 		auto remotePort = m_RecvEndpoint.port ();
 		if (!m_LastPort || m_LastPort != remotePort)
