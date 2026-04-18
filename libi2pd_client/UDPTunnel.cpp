@@ -491,8 +491,19 @@ namespace client
 		}
 		if (!m_IsSendingAllowed)
 		{
-			RecvFromLocal ();
-			return;
+			if (!m_IsFirstPacket && i2p::util::GetMillisecondsSinceEpoch () >  m_LastRepliableDatagramTime + I2P_UDP_SESSION_TIMEOUT)
+			{
+				//  reset session
+				m_IsFirstPacket = true;
+				m_IsSendingAllowed = true;
+				m_AckTimerSeqn = 0;
+				m_RTT = 0;
+			}
+			if (!m_IsSendingAllowed)
+			{
+				RecvFromLocal ();
+				return;
+			}
 		}
 		if (!m_UnackedDatagrams.empty () && m_NextSendPacketNum > m_UnackedDatagrams.front ().first + I2P_UDP_MAX_NUM_UNACKED_DATAGRAMS)
 		{
