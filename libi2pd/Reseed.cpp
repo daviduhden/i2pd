@@ -392,8 +392,8 @@ namespace data
 						uncompressedSize -= inflator.avail_out;
 						if (crc32 (0, uncompressed, uncompressedSize) == crc_32)
 						{
-							i2p::data::netdb.AddRouterInfo (uncompressed, uncompressedSize);
-							numFiles++;
+							if (i2p::data::netdb.AddRouterInfo (uncompressed, uncompressedSize))
+								numFiles++;
 						}
 						else
 							LogPrint (eLogError, "Reseed: CRC32 verification failed");
@@ -405,8 +405,8 @@ namespace data
 				}
 				else // no compression
 				{
-					i2p::data::netdb.AddRouterInfo (compressed, compressedSize);
-					numFiles++;
+					if (i2p::data::netdb.AddRouterInfo (compressed, compressedSize))
+						numFiles++;
 				}
 				delete[] compressed;
 				if (bitFlag & ZIP_BIT_FLAG_DATA_DESCRIPTOR)
