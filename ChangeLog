@@ -1,6 +1,39 @@
 # for this file format description,
 # see https://github.com/olivierlacan/keep-a-changelog
 
+## [2.60.0] - 2026-04-20
+### Added
+- "i2cp.closeIdleTime" and "i2cp.newDestOnResume" client tunnel and proxy params
+- Sequence reset flag for UDP tunnels
+- Post-quantum SSU2 crypto(ML-KEM-512, ML-KEM-768) support if openssl >= 3.5.0
+- Forward ipv4 and ipv6 connections to usptream SOCK5 proxy
+- "persist.netdbinterval" param to specify NetDb persist interval
+- Don't select peer for new tunnel if too many connections from that subnet
+- More I2PControl RouterInfo metrics
+### Changed
+- Generate ECIESx25519 session tags faster
+- Set NTCP2 default crypto type to ML-KEM-768 when applicable
+- Set default bandwidth=O for x86_64 and bandwidth=P for x86_64 with more than 4 cores
+- Replaced boost::asio::deadline_timer by boost::asio::steady_timer
+- Set hidden mode only if trust is enabled
+- Publish crypto keys from in high to low order in LeaseSet
+- Case-insensitive HTTP header matching per RFC 7230
+- Max padding size for NTCP2 SessionRequest and SessionCreated messages
+- Routers profiling algorithm
+- Don't publish mtu=1500
+- Limit streaming receive queue size
+- Recreate zero and one hop tunnels after being offline
+- Reseeds list
+ ### Fixed
+- Incorrect Poly1305 tag of chiper text block in next new session reply message for ML-KEM crypto type
+- Stuck UDP client tunnel after network glitch
+- Private signing key size for offline signatures
+- Forever hanging I2P stream if socket got closed right after connect
+- Inverted value of "i2cp.dontPublishLeaseSet"
+- Failed to bind to ipv6 ULA address
+- Reseed failure if malformed response
+- Multiple race conditions
+
 ## [2.59.0] - 2026-02-09
 ### Added
 - Post-quantum NTCP2 crypto(ML-KEM-512, ML-KEM-768, ML-KEM-1024) support if openssl >= 3.5.0
