@@ -12,8 +12,7 @@
 #include <memory>
 #include "I18N.h"
 
-// English localization file
-// This is an example translation file without strings in it.
+// Persian localization file
 
 namespace i2p
 {
