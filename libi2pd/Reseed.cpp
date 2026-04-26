@@ -75,9 +75,23 @@ namespace data
 		}
 		else // bootstrap from reseed servers
 		{
-			int num = ReseedFromServers ();
-			if (num == 0)
-				LogPrint (eLogWarning, "Reseed: Failed to reseed from servers");
+			auto start = i2p::util::GetMonotonicSeconds ();
+			int num = 0;
+			while (!num)
+			{
+				num = ReseedFromServers ();
+				if (num) break; // success
+
+				if (i2p::util::GetMonotonicSeconds () < start + RESEED_GIVEUP_TIMEOUT)
+				{
+					LogPrint (eLogWarning, "Reseed: Failed to reseed from servers. Waiting for ", RESEED_WAITING_INTERVAL, " seconds");
+					std::this_thread::sleep_for (std::chrono::seconds(RESEED_WAITING_INTERVAL));
+				}
+				else
+					break; // give up
+			}
+			if (!num)
+				LogPrint (eLogWarning, "Reseed: Failed to reseed from servers. Give up");
 		}
 	}
 
