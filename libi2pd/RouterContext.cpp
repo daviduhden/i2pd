@@ -1212,20 +1212,20 @@ namespace i2p
 			SetReachable (true, true); // we assume reachable until we discover firewall through peer tests
 
 		bool updated = false;
-		// create new NTCP2 keys if required
+		// update NTCP2 keys in RouterInfo
 		bool ntcp2; i2p::config::GetOption("ntcp2.enabled", ntcp2);
 		bool ygg; i2p::config::GetOption("meshnets.yggdrasil", ygg);
-		if ((ntcp2 || ygg) && !m_NTCP2Keys)
+		if (ntcp2 || ygg)
 		{
-			NewNTCP2Keys ();
+			if (!m_NTCP2Keys) NewNTCP2Keys (); // create new NTCP2 keys
 			UpdateNTCP2Keys ();
 			updated = true;
 		}
-		// create new SSU2 keys if required
+		// update SSU2 keys in RouterInfo
 		bool ssu2; i2p::config::GetOption("ssu2.enabled", ssu2);
-		if (ssu2 && !m_SSU2Keys)
+		if (ssu2)
 		{
-			NewSSU2Keys ();
+			if (!m_SSU2Keys) NewSSU2Keys (); // create new SSU2 keys
 			UpdateSSU2Keys ();
 			updated = true;
 		}
