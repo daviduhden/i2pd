@@ -228,28 +228,7 @@ namespace tunnel
 			return *this;
 		}
 
-		// for SSU only
-		uint8_t * GetSSUHeader () { return buf + offset + I2NP_HEADER_SIZE - I2NP_SHORT_HEADER_SIZE; };
-		void FromSSU (uint32_t msgID) // we have received SSU message and convert it to regular
-		{
-			const uint8_t * ssu = GetSSUHeader ();
-			GetHeader ()[I2NP_HEADER_TYPEID_OFFSET] = ssu[I2NP_SHORT_HEADER_TYPEID_OFFSET]; // typeid
-			SetMsgID (msgID);
-			SetExpiration (bufbe32toh (ssu + I2NP_SHORT_HEADER_EXPIRATION_OFFSET)*1000LL);
-			SetSize (len - offset - I2NP_HEADER_SIZE);
-			SetChks (0);
-		}
-		uint32_t ToSSU () // return msgID
-		{
-			uint8_t header[I2NP_HEADER_SIZE];
-			memcpy (header, GetHeader (), I2NP_HEADER_SIZE);
-			uint8_t * ssu = GetSSUHeader ();
-			ssu[I2NP_SHORT_HEADER_TYPEID_OFFSET] = header[I2NP_HEADER_TYPEID_OFFSET]; // typeid
-			htobe32buf (ssu + I2NP_SHORT_HEADER_EXPIRATION_OFFSET, bufbe64toh (header + I2NP_HEADER_EXPIRATION_OFFSET)/1000LL);
-			len = offset + I2NP_SHORT_HEADER_SIZE + bufbe16toh (header + I2NP_HEADER_SIZE_OFFSET);
-			return bufbe32toh (header + I2NP_HEADER_MSGID_OFFSET);
-		}
-		// for NTCP2 only
+		// for NTCP2 and SSU2
 		uint8_t * GetNTCP2Header () { return GetPayload () - I2NP_NTCP2_HEADER_SIZE; };
 		size_t GetNTCP2Length () const { return GetPayloadLength () + I2NP_NTCP2_HEADER_SIZE; };
 		void FromNTCP2 ()
