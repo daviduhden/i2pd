@@ -2733,9 +2733,9 @@ namespace transport
 	{
 		if (!msg) return;
 		uint32_t msgID = msg->GetMsgID ();
-		if (!msg->IsExpired ())
+		// m_LastActivityTimestamp is updated in ProcessData before
+		if (!msg->IsExpired (GetLastActivityTimestamp ()*1000LL)) // to milliseconds
 		{
-			// m_LastActivityTimestamp is updated in ProcessData before
 			if (m_ReceivedI2NPMsgIDs.emplace (msgID, (uint32_t)GetLastActivityTimestamp ()).second)
 				m_Handler.PutNextMessage (std::move (msg));
 			else
