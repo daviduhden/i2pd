@@ -701,12 +701,32 @@ namespace transport
 		if (isReal)
 		{
 			ssu2 = m_Rng () & 1; // 1/2
-			if (ssu2 && !profile)
+			if (ssu2 && (compatibleTransports & (i2p::data::RouterInfo::eSSU2V4 | i2p::data::RouterInfo::eSSU2V6)))
 			{
-				profile = peer->router->GetProfile (); // load profile if necessary
-				isReal = profile->IsReal ();
-				if (!isReal) ssu2 = false; // try NTCP2 if router is not confirmed real
+				bool isSSU2PQ = false;
+#if OPENSSL_PQ
+				if (m_SSU2Server && m_SSU2Server->GetVersion () > 2)
+				{
+					isSSU2PQ = true;
+					// both ipv4 and ipv6 must be post-quantum if presented
+					auto addr = peer->router->GetSSU2V4Address ();
+					if (addr && addr->v == 2) isSSU2PQ = false;
+					if (isSSU2PQ)
+					{
+						auto addr = peer->router->GetSSU2V6Address ();
+						if (addr && addr->v == 2) isSSU2PQ = false;
+					}
+				}
+#endif
+				if (!isSSU2PQ && !profile) // check profile only if SSU2 is not post-quantum
+				{
+					profile = peer->router->GetProfile (); // load profile if necessary
+					isReal = profile->IsReal ();
+					if (!isReal) ssu2 = false; // try NTCP2 if router is not confirmed real
+				}
 			}
+			else
+				ssu2 = false;
 		}
 		const auto& priority = ssu2 ? ssu2Priority : ntcp2Priority;
 		if (directTransports)
