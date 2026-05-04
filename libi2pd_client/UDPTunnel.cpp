@@ -205,7 +205,6 @@ namespace client
 					if (ecode != boost::asio::error::operation_aborted)
 					{
 						LogPrint (eLogInfo, "UDP Connection: Packet ", m_AckTimerSeqn, " was not acked");
-//						DeleteExpiredUnackedDatagrams ();
 						m_IsSendingAllowed = false; // stop sending datagrams
 						m_AckTimerSeqn = 0;
 						m_RTT = 0;
@@ -219,19 +218,6 @@ namespace client
 					}
 				});
 		}
-	}
-
-	void UDPConnection::DeleteExpiredUnackedDatagrams ()
-	{
-		if (m_UnackedDatagrams.empty ()) return;
-		auto expired  = i2p::util::GetMillisecondsSinceEpoch () - (m_RTT ? 2*m_RTT : I2P_UDP_MAX_UNACKED_DATAGRAM_TIME);
-		auto it = m_UnackedDatagrams.begin ();
-		while (it != m_UnackedDatagrams.end ())
-		{
-			if (it->second < expired) break;
-			it++;
-		}
-		m_UnackedDatagrams.erase (m_UnackedDatagrams.begin (), it);
 	}
 
 	std::shared_ptr<i2p::datagram::DatagramSession> UDPConnection::GetDatagramSession ()
@@ -274,14 +260,9 @@ namespace client
 		{
 			if (!m_UnackedDatagrams.empty () && m_NextSendPacketNum > m_UnackedDatagrams.front ().first + I2P_UDP_MAX_NUM_UNACKED_DATAGRAMS)
 			{
-				// window is full, try to delete expired unacked datagrams first
-				DeleteExpiredUnackedDatagrams ();
-				if (!m_UnackedDatagrams.empty () && m_NextSendPacketNum > m_UnackedDatagrams.front ().first + I2P_UDP_MAX_NUM_UNACKED_DATAGRAMS)
-				{
-					// window is full, drop packet
-					Receive ();
-					return;
-				}
+				// window is full, drop packet
+				Receive ();
+				return;
 			}
 			LogPrint(eLogDebug, "UDPSession: Forward ", len, "B from ", FromEndpoint);
 			auto ts = i2p::util::GetMillisecondsSinceEpoch();
@@ -507,14 +488,9 @@ namespace client
 		}
 		if (!m_UnackedDatagrams.empty () && m_NextSendPacketNum > m_UnackedDatagrams.front ().first + I2P_UDP_MAX_NUM_UNACKED_DATAGRAMS)
 		{
-			// window is full, try to delete expired unacked datagrams first
-			DeleteExpiredUnackedDatagrams ();
-			if (!m_UnackedDatagrams.empty () && m_NextSendPacketNum > m_UnackedDatagrams.front ().first + I2P_UDP_MAX_NUM_UNACKED_DATAGRAMS)
-			{
-				// window is still full, drop packet
-				RecvFromLocal ();
-				return;
-			}
+			// window is full, drop packet
+			RecvFromLocal ();
+			return;
 		}
 		auto remotePort = m_RecvEndpoint.port ();
 		if (!m_LastPort || m_LastPort != remotePort)

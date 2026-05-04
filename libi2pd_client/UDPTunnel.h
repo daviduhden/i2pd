@@ -62,7 +62,6 @@ namespace client
 
 		void Acked (uint32_t seqn);
 		void ScheduleAckTimer (uint32_t seqn);
-		void DeleteExpiredUnackedDatagrams ();
 
 		std::shared_ptr<i2p::datagram::DatagramSession> GetDatagramSession ();
 	};
