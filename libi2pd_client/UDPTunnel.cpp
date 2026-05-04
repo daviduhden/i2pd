@@ -477,6 +477,7 @@ namespace client
 				//  reset session
 				m_IsFirstPacket = true;
 				m_IsSendingAllowed = true;
+				m_UnackedDatagrams.clear ();
 				m_AckTimerSeqn = 0;
 				m_RTT = 0;
 			}
