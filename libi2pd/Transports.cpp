@@ -1090,12 +1090,13 @@ namespace transport
 			auto ts = i2p::util::GetSecondsSinceEpoch ();
 			for (auto it = m_Peers.begin (); it != m_Peers.end (); )
 			{
-				it->second->sessions.remove_if (
+				auto peer = it->second;
+				peer->sessions.remove_if (
 					[](std::shared_ptr<TransportSession> session)->bool
 					{
 						return !session || !session->IsEstablished ();
 					});
- 				if (!it->second->IsConnected () && ts > it->second->creationTime + SESSION_CREATION_TIMEOUT)
+ 				if (!peer->IsConnected () && ts > peer->creationTime + SESSION_CREATION_TIMEOUT)
 				{
 					LogPrint (eLogWarning, "Transports: Session to peer ", it->first.ToBase64 (), " has not been created in ", SESSION_CREATION_TIMEOUT, " seconds");
 				/*	if (!it->second.router)
@@ -1109,12 +1110,12 @@ namespace transport
 				}
 				else
 				{
-					if (ts > it->second->nextRouterInfoUpdateTime)
+					if (ts > peer->nextRouterInfoUpdateTime)
 					{
-						auto session = it->second->sessions.front ();
+						auto session = (!peer->sessions.empty ()) ? peer->sessions.front () : nullptr;
 						if (session)
 							session->SendLocalRouterInfo (true);
-						it->second->nextRouterInfoUpdateTime = ts + PEER_ROUTER_INFO_UPDATE_INTERVAL +
+						peer->nextRouterInfoUpdateTime = ts + PEER_ROUTER_INFO_UPDATE_INTERVAL +
 							m_Rng() % PEER_ROUTER_INFO_UPDATE_INTERVAL_VARIANCE;
 					}
 					++it;
