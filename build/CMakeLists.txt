@@ -286,7 +286,7 @@ else()
   endif()
 endif()
 
-find_package(Boost REQUIRED COMPONENTS filesystem program_options)
+find_package(Boost REQUIRED COMPONENTS filesystem program_options atomic)
 if(NOT DEFINED Boost_FOUND)
   message(SEND_ERROR "Boost is not found, or your boost version was below 1.46. Please download Boost!")
 endif()
