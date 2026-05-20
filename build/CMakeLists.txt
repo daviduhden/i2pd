@@ -9,6 +9,12 @@ endif()
 # for debugging
 #set(CMAKE_VERBOSE_MAKEFILE on)
 
+# fix: error C2039: 'string_view': is not a member of 'std'
+# MSVC defaults to C++14
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 # paths
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules")
 set(CMAKE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/..")
