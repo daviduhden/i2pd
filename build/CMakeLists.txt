@@ -9,6 +9,12 @@ endif()
 # for debugging
 #set(CMAKE_VERBOSE_MAKEFILE on)
 
+# fix: error C2039: 'string_view': is not a member of 'std'
+# MSVC defaults to C++14
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 # paths
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules")
 set(CMAKE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/..")
@@ -280,7 +286,7 @@ else()
   endif()
 endif()
 
-find_package(Boost REQUIRED COMPONENTS filesystem program_options)
+find_package(Boost REQUIRED COMPONENTS filesystem program_options atomic)
 if(NOT DEFINED Boost_FOUND)
   message(SEND_ERROR "Boost is not found, or your boost version was below 1.46. Please download Boost!")
 endif()
