@@ -44,8 +44,9 @@ namespace transport
 		{
 			std::unique_lock<std::mutex> l(m_AcquiredMutex);
 			m_IsRunning = false;
-			m_Acquired.notify_one ();
 		}
+		m_Acquired.notify_one ();
+
 		if (m_Thread)
 		{
 			m_Thread->join ();
@@ -105,7 +106,7 @@ namespace transport
 			{
 				auto pair = m_KeysPool.AcquireSharedMt ();
 				pair->GenerateKeys ();
-				newKeys.push_back (pair);
+				newKeys.emplace_back (pair);
 			}
 			std::unique_lock<std::mutex> l(m_AcquiredMutex);
 			m_Queue.splice (m_Queue.end (), newKeys);
@@ -120,18 +121,22 @@ namespace transport
 
 	std::shared_ptr<i2p::crypto::X25519Keys> X25519KeysPairSupplier::Acquire ()
 	{
+		std::shared_ptr<i2p::crypto::X25519Keys> pair;
 		{
 			std::unique_lock<std::mutex> l(m_AcquiredMutex);
 			if (!m_Queue.empty ())
 			{
-				auto pair = m_Queue.front ();
+				pair = m_Queue.front ();
 				m_Queue.pop_front ();
-				m_Acquired.notify_one ();
-				return pair;
 			}
 		}
+		if (pair)
+		{
+			m_Acquired.notify_one ();
+			return pair;
+		}
 		// queue is empty, create new
-		auto pair = m_KeysPool.AcquireSharedMt ();
+		pair = m_KeysPool.AcquireSharedMt ();
 		pair->GenerateKeys ();
 		return pair;
 	}
@@ -142,7 +147,7 @@ namespace transport
 		{
 			std::unique_lock<std::mutex> l(m_AcquiredMutex);
 			if ((int)m_Queue.size () < 2*m_QueueSize)
-				m_Queue.push_back (pair);
+				m_Queue.emplace_back (pair);
 		}
 		else
 			LogPrint(eLogError, "Transports: Return null keys");
