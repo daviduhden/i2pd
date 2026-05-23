@@ -17,7 +17,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include <queue>
+#include <list>
 #include <string>
 #include <memory>
 #include <atomic>
@@ -35,36 +35,33 @@ namespace i2p
 {
 namespace transport
 {
-	template<typename Keys>
-	class EphemeralKeysSupplier
+	class X25519KeysPairSupplier
 	{
-	// called from this file only, so implementation is in Transports.cpp
 		public:
 
-			EphemeralKeysSupplier (int size);
-			~EphemeralKeysSupplier ();
+			X25519KeysPairSupplier (int size);
+			~X25519KeysPairSupplier ();
 			void Start ();
 			void Stop ();
-			std::shared_ptr<Keys> Acquire ();
-			void Return (std::shared_ptr<Keys> pair);
+			std::shared_ptr<i2p::crypto::X25519Keys> Acquire ();
+			void Return (std::shared_ptr<i2p::crypto::X25519Keys> pair);
 
 		private:
 
 			void Run ();
-			void CreateEphemeralKeys (int num);
+			size_t CreateEphemeralKeys (int num); // return new queue size
 
 		private:
 
 			const int m_QueueSize;
-			i2p::util::MemoryPoolMt<Keys> m_KeysPool;
-			std::queue<std::shared_ptr<Keys> > m_Queue;
+			i2p::util::MemoryPoolMt<i2p::crypto::X25519Keys> m_KeysPool;
+			std::list<std::shared_ptr<i2p::crypto::X25519Keys> > m_Queue;
 
 			bool m_IsRunning;
 			std::unique_ptr<std::thread> m_Thread;
 			std::condition_variable m_Acquired;
 			std::mutex m_AcquiredMutex;
 	};
-	typedef EphemeralKeysSupplier<i2p::crypto::X25519Keys> X25519KeysPairSupplier;
 
 	const int PEER_ROUTER_INFO_UPDATE_INTERVAL = 31*60; // in seconds
 	const int PEER_ROUTER_INFO_UPDATE_INTERVAL_VARIANCE = 7*60; // in seconds

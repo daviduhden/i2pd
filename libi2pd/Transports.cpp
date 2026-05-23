@@ -23,27 +23,23 @@ namespace i2p
 {
 namespace transport
 {
-	template<typename Keys>
-	EphemeralKeysSupplier<Keys>::EphemeralKeysSupplier (int size):
+	X25519KeysPairSupplier::X25519KeysPairSupplier (int size):
 		m_QueueSize (size), m_IsRunning (false)
 	{
 	}
 
-	template<typename Keys>
-	EphemeralKeysSupplier<Keys>::~EphemeralKeysSupplier ()
+	X25519KeysPairSupplier::~X25519KeysPairSupplier ()
 	{
 		Stop ();
 	}
 
-	template<typename Keys>
-	void EphemeralKeysSupplier<Keys>::Start ()
+	void X25519KeysPairSupplier::Start ()
 	{
 		m_IsRunning = true;
-		m_Thread.reset (new std::thread (std::bind (&EphemeralKeysSupplier<Keys>::Run, this)));
+		m_Thread.reset (new std::thread (std::bind (&X25519KeysPairSupplier::Run, this)));
 	}
 
-	template<typename Keys>
-	void EphemeralKeysSupplier<Keys>::Stop ()
+	void X25519KeysPairSupplier::Stop ()
 	{
 		{
 			std::unique_lock<std::mutex> l(m_AcquiredMutex);
@@ -58,29 +54,36 @@ namespace transport
 		if (!m_Queue.empty ())
 		{
 			// clean up queue
-			std::queue<std::shared_ptr<Keys> > tmp;
+			std::list<std::shared_ptr<i2p::crypto::X25519Keys> > tmp;
 	   		std::swap (m_Queue, tmp);
 		}
 		m_KeysPool.CleanUpMt ();
 	}
 
-	template<typename Keys>
-	void EphemeralKeysSupplier<Keys>::Run ()
+	void X25519KeysPairSupplier::Run ()
 	{
 		i2p::util::SetThreadName("Ephemerals");
 
+		int num = 0;
 		while (m_IsRunning)
 		{
-			int num, total = 0;
-			while ((num = m_QueueSize - (int)m_Queue.size ()) > 0 && total < m_QueueSize)
+			if (num <= 0)
 			{
-				CreateEphemeralKeys (num);
+				std::unique_lock<std::mutex> l(m_AcquiredMutex);
+				num = m_QueueSize - (int)m_Queue.size ();
+			}
+			int total = 0;
+			while (num > 0 && total < m_QueueSize)
+			{
+				auto queueSize = CreateEphemeralKeys (num);
 				total += num;
+				num = m_QueueSize - (int)queueSize;
 			}
 			if (total > m_QueueSize)
 			{
 				LogPrint (eLogWarning, "Transports: ", total, " ephemeral keys generated at the time");
 				std::this_thread::sleep_for (std::chrono::seconds(1)); // take a break
+				num = 0;
 			}
 			else
 			{
@@ -88,34 +91,41 @@ namespace transport
 				std::unique_lock<std::mutex> l(m_AcquiredMutex);
 				if (!m_IsRunning) break;
 				m_Acquired.wait (l); // wait for element gets acquired
+				num = m_QueueSize - (int)m_Queue.size ();
 			}
 		}
 	}
 
-	template<typename Keys>
-	void EphemeralKeysSupplier<Keys>::CreateEphemeralKeys (int num)
+	size_t X25519KeysPairSupplier::CreateEphemeralKeys (int num)
 	{
 		if (num > 0)
 		{
+			std::list<std::shared_ptr<i2p::crypto::X25519Keys> > newKeys;
 			for (int i = 0; i < num; i++)
 			{
 				auto pair = m_KeysPool.AcquireSharedMt ();
 				pair->GenerateKeys ();
-				std::unique_lock<std::mutex> l(m_AcquiredMutex);
-				m_Queue.push (pair);
+				newKeys.push_back (pair);
 			}
+			std::unique_lock<std::mutex> l(m_AcquiredMutex);
+			m_Queue.splice (m_Queue.end (), newKeys);
+			return m_Queue.size ();
+		}
+		else
+		{
+			std::unique_lock<std::mutex> l(m_AcquiredMutex);
+			return m_Queue.size ();
 		}
 	}
 
-	template<typename Keys>
-	std::shared_ptr<Keys> EphemeralKeysSupplier<Keys>::Acquire ()
+	std::shared_ptr<i2p::crypto::X25519Keys> X25519KeysPairSupplier::Acquire ()
 	{
 		{
 			std::unique_lock<std::mutex> l(m_AcquiredMutex);
 			if (!m_Queue.empty ())
 			{
 				auto pair = m_Queue.front ();
-				m_Queue.pop ();
+				m_Queue.pop_front ();
 				m_Acquired.notify_one ();
 				return pair;
 			}
@@ -126,14 +136,13 @@ namespace transport
 		return pair;
 	}
 
-	template<typename Keys>
-	void EphemeralKeysSupplier<Keys>::Return (std::shared_ptr<Keys> pair)
+	void X25519KeysPairSupplier::Return (std::shared_ptr<i2p::crypto::X25519Keys> pair)
 	{
 		if (pair)
 		{
 			std::unique_lock<std::mutex> l(m_AcquiredMutex);
 			if ((int)m_Queue.size () < 2*m_QueueSize)
-				m_Queue.push (pair);
+				m_Queue.push_back (pair);
 		}
 		else
 			LogPrint(eLogError, "Transports: Return null keys");
