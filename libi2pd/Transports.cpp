@@ -1185,95 +1185,99 @@ namespace transport
 	template<typename Filter>
 	std::shared_ptr<const i2p::data::RouterInfo> Transports::GetRandomPeer (Filter filter) const
 	{
-		if (m_Peers.empty()) return nullptr;
+		std::vector<std::pair<i2p::data::IdentHash, std::shared_ptr<Peer>>> peers;
+		{
+			// copy peers to temporary vector
+			std::lock_guard<std::mutex> l(m_PeersMutex);
+			if (m_Peers.empty()) return nullptr;
+			peers.reserve (m_Peers.size ());
+			peers.assign (m_Peers.begin(), m_Peers.end());
+		}
 		auto ts = i2p::util::GetSecondsSinceEpoch ();
 		bool found = false;
-		i2p::data::IdentHash ident;
+		i2p::data::IdentHash foundIdent;
+		uint16_t inds[3];
+		RAND_bytes ((uint8_t *)inds, sizeof (inds));
+		auto count = peers.size ();
+		if (!count) return nullptr;
+		inds[0] %= count;
+		auto& [ident, peer] = peers[inds[0]];
+		// try random peer
+		if (filter (peer))
 		{
-			uint16_t inds[3];
-			RAND_bytes ((uint8_t *)inds, sizeof (inds));
-			std::lock_guard<std::mutex> l(m_PeersMutex);
-			auto count = m_Peers.size ();
-			if(count == 0) return nullptr;
-			inds[0] %= count;
-			auto it = m_Peers.begin ();
-			std::advance (it, inds[0]);
-			// try random peer
-			if (it != m_Peers.end () && filter (it->second))
+			foundIdent = ident;
+			peer->lastSelectionTime = ts;
+			found = true;
+		}
+		else
+		{
+			// try some peers around
+			if (inds[0])
 			{
-				ident = it->first;
-				found = true;
+				// before
+				inds[1] %= inds[0];
+				inds[1] = (inds[1] + inds[0])/2;
 			}
 			else
+				inds[1] = 0;
+			if (inds[0] < peers.size () - 1)
 			{
-				// try some peers around
-				auto it1 = m_Peers.begin ();
-				if (inds[0])
+				// after
+				inds[2] %= (peers.size () - 1 - inds[0]);
+				inds[2] /= 2;
+				inds[2] += inds[0];
+			}
+			else
+				inds[2] = inds[0];
+			// from inds[1] to inds[2]
+			for (auto i = inds[1]; i < inds[2]; i++)
+			{
+				auto& [ident, peer] = peers[i];
+				if (ts > peer->lastSelectionTime + PEER_SELECTION_MIN_INTERVAL &&
+					filter (peer))
 				{
-					// before
-					inds[1] %= inds[0];
-					std::advance (it1, (inds[1] + inds[0])/2);
+					foundIdent = ident;
+					peer->lastSelectionTime = ts;
+					found = true;
+					break;
 				}
-				else
-					it1 = it;
-				auto it2 = it;
-				if (inds[0] < m_Peers.size () - 1)
+			}
+
+			if (!found)
+			{
+				// still not found, try from the beginning to inds[1]
+				for (auto i = 0; i < inds[1]; i++)
 				{
-					// after
-					inds[2] %= (m_Peers.size () - 1 - inds[0]); inds[2] /= 2;
-					std::advance (it2, inds[2]);
-				}
-				// it1 - from, it2 - to
-				it = it1;
-				while (it != it2 && it != m_Peers.end ())
-				{
-					if (ts > it->second->lastSelectionTime + PEER_SELECTION_MIN_INTERVAL &&
-					    filter (it->second))
+					auto& [ident, peer] = peers[i];
+					if (ts > peer->lastSelectionTime + PEER_SELECTION_MIN_INTERVAL &&
+						filter (peer))
 					{
-						ident = it->first;
-						it->second->lastSelectionTime = ts;
+						foundIdent = ident;
+						peer->lastSelectionTime = ts;
 						found = true;
 						break;
 					}
-					it++;
 				}
+
 				if (!found)
 				{
-					// still not found, try from the beginning
-					it = m_Peers.begin ();
-					while (it != it1 && it != m_Peers.end ())
+					// still not found, try from inds[2] to the end
+					for (auto i = inds[2]; i < peers.size (); i++)
 					{
-						if (ts > it->second->lastSelectionTime + PEER_SELECTION_MIN_INTERVAL &&
-						    filter (it->second))
+						auto& [ident, peer] = peers[i];
+						if (ts > peer->lastSelectionTime + PEER_SELECTION_MIN_INTERVAL &&
+							filter (peer))
 						{
-							ident = it->first;
-							it->second->lastSelectionTime = ts;
+							foundIdent = ident;
+							peer->lastSelectionTime = ts;
 							found = true;
 							break;
-						}
-						it++;
-					}
-					if (!found)
-					{
-						// still not found, try to the beginning
-						it = it2;
-						while (it != m_Peers.end ())
-						{
-							if (ts > it->second->lastSelectionTime + PEER_SELECTION_MIN_INTERVAL &&
-							    filter (it->second))
-							{
-								ident = it->first;
-								it->second->lastSelectionTime = ts;
-								found = true;
-								break;
-							}
-							it++;
 						}
 					}
 				}
 			}
 		}
-		return found ? i2p::data::netdb.FindRouter (ident) : nullptr;
+		return found ? i2p::data::netdb.FindRouter (foundIdent) : nullptr;
 	}
 
 	std::shared_ptr<const i2p::data::RouterInfo> Transports::GetRandomPeer (bool isHighBandwidth) const
