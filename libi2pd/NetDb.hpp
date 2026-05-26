@@ -205,6 +205,8 @@ namespace data
 	};
 
 	extern NetDb netdb;
+
+	int CalculatePeerOrderingGroup (i2p::data::Tag<16> key, const i2p::data::IdentHash& routerIdent);
 }
 }
 

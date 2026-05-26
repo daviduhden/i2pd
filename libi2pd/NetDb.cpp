@@ -16,6 +16,7 @@
 #include "I2PEndian.h"
 #include "Base.h"
 #include "Crypto.h"
+#include "Siphash.h"
 #include "Log.h"
 #include "Timestamp.h"
 #include "I2NPProtocol.h"
@@ -26,8 +27,8 @@
 #include "Garlic.h"
 #include "ECIESX25519AEADRatchetSession.h"
 #include "Config.h"
-#include "NetDb.hpp"
 #include "util.h"
+#include "NetDb.hpp"
 
 using namespace i2p::transport;
 
@@ -1405,6 +1406,23 @@ namespace data
 		if (!r) return false;
 		if (r->GetBuffer ()) return true;
 		return r->LoadBuffer (m_Storage.Path (r->GetIdentHashBase64 ()));
+	}
+
+	int CalculatePeerOrderingGroup (i2p::data::Tag<16> key, const i2p::data::IdentHash& routerIdent)
+	{
+		uint8_t hash[16];
+#if OPENSSL_SIPHASH
+		EVP_PKEY * sipKey = EVP_PKEY_new_raw_private_key (EVP_PKEY_SIPHASH, nullptr, key, 16);
+		EVP_MD_CTX * ctx = EVP_MD_CTX_create ();
+		EVP_DigestSignInit (ctx, nullptr, nullptr, nullptr, sipKey);
+		size_t l = 16;
+		EVP_DigestSign (ctx, hash, &l, routerIdent, 32);
+		EVP_MD_CTX_destroy (ctx);
+		EVP_PKEY_free (sipKey);
+#else
+		i2p::crypto::Siphash<16> (hash, routerIdent, 32, key);
+#endif
+		return hash[0] & 0x03;
 	}
 }
 }
