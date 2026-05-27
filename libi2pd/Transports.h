@@ -29,6 +29,7 @@
 #include "RouterInfo.h"
 #include "I2NPProtocol.h"
 #include "Identity.h"
+#include "IdentMetrics.h"
 #include "util.h"
 
 namespace i2p

@@ -27,6 +27,7 @@
 #include "ECIESX25519AEADRatchetSession.h"
 #include "Config.h"
 #include "util.h"
+#include "IdentMetrics.h"
 #include "NetDb.hpp"
 
 using namespace i2p::transport;

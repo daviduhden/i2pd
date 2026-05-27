@@ -15,7 +15,6 @@
 #include <string_view>
 #include <memory>
 #include <vector>
-#include <unordered_map>
 #include "Base.h"
 #include "Signature.h"
 #include "Tag.h"
@@ -208,43 +207,6 @@ namespace data
 			std::vector<uint8_t> m_OfflineSignature; // non zero length, if applicable
 			size_t m_TransientSignatureLen = 0;
 			size_t m_TransientSigningPrivateKeyLen = 0;
-	};
-
-	// kademlia
-	struct XORMetric
-	{
-		union
-		{
-			uint8_t metric[32];
-			uint64_t metric_ll[4];
-		};
-
-		void SetMin () { memset (metric, 0, 32); };
-		void SetMax () { memset (metric, 0xFF, 32); };
-		bool operator< (const XORMetric& other) const { return memcmp (metric, other.metric, 32) < 0; };
-	};
-
-	IdentHash CreateRoutingKey (const IdentHash& ident, bool nextDay = false);
-	XORMetric operator^(const IdentHash& key1, const IdentHash& key2);
-
-	// peer ordering
-	constexpr uint64_t PEER_ORDERING_INACTIVITY_TIMEOUT = 400; // in seconds
-	class PeerOrdering
-	{
-		public:
-
-			PeerOrdering ();
-			int GetPeerOrderingGroup (const IdentHash& routerIdent);
-			void CleanUp (uint64_t ts);
-
-		private:
-
-			int CalculatePeerOrderingGroup (const IdentHash& routerIdent);
-
-		private:
-
-			Tag<16> m_PeerOrderingKey;
-			std::unordered_map<IdentHash, std::pair<int, uint64_t> > m_OrderingGroups; // router ident hash -> (group, last request time)
 	};
 
 	// destination for delivery instructions
