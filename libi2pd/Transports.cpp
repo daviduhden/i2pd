@@ -1183,7 +1183,7 @@ namespace transport
 	}
 
 	template<typename Filter>
-	std::shared_ptr<const i2p::data::RouterInfo> Transports::GetRandomPeer (Filter filter, i2p::data::Tag<16> * peerOrderingKey) const
+	std::shared_ptr<const i2p::data::RouterInfo> Transports::GetRandomPeer (Filter filter, i2p::data::PeerOrdering * peerOrdering) const
 	{
 		std::vector<std::pair<i2p::data::IdentHash, std::shared_ptr<Peer>>> peers;
 		{
@@ -1205,7 +1205,7 @@ namespace transport
 		// try random peer
 		if (ts > peer->lastSelectionTime + PEER_SELECTION_MIN_INTERVAL)
 		{
-			int peerOrderingGroup = peerOrderingKey ? i2p::data::CalculatePeerOrderingGroup (*peerOrderingKey, ident) : 0;
+			int peerOrderingGroup = peerOrdering ? peerOrdering->GetPeerOrderingGroup (ident) : 0;
 			if (!peerOrderingGroup && filter (peer))
 			{
 				foundIdent = ident;
@@ -1239,7 +1239,7 @@ namespace transport
 				auto& [ident, peer] = peers[i];
 				if (ts > peer->lastSelectionTime + PEER_SELECTION_MIN_INTERVAL)
 				{
-					int peerOrderingGroup = peerOrderingKey ? i2p::data::CalculatePeerOrderingGroup (*peerOrderingKey, ident) : 0;
+					int peerOrderingGroup = peerOrdering ? peerOrdering->GetPeerOrderingGroup (ident) : 0;
 					if (!peerOrderingGroup && filter (peer))
 					{
 						foundIdent = ident;
@@ -1258,7 +1258,7 @@ namespace transport
 					auto& [ident, peer] = peers[i];
 					if (ts > peer->lastSelectionTime + PEER_SELECTION_MIN_INTERVAL)
 					{
-						int peerOrderingGroup = peerOrderingKey ? i2p::data::CalculatePeerOrderingGroup (*peerOrderingKey, ident) : 0;
+						int peerOrderingGroup = peerOrdering ? peerOrdering->GetPeerOrderingGroup (ident) : 0;
 						if (!peerOrderingGroup && filter (peer))
 						{
 							foundIdent = ident;
@@ -1277,7 +1277,7 @@ namespace transport
 						auto& [ident, peer] = peers[i];
 						if (ts > peer->lastSelectionTime + PEER_SELECTION_MIN_INTERVAL)
 						{
-							int peerOrderingGroup = peerOrderingKey ? i2p::data::CalculatePeerOrderingGroup (*peerOrderingKey, ident) : 0;
+							int peerOrderingGroup = peerOrdering ? peerOrdering->GetPeerOrderingGroup (ident) : 0;
 							if (!peerOrderingGroup && filter (peer))
 							{
 								foundIdent = ident;
@@ -1293,7 +1293,7 @@ namespace transport
 		return found ? i2p::data::netdb.FindRouter (foundIdent) : nullptr;
 	}
 
-	std::shared_ptr<const i2p::data::RouterInfo> Transports::GetRandomPeer (bool isHighBandwidth, i2p::data::Tag<16> * peerOrderingKey) const
+	std::shared_ptr<const i2p::data::RouterInfo> Transports::GetRandomPeer (bool isHighBandwidth, i2p::data::PeerOrdering * peerOrdering) const
 	{
 		return GetRandomPeer (
 			[isHighBandwidth, this](std::shared_ptr<const Peer> peer)->bool
@@ -1318,7 +1318,7 @@ namespace transport
 				}
 				return true;
 			},
-			i2p::context.IsLimitedConnectivity () ? nullptr : peerOrderingKey);
+			i2p::context.IsLimitedConnectivity () ? nullptr : peerOrdering);
 	}
 
 	void Transports::RestrictRoutesToFamilies(const std::vector<std::string_view>& families)

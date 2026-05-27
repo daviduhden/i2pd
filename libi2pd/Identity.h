@@ -15,8 +15,10 @@
 #include <string_view>
 #include <memory>
 #include <vector>
+#include <unordered_map>
 #include "Base.h"
 #include "Signature.h"
+#include "Tag.h"
 
 namespace i2p
 {
@@ -224,6 +226,26 @@ namespace data
 
 	IdentHash CreateRoutingKey (const IdentHash& ident, bool nextDay = false);
 	XORMetric operator^(const IdentHash& key1, const IdentHash& key2);
+
+	// peer ordering
+	constexpr uint64_t PEER_ORDERING_INACTIVITY_TIMEOUT = 400; // in seconds
+	class PeerOrdering
+	{
+		public:
+
+			PeerOrdering ();
+			int GetPeerOrderingGroup (const IdentHash& routerIdent);
+			void CleanUp (uint64_t ts);
+
+		private:
+
+			int CalculatePeerOrderingGroup (const IdentHash& routerIdent);
+
+		private:
+
+			Tag<16> m_PeerOrderingKey;
+			std::unordered_map<IdentHash, std::pair<int, uint64_t> > m_OrderingGroups; // router ident hash -> (group, last request time)
+	};
 
 	// destination for delivery instructions
 	class RoutingDestination

@@ -7,6 +7,7 @@
 */
 
 #include "Crypto.h"
+#include "Siphash.h"
 #include "I2PEndian.h"
 #include "Log.h"
 #include "Timestamp.h"
@@ -888,6 +889,53 @@ namespace data
 		m.metric_ll[3] = hash1[3] ^ hash2[3];
 
 		return m;
+	}
+
+	PeerOrdering::PeerOrdering ()
+	{
+		RAND_bytes (m_PeerOrderingKey, 16);
+	}
+
+	int PeerOrdering::CalculatePeerOrderingGroup (const IdentHash& routerIdent)
+	{
+		uint8_t hash[16];
+#if OPENSSL_SIPHASH
+		EVP_PKEY * sipKey = EVP_PKEY_new_raw_private_key (EVP_PKEY_SIPHASH, nullptr, m_PeerOrderingKey, 16);
+		EVP_MD_CTX * ctx = EVP_MD_CTX_create ();
+		EVP_DigestSignInit (ctx, nullptr, nullptr, nullptr, sipKey);
+		size_t l = 16;
+		EVP_DigestSign (ctx, hash, &l, routerIdent, 32);
+		EVP_MD_CTX_destroy (ctx);
+		EVP_PKEY_free (sipKey);
+#else
+		i2p::crypto::Siphash<16> (hash, routerIdent, 32, m_PeerOrderingKey);
+#endif
+		return hash[0] & 0x03;
+	}
+
+	int PeerOrdering::GetPeerOrderingGroup (const IdentHash& routerIdent)
+	{
+		auto ts = i2p::util::GetSecondsSinceEpoch ();
+		auto it = m_OrderingGroups.find (routerIdent);
+		if (it != m_OrderingGroups.end ())
+		{
+			it->second.second = ts;
+			return it->second.first;
+		}
+		int group = CalculatePeerOrderingGroup (routerIdent);
+		m_OrderingGroups.emplace (routerIdent, std::pair{group, ts});
+		return group;
+	}
+
+	void PeerOrdering::CleanUp (uint64_t ts)
+	{
+		for (auto it = m_OrderingGroups.begin (); it != m_OrderingGroups.end ();)
+		{
+			if (ts > it->second.second + PEER_ORDERING_INACTIVITY_TIMEOUT)
+				it = m_OrderingGroups.erase (it);
+			else
+				it++;
+		}
 	}
 }
 }

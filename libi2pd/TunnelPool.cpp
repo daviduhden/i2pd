@@ -61,7 +61,6 @@ namespace tunnel
 		if (m_OutboundVariance > 0 && m_NumOutboundHops + m_OutboundVariance > STANDARD_NUM_RECORDS)
 			m_OutboundVariance = (m_NumOutboundHops < STANDARD_NUM_RECORDS) ? STANDARD_NUM_RECORDS - m_NumOutboundHops : 0;
 		m_NextManageTime = i2p::util::GetSecondsSinceEpoch () + m_Rng () % TUNNEL_POOL_MANAGE_INTERVAL;
-		RAND_bytes (m_PeerOrderingKey, 16);
 	}
 
 	TunnelPool::~TunnelPool ()
@@ -485,6 +484,7 @@ namespace tunnel
 			{
 				CreateTunnels (ts);
 				TestTunnels (ts);
+				m_PeerOrdering.CleanUp (ts);
 			}
 			m_NextManageTime = ts + TUNNEL_POOL_MANAGE_INTERVAL + (tunnels.GetRng ()() % TUNNEL_POOL_MANAGE_INTERVAL)/2;
 		}
@@ -613,7 +613,7 @@ namespace tunnel
             (i2p::context.IsLimitedConnectivity () && i2p::transport::transports.GetNumPeers () > 0))))
 		{
 			auto r = i2p::transport::transports.GetRandomPeer (m_IsHighBandwidth && !i2p::context.IsLimitedConnectivity (),
-				&m_PeerOrderingKey);
+				&m_PeerOrdering);
 			if (r && r->IsECIES () && (!r->HasProfile () || !r->GetProfile ()->IsBad ()) &&
 				(numHops > 1 || (r->IsV4 () && (!inbound || r->IsPublished (true))))) // first inbound must be published ipv4
 			{
@@ -629,7 +629,7 @@ namespace tunnel
 			if (!hop && !i) // if no suitable peer found for first hop, try already connected
 			{
 				LogPrint (eLogInfo, "Tunnels: Can't select first hop for a tunnel. Trying already connected");
-				hop = i2p::transport::transports.GetRandomPeer (false, &m_PeerOrderingKey);
+				hop = i2p::transport::transports.GetRandomPeer (false, &m_PeerOrdering);
 				if (hop && !hop->IsECIES ()) hop = nullptr;
 			}
 			if (!hop)
