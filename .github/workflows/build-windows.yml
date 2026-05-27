@@ -79,7 +79,7 @@ jobs:
           { msystem: UCRT64, arch: ucrt-x86_64, arch_short: x64-ucrt, compiler: gcc },
           { msystem: CLANG64, arch: clang-x86_64, arch_short: x64-clang, compiler: clang },
           { msystem: MINGW64, arch: x86_64, arch_short: x64, compiler: gcc },
-          { msystem: MINGW32, arch: i686, arch_short: x86, compiler: gcc }
+          # { msystem: MINGW32, arch: i686, arch_short: x86, compiler: gcc }
         ]
 
     steps:
