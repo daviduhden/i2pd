@@ -44,6 +44,8 @@ namespace data
 		public:
 
 			PeerOrdering ();
+			~PeerOrdering ();
+
 			int GetPeerOrderingGroup (const IdentHash& routerIdent);
 			void CleanUp (uint64_t ts);
 
@@ -55,6 +57,9 @@ namespace data
 
 			Tag<16> m_PeerOrderingKey;
 			std::unordered_map<IdentHash, std::pair<int, uint64_t> > m_OrderingGroups; // router ident hash -> (group, last request time)
+#if OPENSSL_SIPHASH
+			EVP_MD_CTX * m_MDCtx = nullptr;
+#endif
 	};
 }
 }

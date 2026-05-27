@@ -46,19 +46,29 @@ namespace data
 	PeerOrdering::PeerOrdering ()
 	{
 		RAND_bytes (m_PeerOrderingKey, 16);
+#if OPENSSL_SIPHASH
+		EVP_PKEY * sipKey = EVP_PKEY_new_raw_private_key (EVP_PKEY_SIPHASH, nullptr, m_PeerOrderingKey, 16);
+		m_MDCtx = EVP_MD_CTX_create ();
+		EVP_DigestSignInit (m_MDCtx, nullptr, nullptr, nullptr, sipKey);
+		EVP_PKEY_free (sipKey);
+#endif
+	}
+
+	PeerOrdering::~PeerOrdering ()
+	{
+#if OPENSSL_SIPHASH
+		if (m_MDCtx) EVP_MD_CTX_destroy (m_MDCtx);
+#endif
 	}
 
 	int PeerOrdering::CalculatePeerOrderingGroup (const IdentHash& routerIdent)
 	{
 		uint8_t hash[16];
 #if OPENSSL_SIPHASH
-		EVP_PKEY * sipKey = EVP_PKEY_new_raw_private_key (EVP_PKEY_SIPHASH, nullptr, m_PeerOrderingKey, 16);
-		EVP_MD_CTX * ctx = EVP_MD_CTX_create ();
-		EVP_DigestSignInit (ctx, nullptr, nullptr, nullptr, sipKey);
+		EVP_DigestSignInit (m_MDCtx, nullptr, nullptr, nullptr, nullptr);
+		EVP_DigestSignUpdate (m_MDCtx, routerIdent, 32);
 		size_t l = 16;
-		EVP_DigestSign (ctx, hash, &l, routerIdent, 32);
-		EVP_MD_CTX_destroy (ctx);
-		EVP_PKEY_free (sipKey);
+		EVP_DigestSignFinal (m_MDCtx, hash, &l);
 #else
 		i2p::crypto::Siphash<16> (hash, routerIdent, 32, m_PeerOrderingKey);
 #endif
