@@ -1205,8 +1205,8 @@ namespace transport
 		// try random peer
 		if (ts > peer->lastSelectionTime + PEER_SELECTION_MIN_INTERVAL)
 		{
-			int peerOrderingGroup = peerOrdering ? peerOrdering->GetPeerOrderingGroup (ident) : 0;
-			if (!peerOrderingGroup && filter (peer))
+			bool eligibleForFirstHop = peerOrdering ? peerOrdering->IsFirstHop (ident) : true;
+			if (eligibleForFirstHop && filter (peer))
 			{
 				foundIdent = ident;
 				peer->lastSelectionTime = ts;
@@ -1239,8 +1239,8 @@ namespace transport
 				auto& [ident, peer] = peers[i];
 				if (ts > peer->lastSelectionTime + PEER_SELECTION_MIN_INTERVAL)
 				{
-					int peerOrderingGroup = peerOrdering ? peerOrdering->GetPeerOrderingGroup (ident) : 0;
-					if (!peerOrderingGroup && filter (peer))
+					bool eligibleForFirstHop = peerOrdering ? peerOrdering->IsFirstHop (ident) : true;
+					if (eligibleForFirstHop && filter (peer))
 					{
 						foundIdent = ident;
 						peer->lastSelectionTime = ts;
@@ -1258,8 +1258,8 @@ namespace transport
 					auto& [ident, peer] = peers[i];
 					if (ts > peer->lastSelectionTime + PEER_SELECTION_MIN_INTERVAL)
 					{
-						int peerOrderingGroup = peerOrdering ? peerOrdering->GetPeerOrderingGroup (ident) : 0;
-						if (!peerOrderingGroup && filter (peer))
+						bool eligibleForFirstHop = peerOrdering ? peerOrdering->IsFirstHop (ident) : true;
+						if (eligibleForFirstHop && filter (peer))
 						{
 							foundIdent = ident;
 							peer->lastSelectionTime = ts;
@@ -1277,8 +1277,8 @@ namespace transport
 						auto& [ident, peer] = peers[i];
 						if (ts > peer->lastSelectionTime + PEER_SELECTION_MIN_INTERVAL)
 						{
-							int peerOrderingGroup = peerOrdering ? peerOrdering->GetPeerOrderingGroup (ident) : 0;
-							if (!peerOrderingGroup && filter (peer))
+							bool eligibleForFirstHop = peerOrdering ? peerOrdering->IsFirstHop (ident) : true;
+							if (eligibleForFirstHop && filter (peer))
 							{
 								foundIdent = ident;
 								peer->lastSelectionTime = ts;

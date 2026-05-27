@@ -1190,13 +1190,19 @@ namespace data
 	}
 
 	std::shared_ptr<const RouterInfo> NetDb::GetHighBandwidthRandomRouter (std::shared_ptr<const RouterInfo> compatibleWith,
-		bool reverse, bool endpoint) const
+		bool reverse, bool endpoint, PeerOrdering * peerOrdering) const
 	{
 		bool checkIsReal = i2p::tunnel::tunnels.GetPreciseTunnelCreationSuccessRate () < NETDB_TUNNEL_CREATION_RATE_THRESHOLD && // too low rate
 			context.GetUptime () > NETDB_CHECK_FOR_EXPIRATION_UPTIME; // after 10 minutes uptime
 		return GetRandomRouter (
-			[compatibleWith, reverse, endpoint, checkIsReal](std::shared_ptr<const RouterInfo> router)->bool
+			[compatibleWith, reverse, endpoint, checkIsReal, peerOrdering](std::shared_ptr<const RouterInfo> router)->bool
 			{
+				if (peerOrdering)
+				{
+					bool lastHop = peerOrdering->IsLastHop (router->GetIdentHash ());
+					if (endpoint && !lastHop) return false;
+					if (lastHop && !endpoint && router->IsV4 ()) return false; // if router is eligible for endpoint but it's not
+				}
 				return !router->IsHidden () && router != compatibleWith &&
 					(reverse ? (compatibleWith->IsReachableFrom (*router) && router->GetCompatibleTransports (true)) :
 						router->IsReachableFrom (*compatibleWith)) && !router->IsNAT2NATOnly (*compatibleWith) &&

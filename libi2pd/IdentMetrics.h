@@ -45,9 +45,11 @@ namespace data
 
 			PeerOrdering ();
 			~PeerOrdering ();
+			void CleanUp (uint64_t ts);
 
 			int GetPeerOrderingGroup (const IdentHash& routerIdent);
-			void CleanUp (uint64_t ts);
+			bool IsFirstHop (const IdentHash& routerIdent) { return !GetPeerOrderingGroup (routerIdent); };
+			bool IsLastHop (const IdentHash& routerIdent) { return GetPeerOrderingGroup (routerIdent) & 0x02; }; // IBGW or OBEP
 
 		private:
 

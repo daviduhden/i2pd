@@ -119,7 +119,7 @@ namespace tunnel
 			std::shared_ptr<OutboundTunnel> GetLowestLatencyOutboundTunnel(std::shared_ptr<OutboundTunnel> exclude = nullptr) const;
 
 			// for overriding tunnel peer selection
-			std::shared_ptr<const i2p::data::RouterInfo> SelectNextHop (std::shared_ptr<const i2p::data::RouterInfo> prevHop, bool reverse, bool endpoint) const;
+			std::shared_ptr<const i2p::data::RouterInfo> SelectNextHop (std::shared_ptr<const i2p::data::RouterInfo> prevHop, bool reverse, bool endpoint);
 			bool StandardSelectPeers(Path & path, int numHops, bool inbound, SelectHopFunc nextHop);
 
 		private:
