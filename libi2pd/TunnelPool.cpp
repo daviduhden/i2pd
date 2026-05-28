@@ -578,7 +578,7 @@ namespace tunnel
 			hop = tryClient ?
 				(m_IsHighBandwidth ?
 				 	i2p::data::netdb.GetHighBandwidthRandomRouter (prevHop, reverse, endpoint, &m_PeerOrdering) :
-				 	i2p::data::netdb.GetRandomRouter (prevHop, reverse, endpoint, true)):
+				 	i2p::data::netdb.GetRandomRouter (prevHop, reverse, endpoint, true, &m_PeerOrdering)):
 				i2p::data::netdb.GetRandomRouter (prevHop, reverse, endpoint, false);
 			if (hop)
 			{
