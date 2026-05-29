@@ -1102,39 +1102,55 @@ namespace transport
 		if (ecode != boost::asio::error::operation_aborted)
 		{
 			auto ts = i2p::util::GetSecondsSinceEpoch ();
-			for (auto it = m_Peers.begin (); it != m_Peers.end (); )
+			std::list<std::shared_ptr<TransportSession> > sessionsToRemove;
+
 			{
-				auto peer = it->second;
-				peer->sessions.remove_if (
-					[](std::shared_ptr<TransportSession> session)->bool
-					{
-						return !session || !session->IsEstablished ();
-					});
- 				if (!peer->IsConnected () && ts > peer->creationTime + SESSION_CREATION_TIMEOUT)
+				std::lock_guard<std::mutex> l(m_PeersMutex);
+				for (auto it = m_Peers.begin (); it != m_Peers.end (); )
 				{
-					LogPrint (eLogWarning, "Transports: Session to peer ", it->first.ToBase64 (), " has not been created in ", SESSION_CREATION_TIMEOUT, " seconds");
-				/*	if (!it->second.router)
+					auto peer = it->second;
+					peer->sessions.remove_if (
+						[&sessionsToRemove](std::shared_ptr<TransportSession> session)->bool
+						{
+							bool remove = false;
+							if (session)
+							{
+								if (!session->IsEstablished ())
+								{
+									sessionsToRemove.emplace_back (session); // defer session destructor call after the loop
+									remove = true;
+								}
+							}
+							else
+								remove = true;
+							return remove;
+						});
+					if (!peer->IsConnected () && ts > peer->creationTime + SESSION_CREATION_TIMEOUT)
 					{
-						// if router for ident not found mark it unreachable
-						auto profile = i2p::data::GetRouterProfile (it->first);
-						if (profile) profile->Unreachable ();
-					}	*/
-					std::lock_guard<std::mutex> l(m_PeersMutex);
-					it = m_Peers.erase (it);
-				}
-				else
-				{
-					if (ts > peer->nextRouterInfoUpdateTime)
-					{
-						auto session = (!peer->sessions.empty ()) ? peer->sessions.front () : nullptr;
-						if (session)
-							session->SendLocalRouterInfo (true);
-						peer->nextRouterInfoUpdateTime = ts + PEER_ROUTER_INFO_UPDATE_INTERVAL +
-							m_Rng() % PEER_ROUTER_INFO_UPDATE_INTERVAL_VARIANCE;
+						LogPrint (eLogWarning, "Transports: Session to peer ", it->first.ToBase64 (), " has not been created in ", SESSION_CREATION_TIMEOUT, " seconds");
+					/*	if (!it->second.router)
+						{
+							// if router for ident not found mark it unreachable
+							auto profile = i2p::data::GetRouterProfile (it->first);
+							if (profile) profile->Unreachable ();
+						}	*/
+						it = m_Peers.erase (it);
 					}
-					++it;
+					else
+					{
+						if (ts > peer->nextRouterInfoUpdateTime)
+						{
+							auto session = (!peer->sessions.empty ()) ? peer->sessions.front () : nullptr;
+							if (session)
+								session->SendLocalRouterInfo (true);
+							peer->nextRouterInfoUpdateTime = ts + PEER_ROUTER_INFO_UPDATE_INTERVAL +
+								m_Rng() % PEER_ROUTER_INFO_UPDATE_INTERVAL_VARIANCE;
+						}
+						++it;
+					}
 				}
 			}
+
 			bool ipv4Testing = i2p::context.GetTesting ();
 			if (!ipv4Testing)
 				ipv4Testing = i2p::context.GetRouterInfo ().IsSSU2V4 () && (i2p::context.GetStatus() == eRouterStatusUnknown);
@@ -1146,6 +1162,7 @@ namespace transport
 				PeerTest (ipv4Testing, ipv6Testing);
 			m_PeerCleanupTimer->expires_after (std::chrono::seconds(2 * SESSION_CREATION_TIMEOUT + m_Rng() % SESSION_CREATION_TIMEOUT));
 			m_PeerCleanupTimer->async_wait (std::bind (&Transports::HandlePeerCleanupTimer, this, std::placeholders::_1));
+			// cleanup and delete sessionsToRemove here
 		}
 	}
 
@@ -1185,7 +1202,7 @@ namespace transport
 	template<typename Filter>
 	std::shared_ptr<const i2p::data::RouterInfo> Transports::GetRandomPeer (Filter filter, i2p::data::PeerOrdering * peerOrdering) const
 	{
-		std::vector<std::pair<i2p::data::IdentHash, std::shared_ptr<Peer>>> peers;
+		std::vector<std::pair<i2p::data::IdentHash, std::shared_ptr<Peer> > > peers;
 		{
 			// copy peers to temporary vector
 			std::lock_guard<std::mutex> l(m_PeersMutex);
