@@ -139,6 +139,9 @@ namespace garlic
 			int NumSentPackets () const { return m_NumSentPackets; }
 			void SetNumSentPackets (int numSentPackets) { m_NumSentPackets = numSentPackets; }
 
+			uint64_t LastSendTime () const { return m_LastSendTime; }
+			void SetLastSendTime (uint64_t lastSendTime) { m_LastSendTime = lastSendTime; }
+
 			GarlicDestination * GetOwner () const { return m_Owner; }
 			void SetOwner (GarlicDestination * owner) { m_Owner = owner; }
 
@@ -163,6 +166,7 @@ namespace garlic
 			std::shared_ptr<GarlicRoutingPath> m_SharedRoutingPath;
 			bool m_IsWithJava; // based on choked value from streaming
 			int m_NumSentPackets; // for limit number of sent messages in streaming
+			uint64_t m_LastSendTime; // for limit OB speed in streaming
 
 		public:
 

@@ -1123,6 +1123,7 @@ namespace stream
 			{
 				int numSentPackets = m_RoutingSession->NumSentPackets ();
 				m_RoutingSession->SetNumSentPackets (numSentPackets + numPackets);
+				m_RoutingSession->SetLastSendTime (ts);
 			}
 			if (m_Status == eStreamStatusClosing && m_SendBuffer.IsEmpty ())
 				SendClose ();
@@ -1617,9 +1618,22 @@ namespace stream
 			{
 				if (m_PacingTime)
 				{
-					auto numPackets = std::lldiv (m_PacingTimeRem + ts*1000 - m_LastSendTime*1000, m_PacingTime);
-					m_NumPacketsToSend = numPackets.quot;
-					m_PacingTimeRem = numPackets.rem;
+					if (m_RoutingSession)
+					{
+						uint64_t lastSendTime = m_RoutingSession->LastSendTime ();
+						if (lastSendTime)
+						{
+							auto numPackets = std::lldiv (m_PacingTimeRem + ts*1000 - lastSendTime*1000, m_PacingTime);
+							m_NumPacketsToSend = numPackets.quot;
+							m_PacingTimeRem = numPackets.rem;
+						}
+						else
+						{
+							auto numPackets = std::lldiv (m_PacingTimeRem + ts*1000 - m_LastSendTime*1000, m_PacingTime);
+							m_NumPacketsToSend = numPackets.quot;
+							m_PacingTimeRem = numPackets.rem;
+						}
+					}
 				}
 				else
 				{
@@ -1627,7 +1641,7 @@ namespace stream
 					m_NumPacketsToSend = 1; m_PacingTimeRem = 0;
 				}
 				m_IsSendTime = true;
-				if (m_WindowIncCounter && (m_WindowSize < m_MaxWindowSize || m_WindowDropTargetSize) && !m_SendBuffer.IsEmpty () && m_PacingTime > m_MinPacingTime)
+				if (m_NumPacketsToSend && m_WindowIncCounter && (m_WindowSize < m_MaxWindowSize || m_WindowDropTargetSize) && !m_SendBuffer.IsEmpty () && m_PacingTime > m_MinPacingTime)
 				{
 					float winSize = m_WindowSize;
 					if (m_WindowDropTargetSize)
@@ -1821,6 +1835,8 @@ namespace stream
 			if (m_IsTimeOutResend) ScheduleResend ();
 			SendPackets (packets);
 			m_LastSendTime = ts;
+			if (m_RoutingSession)
+				m_RoutingSession->SetLastSendTime (ts);
 			m_IsSendTime = false;
 		}
 		else if (!m_IsClientChoked && !m_IsClientChoked2)
