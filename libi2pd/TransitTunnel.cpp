@@ -394,7 +394,12 @@ namespace tunnel
 					nonce[4] = j; // nonce is record #
 					if (j == i)
 					{
-						memset (reply + SHORT_RESPONSE_RECORD_OPTIONS_OFFSET, 0, 2); // no options
+						i2p::util::Mapping replyOptions;
+						size_t optionsSize = replyOptions.ToBuffer (reply + SHORT_RESPONSE_RECORD_OPTIONS_OFFSET,
+							SHORT_RESPONSE_RECORD_RET_OFFSET - SHORT_RESPONSE_RECORD_OPTIONS_OFFSET);
+						if (SHORT_RESPONSE_RECORD_OPTIONS_OFFSET + optionsSize < SHORT_RESPONSE_RECORD_RET_OFFSET)
+							memset (reply + SHORT_RESPONSE_RECORD_OPTIONS_OFFSET + optionsSize, 0,
+								SHORT_RESPONSE_RECORD_RET_OFFSET - SHORT_RESPONSE_RECORD_OPTIONS_OFFSET - optionsSize);
 						reply[SHORT_RESPONSE_RECORD_RET_OFFSET] = retCode;
 						if (!i2p::crypto::AEADChaCha20Poly1305 (reply, SHORT_TUNNEL_BUILD_RECORD_SIZE - 16,
 							noiseState.m_H, 32, replyKey, nonce, reply, SHORT_TUNNEL_BUILD_RECORD_SIZE, true)) // encrypt

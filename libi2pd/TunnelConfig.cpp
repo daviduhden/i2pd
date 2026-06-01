@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2025, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -15,6 +15,7 @@
 #include "Timestamp.h"
 #include "I2PEndian.h"
 #include "I2NPProtocol.h"
+#include "util.h"
 #include "TunnelConfig.h"
 
 namespace i2p
@@ -168,7 +169,12 @@ namespace tunnel
 		htobe32buf (clearText + SHORT_REQUEST_RECORD_REQUEST_TIME_OFFSET, i2p::util::GetMinutesSinceEpoch ());
 		htobe32buf (clearText + SHORT_REQUEST_RECORD_REQUEST_EXPIRATION_OFFSET , 600); // +10 minutes
 		htobe32buf (clearText + SHORT_REQUEST_RECORD_SEND_MSG_ID_OFFSET, replyMsgID);
-		memset (clearText + SHORT_REQUEST_RECORD_PADDING_OFFSET, 0, SHORT_REQUEST_RECORD_CLEAR_TEXT_SIZE - SHORT_REQUEST_RECORD_PADDING_OFFSET);
+		i2p::util::Mapping options;
+		auto optionsSize = options.ToBuffer (clearText + SHORT_REQUEST_RECORD_TUNNEL_BUILD_OPTIONS_OFFSET,
+			SHORT_REQUEST_RECORD_CLEAR_TEXT_SIZE - SHORT_REQUEST_RECORD_TUNNEL_BUILD_OPTIONS_OFFSET);
+		if (SHORT_REQUEST_RECORD_TUNNEL_BUILD_OPTIONS_OFFSET + optionsSize < SHORT_REQUEST_RECORD_CLEAR_TEXT_SIZE)
+			memset (clearText + SHORT_REQUEST_RECORD_TUNNEL_BUILD_OPTIONS_OFFSET + optionsSize, 0,
+				SHORT_REQUEST_RECORD_CLEAR_TEXT_SIZE - SHORT_REQUEST_RECORD_TUNNEL_BUILD_OPTIONS_OFFSET - optionsSize);
 		// encrypt
 		uint8_t * record = records + recordIndex*SHORT_TUNNEL_BUILD_RECORD_SIZE;
 		EncryptECIES (clearText, SHORT_REQUEST_RECORD_CLEAR_TEXT_SIZE, record + SHORT_REQUEST_RECORD_ENCRYPTED_OFFSET);
@@ -254,7 +260,7 @@ namespace tunnel
 		m_FirstHop->isGateway = false;
 		m_LastHop->SetReplyHop (replyTunnelID, replyIdent);
 	}
-	
+
 	void TunnelConfig::CreatePeers (const std::vector<std::shared_ptr<const i2p::data::IdentityEx> >& peers)
 	{
 		TunnelHopConfig * prev = nullptr;
@@ -285,20 +291,20 @@ namespace tunnel
 	void TunnelConfig::CreatePhonyHop ()
 	{
 		if (m_LastHop && m_LastHop->ident)
-		{	
+		{
 			TunnelHopConfig * hop = nullptr;
 			if (m_IsShort)
 				hop = new ShortPhonyTunnelHopConfig ();
 			else
 				hop = new LongPhonyTunnelHopConfig ();
 			if (hop)
-			{	
+			{
 				hop->prev = m_LastHop;
 				m_LastHop->next = hop;
 				m_LastHop = hop;
-			}	
-		}	
-	}	
+			}
+		}
+	}
 
 	void TunnelConfig::DeletePhonyHop ()
 	{
@@ -309,7 +315,7 @@ namespace tunnel
 			auto tmp = m_LastHop;
 			m_LastHop = m_LastHop->prev;
 			delete tmp;
-		}	
-	}	
+		}
+	}
 }
 }
