@@ -529,6 +529,7 @@ namespace util
 			ShowNetworkStatus (s, i2p::context.GetStatusV6 (), i2p::context.GetTestingV6(), i2p::context.GetErrorV6 ());
 		}
 		s << "; ";
+		s << "Caps: " << i2p::context.GetRouterInfo().GetProperty("caps") << "; ";
 		s << "Success Rate: " << i2p::tunnel::tunnels.GetTunnelCreationSuccessRate() << "%\n";
 		s << "Uptime: "; ShowUptime(s, i2p::context.GetUptime ());
 		auto gracefulTimeLeft = Daemon.GetGracefulShutdownInterval ();
