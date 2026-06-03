@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2023, The PurpleI2P Project
+* Copyright (c) 2013-2026, The PurpleI2P Project
 *
 * This file is part of Purple i2pd project and licensed under BSD3
 *
@@ -45,7 +45,7 @@ namespace http
 		".menu { display: block; float: left; overflow: hidden; padding: 4px; max-width: 12em; white-space: nowrap; text-overflow: ellipsis ;}\r\n"
 		".listitem { display: block; font-family: monospace; font-size: 1.2em; white-space: nowrap; }\r\n"
 		".tableitem { font-family: monospace; font-size: 1.2em; white-space: nowrap; }\r\n"
-		".content { font-size: 1em; margin-left: 2em; padding: 4px; max-width: 50em; overflow: auto; position: absolute; left: 35%; }\r\n"
+		".content { font-size: 1em; margin-left: 2em; padding: 4px; max-width: 50em; overflow: auto; position: relative; left: 10%; width: fit-content; }\r\n"
 		".tunnel.established { color: #56B734; }\r\n"
 		".tunnel.expiring { color: #D3AE3F; }\r\n"
 		".tunnel.failed { color: #D33F3F; }\r\n"
