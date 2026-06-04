@@ -576,8 +576,11 @@ namespace transport
 			m_Socket.close ();
 			transports.PeerDisconnected (shared_from_this ());
 			m_Server.RemoveNTCP2Session (shared_from_this ());
-			if (!m_IntermediateQueue.empty ())
-				m_SendQueue.splice (m_SendQueue.end (), m_IntermediateQueue);
+			{
+				std::lock_guard<std::mutex> l(m_IntermediateQueueMutex);
+				if (!m_IntermediateQueue.empty ())
+					m_SendQueue.splice (m_SendQueue.end (), m_IntermediateQueue);
+			}
 			for (auto& it: m_SendQueue)
 				it->Drop ();
 			m_SendQueue.clear ();

@@ -354,7 +354,10 @@ namespace client
 			dgram->ResetReceiver (m_inPort);
 			dgram->ResetRawReceiver (m_inPort);
 		}
-		m_Sessions.clear ();
+		{
+			std::lock_guard<std::mutex> lock (m_SessionsMutex);
+			m_Sessions.clear ();
+		}
 	}
 
 	std::vector<std::shared_ptr<DatagramSessionInfo> > I2PUDPServerTunnel::GetSessions ()
@@ -433,7 +436,10 @@ namespace client
 		}
 		m_cancel_resolve = true;
 
-		m_Sessions.clear();
+		{
+			std::lock_guard<std::mutex> lock (m_SessionsMutex);
+			m_Sessions.clear();
+		}
 
 		if(m_LocalSocket && m_LocalSocket->is_open ())
 			m_LocalSocket->close ();
@@ -496,6 +502,7 @@ namespace client
 		auto remotePort = m_RecvEndpoint.port ();
 		if (!m_LastPort || m_LastPort != remotePort)
 		{
+			std::lock_guard<std::mutex> lock (m_SessionsMutex);
 			auto itr = m_Sessions.find (remotePort);
 			if (itr != m_Sessions.end ())
 				m_LastSession = itr->second;
@@ -637,21 +644,27 @@ namespace client
 
 	void I2PUDPClientTunnel::HandleRecvFromI2PRaw (uint16_t fromPort, uint16_t toPort, const uint8_t * buf, size_t len)
 	{
-		auto itr = m_Sessions.find (toPort);
-		// found convo ?
-		if (itr != m_Sessions.end ())
+		std::shared_ptr<UDPConvo> convo;
+		{
+			std::lock_guard<std::mutex> lock (m_SessionsMutex);
+			auto itr = m_Sessions.find (toPort);
+			// found convo ?
+			if (itr != m_Sessions.end ())
+				convo = itr->second;
+		}
+		if (convo)
 		{
 			// found convo
 			if (len > 0)
 			{
 				LogPrint (eLogDebug, "UDP Client: Got ", len, "B from ", isIdentity ? Identity.ToBase32 () : "");
 				boost::system::error_code ec;
-				m_LocalSocket->send_to (boost::asio::buffer (buf, len), itr->second->first, 0, ec);
+				m_LocalSocket->send_to (boost::asio::buffer (buf, len), convo->first, 0, ec);
 				if (!ec)
 					// mark convo as active
-					itr->second->second = i2p::util::GetMillisecondsSinceEpoch ();
+					convo->second = i2p::util::GetMillisecondsSinceEpoch ();
 				else
-					LogPrint (eLogInfo, "UDP Client: Send exception: ", ec.message (), " to ", itr->second->first);
+					LogPrint (eLogInfo, "UDP Client: Send exception: ", ec.message (), " to ", convo->first);
 			}
 		}
 		else
