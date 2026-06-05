@@ -225,25 +225,29 @@ namespace stream
 		{
 			uint16_t flags = packet->GetFlags ();
 			if (flags)
-				// plain ack with options
+			{
+				// plain ack with options or SYNACK retrans
 				ProcessOptions (flags, packet);
+				if (flags & PACKET_FLAG_SYNCHRONIZE)
+					SendQuickAck (); // to ack SYNACK retrans
+			}
 			else
+			{
 				// plain ack
+				LogPrint (eLogDebug, "Streaming: Plain ACK received");
+				if (m_IsImmediateAckRequested)
 				{
-					LogPrint (eLogDebug, "Streaming: Plain ACK received");
-					if (m_IsImmediateAckRequested)
+					auto ts = i2p::util::GetMillisecondsSinceEpoch ();
+					if (m_IsFirstRttSample)
 					{
-						auto ts = i2p::util::GetMillisecondsSinceEpoch ();
-						if (m_IsFirstRttSample)
-						{
-							m_RTT = ts - m_LastSendTime;
-							m_IsFirstRttSample = false;
-						}
-						else
-							m_RTT = (m_RTT + (ts - m_LastSendTime)) / 2;
-						m_IsImmediateAckRequested = false;
+						m_RTT = ts - m_LastSendTime;
+						m_IsFirstRttSample = false;
 					}
+					else
+						m_RTT = (m_RTT + (ts - m_LastSendTime)) / 2;
+					m_IsImmediateAckRequested = false;
 				}
+			}
 			m_LocalDestination.DeletePacket (packet);
 			return;
 		}
@@ -1114,7 +1118,7 @@ namespace stream
 			for (auto& it: packets)
 			{
 				it->sendTime = ts;
-				m_SentPackets.insert (it);
+				m_SentPackets.emplace (it);
 			}
 			SendPackets (packets);
 			m_LastSendTime = ts;
@@ -1279,7 +1283,7 @@ namespace stream
 		size += 2; // options size
 		p.len = size;
 
-		SendPackets (std::vector<Packet *> { &p });
+		SendPackets ({ &p });
 		m_LastACKSendTime = ts; // for limit inbound speed
 		m_LastConfirmedReceivedSequenceNumber = lastReceivedSeqn; // for limit inbound speed
 		m_IsChoking2 = false;
@@ -1325,7 +1329,7 @@ namespace stream
 			m_LocalDestination.GetOwner ()->Sign (packet, size, signature);
 		}
 		p.len = size;
-		SendPackets (std::vector<Packet *> { &p });
+		SendPackets ({ &p });
 		LogPrint (eLogDebug, "Streaming: Ping of ", p.len, " bytes sent");
 	}
 
@@ -1445,9 +1449,9 @@ namespace stream
 				m_AckSendTimer.cancel ();
 			}
 			if (!packet->sendTime) packet->sendTime = i2p::util::GetMillisecondsSinceEpoch ();
-			SendPackets (std::vector<Packet *> { packet });
+			SendPackets ({ packet });
 			bool isEmpty = m_SentPackets.empty ();
-			m_SentPackets.insert (packet);
+			m_SentPackets.emplace (packet);
 			if (isEmpty)
 				ScheduleResend ();
 			return true;
@@ -2246,7 +2250,7 @@ namespace stream
 					it->second.push_back (packet);
 				else
 				{
-					m_SavedPackets[receiveStreamID] = std::list<Packet *>{ packet };
+					m_SavedPackets.emplace (receiveStreamID, std::list<Packet *>{ packet });
 					auto timer = std::make_shared<boost::asio::steady_timer> (m_Owner->GetService ());
 					timer->expires_after (std::chrono::seconds(PENDING_INCOMING_TIMEOUT));
 					auto s = shared_from_this ();
