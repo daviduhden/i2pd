@@ -9,7 +9,7 @@
 #include "Log.h"
 #include "PostQuantum.h"
 
-#if OPENSSL_PQ
+#if OPENSSL_PQ // is 1 by default
 
 #include <openssl/param_build.h>
 #include <openssl/core_names.h>
@@ -18,7 +18,7 @@
 	// only for openbsd
 	#include<openssl/mlkem.h>
 	#define is_openbsd ""
-#else
+#endif
 
 namespace i2p
 {
