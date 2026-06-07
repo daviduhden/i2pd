@@ -15,9 +15,12 @@
 #include <openssl/core_names.h>
 
 #if defined(LIBRESSL_VERSION_NUMBER)
-	// only for openbsd
+	#warning like you use libressl
 	#include<openssl/mlkem.h>
-	#define is_openbsd ""
+	#define is_libre ""
+#error libressl
+#else 
+	#warning like you use openssl
 #endif
 
 namespace i2p
@@ -31,7 +34,7 @@ namespace crypto
 	}
 	MLKEMKEYS::FreeKeys(void) 
 	{
-#ifndef is_openbsd
+#ifndef is_libre
 		if (m_Pkey) EVP_PKEY_free (m_Pkey);
 #else
 	        if (m_Pkey) MLKEM_private_key_free (m_Pkey);
@@ -45,7 +48,7 @@ namespace crypto
 	void MLKEMKeys::GenerateKeys ()
 	{
 		FreeKeys();
-#ifndef is_openbsd
+#ifndef is_libre
 		m_Pkey = EVP_PKEY_Q_keygen(NULL, NULL, m_Name.c_str ());
 #else
 		m_Pkey = MLKEM_private_key_new(MLKEM768_RANK);
@@ -263,5 +266,6 @@ namespace crypto
 	}
 }
 }
-
+#else
+	#warning You are compile without PQ support
 #endif

@@ -34,6 +34,11 @@
 #if (OPENSSL_VERSION_NUMBER >= 0x030500000) // 3.5.0
 #	define OPENSSL_PQ 1
 #endif
+#ifdef LIBRESSL_VERSION_NUMBER
+	#if (defined(LIBRESSL_VERSION_NUMBER) && (LIBRESSL_VERSION_NUMBER >= 0x4030200fL)) 
+#		define OPENSSL_PQ
+	#endif
+#endif
 
 namespace i2p
 {
