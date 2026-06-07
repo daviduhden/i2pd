@@ -14,6 +14,12 @@
 #include <openssl/param_build.h>
 #include <openssl/core_names.h>
 
+#if defined(LIBRESSL_VERSION_NUMBER)
+	// only for openbsd
+	#include<openssl/mlkem.h>
+	#define is_openbsd ""
+#else
+
 namespace i2p
 {
 namespace crypto
@@ -23,16 +29,27 @@ namespace crypto
 		m_CTLen (std::get<2>(MLKEMS[type])), m_Pkey (nullptr)
 	{
 	}
-
+	MLKEMKEYS::FreeKeys(void) 
+	{
+#ifndef is_openbsd
+		if (m_Pkey) EVP_PKEY_free (m_Pkey);
+#else
+	        if (m_Pkey) MLKEM_private_key_free (m_Pkey);
+#endif
+	}
 	MLKEMKeys::~MLKEMKeys ()
 	{
-		if (m_Pkey) EVP_PKEY_free (m_Pkey);
+		FreeKeys();
 	}
 
 	void MLKEMKeys::GenerateKeys ()
 	{
-		if (m_Pkey) EVP_PKEY_free (m_Pkey);
+		FreeKeys();
+#ifndef is_openbsd
 		m_Pkey = EVP_PKEY_Q_keygen(NULL, NULL, m_Name.c_str ());
+#else
+		m_Pkey = MLKEM_private_key_new(MLKEM768_RANK);
+#endif
 	}
 
 	void MLKEMKeys::GetPublicKey (uint8_t * pub) const
