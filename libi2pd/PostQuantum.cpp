@@ -120,13 +120,13 @@ namespace crypto
 		else
 			LogPrint (eLogError, "MLKEM can't create PKEY context");
 		#else
-			if (m_PublicKey) MLKEM_public_key_free(m_PublicKey);
-			m_PublicKey = MLKEM_public_key_new(DEF_RANK);
-			if (!MLKEM_parse_public_key(m_PublicKey, pub, m_KeyLen))
+			MLKEM_public_key * pub_key; 
+			pub_key = MLKEM_public_key_new(DEF_RANK);
+			if (!MLKEM_parse_public_key(pub_key, pub, m_KeyLen))
 			{
 				LogPrint(eLogError, "MLKEM: failed to parse public key");
-				MLKEM_public_key_free(m_PublicKey);
-				m_PublicKey = nullptr;
+				if(pub_key) MLKEM_public_key_free(m_PublicKey);
+				pub_key = nullptr;
 			}
 			//LogPrint(eLogError, "MLKEM SetPublicKey [libressl] NOT IMPLEMENTED YET");
 		#endif
@@ -147,13 +147,42 @@ namespace crypto
 		else
 			LogPrint (eLogError, "MLKEM can't create PKEY context");
 		#else
-		//	auto res = MLKEM_encap(
-		#endif
+			auto pub_key = MLKEM_public_key_new(DEF_RANK); 
+					
+			if (MLKEM_public_from_private(m_Pkey, pub_key) != 0)
+			{
+				LogPrint(eLogError, "MLKEM can't get public from private");
+				return;
+			}
+
+			uint8_t * out_ct = nullptr;
+			size_t out_ct_len = 0;
+			uint8_t * out_ss = nullptr;
+			size_t out_ss_len = 0;
+
+			if (MLKEM_encap(pub_key, &out_ct, &out_ct_len, &out_ss, &out_ss_len) == 1)
+			{
+				memcpy(ciphertext, out_ct, out_ct_len);
+				memcpy(shared, out_ss, out_ss_len);
+
+				OPENSSL_cleanse(out_ct, out_ct_len);
+				OPENSSL_cleanse(out_ss, out_ss_len);
+
+				OPENSSL_free(out_ct);
+				OPENSSL_free(out_ss);
+			}
+			else
+			{
+				LogPrint(eLogError, "MLKEM [libressl]: encapsulation failed");
+			}
+			MLKEM_public_key_free(pub_key);
+    		#endif
 	}
 
 	void MLKEMKeys::Decaps (const uint8_t * ciphertext, uint8_t * shared)
 	{
 		if (!m_Pkey) return;
+		#ifndef LIBRESSL_PQ
 		auto ctx = EVP_PKEY_CTX_new_from_pkey (NULL, m_Pkey, NULL);
 		if (ctx)
 		{
@@ -164,6 +193,25 @@ namespace crypto
 		}
 		else
 			LogPrint (eLogError, "MLKEM can't create PKEY context");
+		#else
+		//int MLKEM_decap(const MLKEM_private_key *private_key,
+			//const uint8_t *ciphertext, size_t ciphertext_len,
+			//uint8_t **out_shared_secret, size_t *out_shared_secret_len);
+			uint8_t * out_shared_secret = nullptr;
+			size_t out_shared_secret_len = 0;
+			if (MLKEM_decap(m_Pkey, ciphertext, m_CTLen, &out_shared_secret, &out_shared_secret_len) == 1)
+			{
+				memcpy(shared, out_shared_secret, out_shared_secret_len);
+
+				OPENSSL_cleanse(out_shared_secret, out_shared_secret_len);
+
+				OPENSSL_free(out_shared_secret);
+			}
+			else
+			{
+				LogPrint(eLogError, "MLKEM [libressl]: decapsulation failed");
+			}
+		#endif
 	}
 
 	std::unique_ptr<MLKEMKeys> CreateMLKEMKeys (i2p::data::CryptoKeyType type)

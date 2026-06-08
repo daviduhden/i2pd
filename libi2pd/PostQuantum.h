@@ -83,7 +83,6 @@ namespace crypto
 			EVP_PKEY * m_Pkey;
 #else
 			MLKEM_private_key * m_Pkey;
-			MLKEM_public_key * m_PublicKey; // used only for SetPublickKey maybe not neeed
 #endif
 	};
 
