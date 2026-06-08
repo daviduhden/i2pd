@@ -35,7 +35,7 @@ namespace crypto
 	}
 	void MLKEMKeys::FreeKeys(void) 
 	{
-#if !LIBRESSL
+#ifndef LIBRESSL_VERSION_NUMBER
 		if (m_Pkey) EVP_PKEY_free (m_Pkey);
 #else
 	    if (m_Pkey) MLKEM_private_key_free (m_Pkey);
@@ -51,7 +51,7 @@ namespace crypto
 	void MLKEMKeys::GenerateKeys ()
 	{
 		FreeKeys();
-#if !LIBRESSL
+#ifndef LIBRESSL_VERSION_NUMBER
 		m_Pkey = EVP_PKEY_Q_keygen(NULL, NULL, m_Name.c_str ());
 		LogPrint(eLogDebug, "MLKEM: GenerateKeys [ openssl ]");
 #else
@@ -62,18 +62,22 @@ namespace crypto
 		uint8_t * seed = nullptr;
 		size_t seed_len = 0;
 
-		if (MLKEM_generate_key(m_Pkey, &pub_key, &pub_key_len, &seed, &seed_len) == 1) {
+		if (MLKEM_generate_key(m_Pkey, &pub_key, &pub_key_len, &seed, &seed_len) == 1) 
+		{
 			LogPrint(eLogDebug, "MLKEM: GenerateKeys [ libressl ] success");
-			if (pub_key_len <= sizeof(m_CachedPub)) {
+			if (pub_key_len <= sizeof(m_CachedPub)) 
+			{
 				memcpy(m_CachedPub, pub_key, pub_key_len);
 				m_IsPubCached = true;
 				LogPrint(eLogDebug, "MLKEM [libressl] cache the pub succes");
-			} else {
+			} else 
+			{
 				 LogPrint(eLogError, "MLKEM: can't cache private key [libressl]");
 			}
 			OPENSSL_free(pub_key);
 			if (seed) OPENSSL_free(seed);
-		} else {
+		} else 
+		{
 			LogPrint(eLogError, "MLKEM: GenerateKeys [ libressl ] failed");
 			MLKEM_private_key_free(m_Pkey);
 			m_Pkey = nullptr;
@@ -83,8 +87,9 @@ namespace crypto
 
 	void MLKEMKeys::GetPublicKey (uint8_t * pub) const
 	{
-		if (m_Pkey) {
-			#if !LIBRESSL
+		if (m_Pkey) 
+		{
+			#ifndef LIBRESSL_VERSION_NUMBER
 				size_t len = m_KeyLen;
 				EVP_PKEY_get_octet_string_param (m_Pkey, OSSL_PKEY_PARAM_PUB_KEY, pub, m_KeyLen, &len);
 		    #else
@@ -92,10 +97,12 @@ namespace crypto
 
 				LogPrint(eLogDebug, "MLKEM: GetPublicKey [ libressl ]");
 				
-				if (m_IsPubCached) {
+				if (m_IsPubCached) 
+				{
 						memcpy(pub, m_CachedPub, MLKEM768_KEY_LENGTH);
 						LogPrint(eLogDebug,"MLKEM [libressl]: copy pubkey");
-					} else {
+					} else 
+					{
 						LogPrint(eLogError, "MLKEM: Public key not cached!");
 					}
     		#endif
@@ -106,30 +113,34 @@ namespace crypto
 	void MLKEMKeys::SetPublicKey (const uint8_t * pub)
 	{
 		if(!m_Pkey) return LogPrint(eLogError, "We are don't have private key for set public key");
-		#if !LIBRESSL
+		#ifndef LIBRESSL_VERSION_NUMBER
 		OSSL_PARAM params[] = {
 			OSSL_PARAM_octet_string(OSSL_PKEY_PARAM_PUB_KEY, (void*)pub, m_KeyLen),
 			OSSL_PARAM_END
 		};
 
 		EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new_from_name(NULL, m_Name.c_str(), NULL);
-		if (ctx) {
+		if (ctx) 
+		{
 			EVP_PKEY_fromdata_init(ctx);
 			if (EVP_PKEY_fromdata(ctx, &m_Pkey, OSSL_KEYMGMT_SELECT_PUBLIC_KEY, params) <= 0) {
 				LogPrint(eLogError, "MLKEM: Failed to set public key data");
 			}
 			EVP_PKEY_CTX_free(ctx);
-		} else {
+		} else 
+		{
 			LogPrint(eLogError, "MLKEM: can't create PKEY context");
 		}
 		#else
 		MLKEM_public_key * pub_key = MLKEM_public_key_new(DEF_RANK); 
-		if (MLKEM_parse_public_key(pub_key, pub, m_KeyLen))	{
+		if (MLKEM_parse_public_key(pub_key, pub, m_KeyLen))	
+		{
 				memcpy(m_CachedPub, pub, m_KeyLen);
 				m_IsPubCached = true;
 				LogPrint(eLogDebug, "MLKEM: SetPublicKey [ libressl ] success");
 		}
-		else {
+		else 
+		{
 				LogPrint(eLogError, "MLKEM: failed to parse public key");
 		}
 		if (pub_key) MLKEM_public_key_free(pub_key);
@@ -138,17 +149,20 @@ namespace crypto
 
 	void MLKEMKeys::Encaps (uint8_t * ciphertext, uint8_t * shared)
 	{
-		if (!m_Pkey) {
+		if (!m_Pkey) 
+		{
 			LogPrint(eLogDebug, "MLKEM encaps failed, not found priv key");
 			GenerateKeys();
-			if (!m_Pkey) {
+			if (!m_Pkey) 
+			{
 					LogPrint(eLogError, "MLKEM: Failed to generate keys for Encaps");
 					return;
 			}
         }
-		#if !LIBRESSL
+		#ifndef LIBRESSL_VERSION_NUMBER
 		auto ctx = EVP_PKEY_CTX_new_from_pkey (NULL, m_Pkey, NULL);
-		if (ctx) {
+		if (ctx) 
+		{
 			EVP_PKEY_encapsulate_init (ctx, NULL);
 			size_t len = m_CTLen, sharedLen = 32;
 			EVP_PKEY_encapsulate (ctx, ciphertext, &len, shared, &sharedLen);
@@ -175,7 +189,8 @@ namespace crypto
 				OPENSSL_free(out_ss);
 				LogPrint(eLogDebug, "MLKEM [libressl] succesfully encaps");
 			}
-			else {
+			else 
+			{
 				LogPrint(eLogError, "MLKEM [libressl]: encapsulation failed");
 			}
 			MLKEM_public_key_free(pub_key);
@@ -185,9 +200,10 @@ namespace crypto
 	void MLKEMKeys::Decaps (const uint8_t * ciphertext, uint8_t * shared)
 	{
 		if (!m_Pkey) return;
-		#if !LIBRESSL
+		#ifndef LIBRESSL_VERSION_NUMBER
 		auto ctx = EVP_PKEY_CTX_new_from_pkey (NULL, m_Pkey, NULL);
-		if (ctx) {
+		if (ctx) 
+		{
 			EVP_PKEY_decapsulate_init (ctx, NULL);
 			size_t sharedLen = 32;
 			EVP_PKEY_decapsulate (ctx, shared, &sharedLen, ciphertext, m_CTLen);
@@ -198,7 +214,8 @@ namespace crypto
 		#else
 			uint8_t * out_shared_secret = nullptr;
 			size_t out_shared_secret_len = 0;
-			if (MLKEM_decap(m_Pkey, ciphertext, m_CTLen, &out_shared_secret, &out_shared_secret_len) == 1) {
+			if (MLKEM_decap(m_Pkey, ciphertext, m_CTLen, &out_shared_secret, &out_shared_secret_len) == 1) 
+			{
 				memcpy(shared, out_shared_secret, out_shared_secret_len);
 
 				OPENSSL_cleanse(out_shared_secret, out_shared_secret_len);
@@ -206,7 +223,8 @@ namespace crypto
 				OPENSSL_free(out_shared_secret);
 				LogPrint(eLogDebug, "MLKEM [libressl] succesfully decrypt");
 			}
-			else {
+			else 
+			{
 				LogPrint(eLogError, "MLKEM [libressl]: decapsulation failed");
 			}
 		#endif
