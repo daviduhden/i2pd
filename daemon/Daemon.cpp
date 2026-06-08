@@ -114,7 +114,7 @@ namespace util
 			{
 				LogPrint(eLogDebug, "Use default pledge values");
 				// TODO: remove that not need
-				pledge("stdio rpath wpath cpath inet dns unix recvfd sendfd proc exec error tmppath mcast chown flock",nullptr);
+				pledge("stdio rpath wpath cpath inet dns unix recvfd sendfd proc error mcast chown flock",nullptr);
 			} else {
 				std::ifstream f(pledge_file);
 				if(!f) {
