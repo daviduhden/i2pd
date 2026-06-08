@@ -10,6 +10,10 @@
 #include <memory>
 #include <regex>
 
+#ifdef __OpenBSD__
+#	include<unistd.h>
+#endif
+
 #include "Daemon.h"
 
 #include "Config.h"
@@ -102,6 +106,42 @@ namespace util
 
 		i2p::config::ParseConfig(config);
 		i2p::config::Finalize();
+
+#ifdef __OpenBSD__
+		auto init_pledge = []() {
+			std::string pledge_file; i2p::config::GetOption("openbsd.pledge_file");
+			if (pledge_file == "")
+			{
+				LogPrint(eLogDebug, "Use default pledge values");
+				pledge("inet dns unix sendfd recvfd error",nullptr);
+			} else {
+				std::ifstream f(pledge_file);
+				if(!f) {
+					std::cerr << "Can't open pledge file " << pledge_file<<std::endl;
+					exit(1);
+				}
+				std::string line;
+				std::vector<std::string> rules;
+				while(std::getline(f, line)){
+					rules.push_back(line);
+				}
+				if(f.bad()) {
+					std::cerr << "IO error with pledge file" << std::endl;
+				}
+				std::ostringstream out;
+				for(auto r : rules)
+					out << r << " ";
+				pledge(out.str().c_str());
+			}		
+
+
+		};
+		auto init_unevil = []() {
+			std::string unevil_file; i2p::config::GetOption("openbsd.unevil_file");
+		}
+		init_pledge();
+		init_unevil();
+#endif
 
 		i2p::config::GetOption("daemon", isDaemon);
 
