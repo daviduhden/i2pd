@@ -82,36 +82,39 @@ namespace crypto
 		{
 			size_t len = m_KeyLen;
 			#ifndef LIBRESSL_PQ
-		    EVP_PKEY_get_octet_string_param (m_Pkey, OSSL_PKEY_PARAM_PUB_KEY, pub, m_KeyLen, &len);
+				EVP_PKEY_get_octet_string_param (m_Pkey, OSSL_PKEY_PARAM_PUB_KEY, pub, m_KeyLen, &len);
 		    #else
-		    /*
-		     * MLKEM_generate_key(MLKEM_private_key *private_key,
-				uint8_t **out_encoded_public_key, size_t *out_encoded_public_key_len,
-				uint8_t **out_optional_seed, size_t *out_optional_seed_len);
-				https://github.com/libressl/openbsd/blob/8662e35dbd36d8450a6d4c7188a65c580e4b339f/src/lib/libcrypto/mlkem/mlkem.h#L125C5-L128C1
-				maybe int MLKEM_public_from_private(const MLKEM_private_key *private_key,
-					MLKEM_public_key *public_key);?
-			*/
-			{
-//				auto result = MLKEM_generate_key(m_Pkey, &pub, &len, nullptr, nullptr);
-//				if(result != 0) {
-//					LogPrint (eLogError, "MLKEM [libressl]: can't generate public key");
-					if (!m_Pkey) return;
-					LogPrint(eLogDebug, "MLKEM: GetPublicKey [ libressl ]");
-					auto pub_key = MLKEM_public_key_new(DEF_RANK); 
-					
-					if (MLKEM_public_from_private(m_Pkey, pub_key) == 0)
+				if (!m_Pkey) return;
+
+				LogPrint(eLogDebug, "MLKEM: GetPublicKey [ libressl ]");
+				
+				auto pub_key = MLKEM_public_key_new(DEF_RANK); 
+				
+				if (MLKEM_public_from_private(m_Pkey, pub_key) == 0)
+				{
+					uint8_t * encoded_pub = nullptr;
+					size_t encoded_len = 0;
+
+					if (MLKEM_marshal_public_key(pub_key, &encoded_pub, &encoded_len) == 1)
 					{
-						//int MLKEM_marshal_public_key(const MLKEM_public_key *public_key, uint8_t **out,    size_t *out_len);
-						MLKEM_marshal_public_key(pub_key, &pub, &len);
+						if (encoded_len <= m_KeyLen) {
+							memcpy(pub, encoded_pub, encoded_len);
+						} else {
+							LogPrint(eLogError, "MLKEM [libressl]: Buffer too small");
+						}
+						OPENSSL_free(encoded_pub);
 					}
 					else
 					{
-						LogPrint(eLogError, "MLKEM [libressl]: can't extract public key from private");
-					}					
-					MLKEM_public_key_free(pub_key);
-					
+						LogPrint(eLogError, "MLKEM [libressl]: can't marshal public key");
+					}
 				}
+				else
+				{
+					LogPrint(eLogError, "MLKEM [libressl]: can't extract public key from private");
+				}
+				
+				MLKEM_public_key_free(pub_key);
 		    #endif
 		}
 	}
@@ -121,7 +124,7 @@ namespace crypto
 	{
 		#ifndef LIBRESSL_PQ
 		if(!m_Pkey) return LogPrint(eLogError, "We are don't have private key for set public key");
-		FreeKeys();
+		/*FreeKeys(); /////// ?????????
 		OSSL_PARAM params[] =
 		{
 			OSSL_PARAM_octet_string (OSSL_PKEY_PARAM_PUB_KEY, (uint8_t *)pub, m_KeyLen),
@@ -136,6 +139,22 @@ namespace crypto
 		}
 		else
 			LogPrint (eLogError, "MLKEM can't create PKEY context");
+		*/
+		OSSL_PARAM params[] = {
+			OSSL_PARAM_octet_string(OSSL_PKEY_PARAM_PUB_KEY, (void*)pub, m_KeyLen),
+			OSSL_PARAM_END
+		};
+
+		EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new_from_name(NULL, m_Name.c_str(), NULL);
+		if (ctx) {
+			EVP_PKEY_fromdata_init(ctx);
+			if (EVP_PKEY_fromdata(ctx, &m_Pkey, OSSL_KEYMGMT_SELECT_PUBLIC_KEY, params) <= 0) {
+				LogPrint(eLogError, "MLKEM: Failed to set public key data");
+			}
+			EVP_PKEY_CTX_free(ctx);
+		} else {
+			LogPrint(eLogError, "MLKEM: can't create PKEY context");
+		}
 		#else
 			MLKEM_public_key * pub_key; 
 			pub_key = MLKEM_public_key_new(DEF_RANK);
