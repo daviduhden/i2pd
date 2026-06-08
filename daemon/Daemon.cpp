@@ -138,11 +138,11 @@ namespace util
 
 		};
 		auto init_unevil = []() {
-			unveil("/usr/lib", "rx");
-			unveil("/usr/local/lib", "rx"); 
-			unveil("/lib", "rx");
+			unveil("/usr/lib", "r");
+			unveil("/usr/local/lib", "r"); 
 			unveil("/lib", "r");
-			unveil("/usr/libexec", "rx"); 
+			unveil("/lib", "r");
+			unveil("/usr/libexec", "r"); 
 			unveil("/dev/urandom", "r");
 			unveil("/tmp", "rw");
 			unveil("/etc/i2pd", "r");
