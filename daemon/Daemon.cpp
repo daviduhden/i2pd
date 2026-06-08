@@ -113,7 +113,8 @@ namespace util
 			if (pledge_file == "")
 			{
 				LogPrint(eLogDebug, "Use default pledge values");
-				pledge("inet dns unix sendfd recvfd error",nullptr);
+				// TODO: remove that not need
+				pledge("stdio rpath wpath cpath inet dns unix recvfd sendfd proc exec error tmppath mcast chown flock",nullptr);
 			} else {
 				std::ifstream f(pledge_file);
 				if(!f) {
@@ -137,6 +138,15 @@ namespace util
 
 		};
 		auto init_unevil = []() {
+			unveil("/usr/lib", "rx");
+			unveil("/usr/local/lib", "rx"); 
+			unveil("/lib", "rx");
+			unveil("/lib", "r");
+			unveil("/usr/libexec", "rx"); 
+			unveil("/dev/urandom", "r");
+			unveil("/tmp", "rw");
+			unveil("/etc/i2pd", "r");
+			
 			#define UNVEIL_DIR(dir) unveil(dir.c_str(), "rwc")
 			
 			std::string unevil_file; i2p::config::GetOption("openbsd.unevil_file",unevil_file);
@@ -154,7 +164,8 @@ namespace util
 			unveil(openbsd_pledge_file.c_str(), "r");
 			std::string tunconf ;i2p::config::GetOption("tunconf", tunconf); unveil(tunconf.c_str(), "r");
 			std::string conf ;i2p::config::GetOption("tunconf", conf); unveil(conf.c_str(), "r");
-			std::string pidfile ;i2p::config::GetOption("pidfile", pidfile); unveil(pidfile.c_str(), "r");
+			std::string pidfile ;i2p::config::GetOption("pidfile", pidfile); unveil(pidfile.c_str(), "rwc");
+			i2p::config::GetOption("logfile", pidfile); unveil(logfile.c_str(), "rwc");
 			if(unevil_file != "")
 			{
 				std::ifstream f(unevil_file);
@@ -168,9 +179,10 @@ namespace util
 				}
 			}
 			#undef UNVEIL_DIR
+			unveil(NULL, NULL); 
 		};
-		init_pledge();
 		init_unevil();
+		init_pledge();
 #endif
 
 		i2p::config::GetOption("daemon", isDaemon);
