@@ -1,5 +1,6 @@
 ---
 name: Build on OSX
+# trigger: workflow/macos-system-libressl-ci
 
 "on":
   push:
