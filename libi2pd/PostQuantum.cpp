@@ -91,21 +91,20 @@ namespace crypto
 		if (m_Pkey)
 		{
 #ifndef LIBRESSL_VERSION_NUMBER
-				size_t len = m_KeyLen;
-				EVP_PKEY_get_octet_string_param (m_Pkey, OSSL_PKEY_PARAM_PUB_KEY, pub, m_KeyLen, &len);
+			size_t len = m_KeyLen;
+			EVP_PKEY_get_octet_string_param (m_Pkey, OSSL_PKEY_PARAM_PUB_KEY, pub, m_KeyLen, &len);
 #else
-				if (!m_Pkey) return;
+			if (!m_Pkey) return;
 
-				LogPrint(eLogDebug, "MLKEM: GetPublicKey [ libressl ]");
+			LogPrint(eLogDebug, "MLKEM: GetPublicKey [ libressl ]");
 
-				if (m_IsPubCached)
-				{
-						memcpy(pub, m_CachedPub, MLKEM768_KEY_LENGTH);
-						LogPrint(eLogDebug,"MLKEM [libressl]: copy pubkey");
-					} else
-					{
-						LogPrint(eLogError, "MLKEM: Public key not cached!");
-					}
+			if (m_IsPubCached)
+			{
+				memcpy(pub, m_CachedPub, MLKEM768_KEY_LENGTH);
+				LogPrint(eLogDebug,"MLKEM [libressl]: copy pubkey");
+			}
+			else
+				LogPrint(eLogError, "MLKEM: Public key not cached!");
 #endif
 		}
 	}
@@ -113,8 +112,12 @@ namespace crypto
 
 	void MLKEMKeys::SetPublicKey (const uint8_t * pub)
 	{
-		if(!m_Pkey) return LogPrint(eLogError, "We are don't have private key for set public key");
 #ifndef LIBRESSL_VERSION_NUMBER
+		if (m_Pkey)
+		{
+			EVP_PKEY_free (m_Pkey);
+			m_Pkey = nullptr;
+		}
 		OSSL_PARAM params[] = {
 			OSSL_PARAM_octet_string(OSSL_PKEY_PARAM_PUB_KEY, (void*)pub, m_KeyLen),
 			OSSL_PARAM_END
@@ -152,13 +155,8 @@ namespace crypto
 	{
 		if (!m_Pkey)
 		{
-			LogPrint(eLogDebug, "MLKEM encaps failed, not found priv key");
-			GenerateKeys();
-			if (!m_Pkey)
-			{
-					LogPrint(eLogError, "MLKEM: Failed to generate keys for Encaps");
-					return;
-			}
+			LogPrint(eLogError, "MLKEM: No key for Encaps");
+			return;
         }
 #ifndef LIBRESSL_VERSION_NUMBER
 		auto ctx = EVP_PKEY_CTX_new_from_pkey (NULL, m_Pkey, NULL);
