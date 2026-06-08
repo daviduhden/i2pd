@@ -23,11 +23,23 @@ namespace i2p
 namespace crypto
 {
 	MLKEMKeys::MLKEMKeys (MLKEMTypes type):
+#ifndef LIBRESSL_VERSION_NUMBER
 		m_Name (std::get<0>(MLKEMS[type])), m_KeyLen (std::get<1>(MLKEMS[type])),
-		m_CTLen (std::get<2>(MLKEMS[type])), m_Pkey (nullptr)
+		m_CTLen (std::get<2>(MLKEMS[type])),
+#else
+		m_Name (std::get<0>(MLKEMS[eMLKEM768])), m_KeyLen (std::get<1>(MLKEMS[eMLKEM768])),
+		m_CTLen (std::get<2>(MLKEMS[eMLKEM768])),
+#endif
+		m_Pkey (nullptr)
 	{
 	}
-	void MLKEMKeys::FreeKeys(void)
+
+	MLKEMKeys::~MLKEMKeys ()
+	{
+		FreeKeys();
+	}
+
+	void MLKEMKeys::FreeKeys ()
 	{
 #ifndef LIBRESSL_VERSION_NUMBER
 		if (m_Pkey) EVP_PKEY_free (m_Pkey);
@@ -35,11 +47,6 @@ namespace crypto
 	    if (m_Pkey) MLKEM_private_key_free (m_Pkey);
 #endif
 		if (m_Pkey) m_Pkey = nullptr;
-	}
-	MLKEMKeys::~MLKEMKeys ()
-	{
-		FreeKeys();
-		LogPrint(eLogDebug, "MLKEM: FreeKeys ");
 	}
 
 	void MLKEMKeys::GenerateKeys ()
@@ -83,10 +90,10 @@ namespace crypto
 	{
 		if (m_Pkey)
 		{
-			#ifndef LIBRESSL_VERSION_NUMBER
+#ifndef LIBRESSL_VERSION_NUMBER
 				size_t len = m_KeyLen;
 				EVP_PKEY_get_octet_string_param (m_Pkey, OSSL_PKEY_PARAM_PUB_KEY, pub, m_KeyLen, &len);
-		    #else
+#else
 				if (!m_Pkey) return;
 
 				LogPrint(eLogDebug, "MLKEM: GetPublicKey [ libressl ]");
@@ -99,7 +106,7 @@ namespace crypto
 					{
 						LogPrint(eLogError, "MLKEM: Public key not cached!");
 					}
-    		#endif
+#endif
 		}
 	}
 
@@ -107,7 +114,7 @@ namespace crypto
 	void MLKEMKeys::SetPublicKey (const uint8_t * pub)
 	{
 		if(!m_Pkey) return LogPrint(eLogError, "We are don't have private key for set public key");
-		#ifndef LIBRESSL_VERSION_NUMBER
+#ifndef LIBRESSL_VERSION_NUMBER
 		OSSL_PARAM params[] = {
 			OSSL_PARAM_octet_string(OSSL_PKEY_PARAM_PUB_KEY, (void*)pub, m_KeyLen),
 			OSSL_PARAM_END
@@ -125,8 +132,8 @@ namespace crypto
 		{
 			LogPrint(eLogError, "MLKEM: can't create PKEY context");
 		}
-		#else
-		MLKEM_public_key * pub_key = MLKEM_public_key_new( MLKEM768_RANK);
+#else
+		MLKEM_public_key * pub_key = MLKEM_public_key_new(MLKEM768_RANK);
 		if (MLKEM_parse_public_key(pub_key, pub, m_KeyLen))
 		{
 				memcpy(m_CachedPub, pub, m_KeyLen);
@@ -138,7 +145,7 @@ namespace crypto
 				LogPrint(eLogError, "MLKEM: failed to parse public key");
 		}
 		if (pub_key) MLKEM_public_key_free(pub_key);
-    #endif
+#endif
 	}
 
 	void MLKEMKeys::Encaps (uint8_t * ciphertext, uint8_t * shared)
@@ -153,7 +160,7 @@ namespace crypto
 					return;
 			}
         }
-		#ifndef LIBRESSL_VERSION_NUMBER
+#ifndef LIBRESSL_VERSION_NUMBER
 		auto ctx = EVP_PKEY_CTX_new_from_pkey (NULL, m_Pkey, NULL);
 		if (ctx)
 		{
@@ -164,8 +171,8 @@ namespace crypto
 		}
 		else
 			LogPrint (eLogError, "MLKEM can't create PKEY context");
-		#else
-			auto pub_key = MLKEM_public_key_new(DEF_RANK);
+#else
+			auto pub_key = MLKEM_public_key_new(MLKEM768_RANK);
 			if (MLKEM_public_from_private(m_Pkey, pub_key) != 1) {
 				LogPrint(eLogError, "MLKEM can't get public from private");
 				return;
@@ -194,7 +201,7 @@ namespace crypto
 	void MLKEMKeys::Decaps (const uint8_t * ciphertext, uint8_t * shared)
 	{
 		if (!m_Pkey) return;
-		#ifndef LIBRESSL_VERSION_NUMBER
+#ifndef LIBRESSL_VERSION_NUMBER
 		auto ctx = EVP_PKEY_CTX_new_from_pkey (NULL, m_Pkey, NULL);
 		if (ctx)
 		{
@@ -205,7 +212,7 @@ namespace crypto
 		}
 		else
 			LogPrint (eLogError, "MLKEM can't create PKEY context");
-		#else
+#else
 			uint8_t * out_shared_secret = nullptr;
 			size_t out_shared_secret_len = 0;
 			if (MLKEM_decap(m_Pkey, ciphertext, m_CTLen, &out_shared_secret, &out_shared_secret_len) == 1)
@@ -221,7 +228,7 @@ namespace crypto
 			{
 				LogPrint(eLogError, "MLKEM [libressl]: decapsulation failed");
 			}
-		#endif
+#endif
 	}
 
 	std::unique_ptr<MLKEMKeys> CreateMLKEMKeys (i2p::data::CryptoKeyType type)
