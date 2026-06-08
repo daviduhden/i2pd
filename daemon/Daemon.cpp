@@ -137,17 +137,17 @@ namespace util
 
 		};
 		auto init_unevil = []() {
-			#define UNEVIL_DIR(dir) unveil(dir.c_str(), "rwc")
+			#define UNVEIL_DIR(dir) unveil(dir.c_str(), "rwc")
 			
 			std::string unevil_file; i2p::config::GetOption("openbsd.unevil_file",unevil_file);
-			UNEVIL_DIR(unevil_file);
+			UNVEIL_DIR(unevil_file);
 			std::string tunnelsdir, certsdir, logfile, datadir, reseed_file, openbsd_pledge_file;
 			i2p::config::GetOption("tunnelsdir", tunnelsdir);
-			UNEVIL_DIR(tunnelsdir);
+			UNVEIL_DIR(tunnelsdir);
 			i2p::config::GetOption("certsdir", certsdir);
-			UNEVIL_DIR(certsdir);
+			UNVEIL_DIR(certsdir);
 			i2p::config::GetOption("datadir", datadir);
-			UNEVIL_DIR(datadir);
+			UNVEIL_DIR(datadir);
 			i2p::config::GetOption("reseed.file", reseed_file);
 			unveil(reseed_file.c_str(), "r");
 			i2p::config::GetOption("openbsd.pledge_file", openbsd_pledge_file);
@@ -162,17 +162,12 @@ namespace util
 					std::cerr << "Can't open unevil file" << std::endl;
 					exit(1);
 				}
-				//using dir_pair = struct {
-				//		std::string path;
-				//		std::string perms;
-				//}; 
 				std::string line;
-				//std::vector<> dirs;
 				while(std::getline(f, line)){
-						UNEVIL_DIR(line);
+						UNVEIL_DIR(line);
 				}
 			}
-			#undef UNEVIL_DIR
+			#undef UNVEIL_DIR
 		};
 		init_pledge();
 		init_unevil();
