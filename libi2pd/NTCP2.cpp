@@ -13,6 +13,9 @@
 #include <stdlib.h>
 #include <vector>
 #include <chrono>
+#include <algorithm>
+#include <sstream>
+#include <iomanip>
 #include "Log.h"
 #include "I2PEndian.h"
 #include "Crypto.h"
@@ -33,6 +36,23 @@ namespace i2p
 {
 namespace transport
 {
+	namespace
+	{
+		std::string HexSnippet (const uint8_t * data, size_t len, size_t maxLen = 24)
+		{
+			std::ostringstream s;
+			s << std::hex << std::setfill ('0');
+			auto n = std::min (len, maxLen);
+			for (size_t i = 0; i < n; i++)
+			{
+				if (i) s << ' ';
+				s << std::setw (2) << (int)data[i];
+			}
+			if (len > n) s << " ...";
+			return s.str ();
+		}
+	}
+
 	NTCP2Establisher::NTCP2Establisher ():
 		m_SessionConfirmedBuffer (nullptr), m_BufferLen (0), m_IsLongPadding (false)
 	{
@@ -146,6 +166,7 @@ namespace transport
 	bool NTCP2Establisher::CreateSessionRequestMessage (std::mt19937& rng)
 	{
 		size_t offset  = 0;
+		size_t pqKeyLen = 0;
 		// encrypt X
 		i2p::crypto::CBCEncryption encryption;
 		encryption.SetKey (m_RemoteIdentHash);
@@ -177,8 +198,9 @@ namespace transport
         {
             // ML-KEM frame
             auto keyLen = i2p::crypto::GetMLKEMPublicKeyLen (m_CryptoType);
-			std::vector<uint8_t> encapsKey(keyLen);
-			m_PQKeys->GetPublicKey (encapsKey.data ());
+            pqKeyLen = keyLen;
+            std::vector<uint8_t> encapsKey(keyLen);
+            m_PQKeys->GetPublicKey (encapsKey.data ());
 			// encrypt encapsKey
 			if (!Encrypt (encapsKey.data (), m_Buffer + offset, keyLen))
 			{
@@ -225,6 +247,9 @@ namespace transport
             MixHash (m_Buffer + offset, paddingLength);
 		}
 		m_BufferLen = offset + paddingLength;
+		LogPrint (eLogDebug, "NTCP2: SessionRequest built crypto=", (int)m_CryptoType,
+			" pq=", m_PQKeys ? 1 : 0, " pqKeyLen=", pqKeyLen, " totalLen=", m_BufferLen,
+			" head=", HexSnippet (m_Buffer, m_BufferLen));
 		// create m3p2 payload (RouterInfo block) for SessionConfirmed
 		m_SessionConfirmedBuffer = new uint8_t[m3p2Len + 48]; // m3p1 is 48 bytes
 		uint8_t * m3p2 = m_SessionConfirmedBuffer + 48;
@@ -422,6 +447,9 @@ namespace transport
 			LogPrint (eLogWarning, "NTCP2: SessionRequest AEAD verification failed ");
 			return false;
 		}
+		LogPrint (eLogDebug, "NTCP2: SessionRequest parsed crypto=", (int)m_CryptoType,
+			" pq=", pq ? 1 : 0, " padLen=", paddingLen, " m3p2Len=", m3p2Len, " totalLen=", m_BufferLen,
+			" head=", HexSnippet (m_Buffer, m_BufferLen));
 		return true;
 	}
 
