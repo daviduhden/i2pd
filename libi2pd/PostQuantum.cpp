@@ -40,7 +40,6 @@ namespace crypto
 		if (m_Pkey) EVP_PKEY_free (m_Pkey);
 #else
 	    if (m_Pkey) MLKEM_private_key_free (m_Pkey);
-	    if (m_PublicKey) {MLKEM_public_key_free(m_PublicKey); m_PublicKey = nullptr;}
 #endif
 		if (m_Pkey) m_Pkey = nullptr;
 	}
@@ -71,8 +70,7 @@ namespace crypto
 				m_IsPubCached = true;
 				LogPrint(eLogDebug, "MLKEM [libressl] cache the pub succes");
 			} else LogPrint(eLogError, "MLKEM: can't cache private key [libressl]");
-			//OPENSSL_free(pub_key);
-			m_PublicKey = pub_key;
+			OPENSSL_free(pub_key);
 			if (seed) OPENSSL_free(seed);
 		} else {
 			LogPrint(eLogError, "MLKEM: GenerateKeys [ libressl ] failed");
@@ -152,19 +150,20 @@ namespace crypto
 		{
 				LogPrint(eLogError, "MLKEM: failed to parse public key");
 		}
-		if (m_PublicKey) MLKEM_public_key_free(m_PublicKey);
-		m_PublicKey = pub_key;
-		//if (pub_key) MLKEM_public_key_free(pub_key);
+		if (pub_key) MLKEM_public_key_free(pub_key);
     #endif
 	}
 
 	void MLKEMKeys::Encaps (uint8_t * ciphertext, uint8_t * shared)
 	{
 		if (!m_Pkey) {
-			LogPrint(eLogDebug, "MLKEM encaps failed, not found priv key. GenerateKeys");
+			LogPrint(eLogDebug, "MLKEM encaps failed, not found priv key");
 			GenerateKeys();
-			//return;
-		}
+			if (!m_Pkey) {
+					LogPrint(eLogError, "MLKEM: Failed to generate keys for Encaps");
+					return;
+			}
+        }
 		#ifndef LIBRESSL_PQ
 		auto ctx = EVP_PKEY_CTX_new_from_pkey (NULL, m_Pkey, NULL);
 		if (ctx)
@@ -177,11 +176,9 @@ namespace crypto
 		else
 			LogPrint (eLogError, "MLKEM can't create PKEY context");
 		#else
-			if(!m_PublicKey) {
-				LogPrint(eLogError, "MLKEM Not found public key"); // not will write anytime because we are generate keys?
-				return;
-			}
-			if (MLKEM_public_from_private(m_Pkey, m_PublicKey) != 0)
+			auto pub_key = MLKEM_public_key_new(DEF_RANK); 
+			//  corresponds to |private_key|. It returns one on success and zero on
+			if (MLKEM_public_from_private(m_Pkey, pub_key) != 1)
 			{
 				LogPrint(eLogError, "MLKEM can't get public from private");
 				return;
