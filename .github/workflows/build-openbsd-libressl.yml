@@ -1,5 +1,6 @@
 ---
 name: Build on OpenBSD (LibreSSL)
+# trigger: workflow/openbsd-libressl-ci
 
 "on":
   workflow_dispatch:
