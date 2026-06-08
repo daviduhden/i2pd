@@ -332,9 +332,9 @@ namespace config {
 			("ntcp2.addressv6", value<std::string>()->default_value("::"), "Address to publish NTCP2 with")
 			("ntcp2.proxy", value<std::string>()->default_value(""),       "Proxy URL for NTCP2 transport")
 #if OPENSSL_PQ
-			("ntcp2.version", value<int>()->default_value(4),              "Protocol version. 2 - standard, 3,4,5 - post quantum (default: 4")
+			("ntcp2.version", value<int>()->default_value(4),              "Protocol version. 2 - standard, 3,4,5 - post quantum (default: 4)")
 #else
-			("ntcp2.version", value<int>()->default_value(2),              "Protocol version. 2 - standard, 3,4,5 - post quantum (default: 2")
+			("ntcp2.version", value<int>()->default_value(2),              "Protocol version. 2 - standard, 3,4,5 - post quantum (default: 2)")
 #endif
 		;
 
