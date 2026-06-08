@@ -179,8 +179,10 @@ namespace util
 			#undef UNVEIL_DIR
 			unveil(NULL, NULL); 
 		};
-		init_unevil();
-		init_pledge();
+		bool openbsd_unevil_enabled; i2p::config::GetOption("openbsd.unevil_enabled", openbsd_unevil_enabled);
+		bool openbsd_pledge_enabled; i2p::config::GetOption("openbsd.pledge_enabled", openbsd_pledge_enabled);
+		if(openbsd_unevil_enabled) init_unevil();
+		if(openbsd_pledge_enabled) init_pledge();
 #endif
 
 		i2p::config::GetOption("daemon", isDaemon);

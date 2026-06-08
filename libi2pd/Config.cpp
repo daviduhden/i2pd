@@ -396,6 +396,8 @@ namespace config {
 		openbsd_specific.add_options()
 			("openbsd.pledge_file", value<std::string>()->default_value(""), "OpenbSD file with pledge rules")
 			("openbsd.unevil_file", value<std::string>()->default_value(""), "OpenBSD file with unevil rules")
+			("openbsd.unevil_enabled", value<bool>()->default_value(true),     "use unevil rues")
+			("openbsd.pledge_enabled", value<bool>()->default_value(true),     "use pledge rules")
 			;
 #endif
 
