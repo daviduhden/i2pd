@@ -154,6 +154,7 @@ namespace util
 			unveil(openbsd_pledge_file.c_str(), "r");
 			std::string tunconf ;i2p::config::GetOption("tunconf", tunconf); unveil(tunconf.c_str(), "r");
 			std::string conf ;i2p::config::GetOption("tunconf", conf); unveil(conf.c_str(), "r");
+			std::string pidfile ;i2p::config::GetOption("pidfile", pidfile); unveil(pidfile.c_str(), "r");
 			if(unevil_file != "")
 			{
 				std::ifstream f(unevil_file);
