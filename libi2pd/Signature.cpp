@@ -576,7 +576,6 @@ namespace crypto
 		else
 			LogPrint (eLogError, "MLDSA44 signing key is not set");
 	}	
-#endif
 #endif		
 }
 }

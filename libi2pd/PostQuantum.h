@@ -17,7 +17,9 @@
 #include "Identity.h"
 
 #if OPENSSL_PQ
-
+#if LIBRESSL_PQ
+#	include <openssl/mlkem.h>
+#endif
 namespace i2p
 {
 namespace crypto
@@ -81,6 +83,7 @@ namespace crypto
 			EVP_PKEY * m_Pkey;
 #else
 			MLKEM_private_key * m_Pkey;
+			MLKEM_public_key * m_PublicKey; // used only for SetPublickKey maybe not neeed
 #endif
 	};
 
