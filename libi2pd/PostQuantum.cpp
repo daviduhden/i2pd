@@ -11,7 +11,7 @@
 
 #if OPENSSL_PQ 
 
-#if !LIBRESSL
+#ifndef LIBRESSL_VERSION_NUMBER
 #	include <openssl/param_build.h>
 #	include <openssl/core_names.h>
 #	warning like you use openssl

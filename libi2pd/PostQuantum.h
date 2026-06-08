@@ -15,7 +15,7 @@
 #include <tuple>
 #include "Crypto.h"
 #include "Identity.h"
-#if LIBRESSL
+#ifdef LIBRESSL_VERSION_NUMBER
 #	include <openssl/mlkem.h>
 #endif
 
@@ -80,7 +80,7 @@ namespace crypto
 			void FreeKeys(void);
 			const std::string m_Name;
 			const size_t m_KeyLen, m_CTLen;
-#if !LIBRESSL
+#ifndef LIBRESSL_VERSION_NUMBER
 			EVP_PKEY * m_Pkey;
 #else
 			MLKEM_private_key * m_Pkey;
