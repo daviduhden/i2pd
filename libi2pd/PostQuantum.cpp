@@ -9,19 +9,18 @@
 #include "Log.h"
 #include "PostQuantum.h"
 
-#if OPENSSL_PQ || LIBRESSL_PQ // is 1 by default
+#if OPENSSL_PQ 
 
-#ifndef LIBRESSL_PQ
+#if !LIBRESSL
 #	include <openssl/param_build.h>
 #	include <openssl/core_names.h>
+#	warning like you use openssl
+#else
+#	warning like you use libressl
+#	include<openssl/mlkem.h>
 #endif
 
-#if LIBRESSL_PQ
-	#warning like you use libressl
-	#include<openssl/mlkem.h>
-#else 
-	#warning like you use openssl
-#endif
+
 
 #define DEF_RANK MLKEM768_RANK
 
@@ -36,7 +35,7 @@ namespace crypto
 	}
 	void MLKEMKeys::FreeKeys(void) 
 	{
-#ifndef LIBRESSL_PQ
+#if !LIBRESSL
 		if (m_Pkey) EVP_PKEY_free (m_Pkey);
 #else
 	    if (m_Pkey) MLKEM_private_key_free (m_Pkey);
@@ -52,7 +51,7 @@ namespace crypto
 	void MLKEMKeys::GenerateKeys ()
 	{
 		FreeKeys();
-#ifndef LIBRESSL_PQ
+#if !LIBRESSL
 		m_Pkey = EVP_PKEY_Q_keygen(NULL, NULL, m_Name.c_str ());
 		LogPrint(eLogDebug, "MLKEM: GenerateKeys [ openssl ]");
 #else
@@ -85,7 +84,7 @@ namespace crypto
 		if (m_Pkey)
 		{
 			size_t len = m_KeyLen;
-			#ifndef LIBRESSL_PQ
+			#if !LIBRESSL
 				EVP_PKEY_get_octet_string_param (m_Pkey, OSSL_PKEY_PARAM_PUB_KEY, pub, m_KeyLen, &len);
 		    #else
 				if (!m_Pkey) return;
@@ -106,23 +105,7 @@ namespace crypto
 	void MLKEMKeys::SetPublicKey (const uint8_t * pub)
 	{
 		if(!m_Pkey) return LogPrint(eLogError, "We are don't have private key for set public key");
-		#ifndef LIBRESSL_PQ
-		/*FreeKeys(); /////// ?????????
-		OSSL_PARAM params[] =
-		{
-			OSSL_PARAM_octet_string (OSSL_PKEY_PARAM_PUB_KEY, (uint8_t *)pub, m_KeyLen),
-			OSSL_PARAM_END
-		};
-		EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new_from_name (NULL, m_Name.c_str (), NULL);
-		if (ctx)
-		{
-			EVP_PKEY_fromdata_init (ctx);
-			EVP_PKEY_fromdata (ctx, &m_Pkey, OSSL_KEYMGMT_SELECT_PUBLIC_KEY, params);
-			EVP_PKEY_CTX_free (ctx);
-		}
-		else
-			LogPrint (eLogError, "MLKEM can't create PKEY context");
-		*/
+		#if !LIBRESSL
 		OSSL_PARAM params[] = {
 			OSSL_PARAM_octet_string(OSSL_PKEY_PARAM_PUB_KEY, (void*)pub, m_KeyLen),
 			OSSL_PARAM_END
@@ -140,14 +123,12 @@ namespace crypto
 		}
 		#else
 		MLKEM_public_key * pub_key = MLKEM_public_key_new(DEF_RANK); 
-		if (MLKEM_parse_public_key(pub_key, pub, m_KeyLen))
-		{
+		if (MLKEM_parse_public_key(pub_key, pub, m_KeyLen))	{
 				memcpy(m_CachedPub, pub, m_KeyLen);
 				m_IsPubCached = true;
 				LogPrint(eLogDebug, "MLKEM: SetPublicKey [ libressl ] success");
 		}
-		else
-		{
+		else {
 				LogPrint(eLogError, "MLKEM: failed to parse public key");
 		}
 		if (pub_key) MLKEM_public_key_free(pub_key);
@@ -164,10 +145,9 @@ namespace crypto
 					return;
 			}
         }
-		#ifndef LIBRESSL_PQ
+		#if !LIBRESSL
 		auto ctx = EVP_PKEY_CTX_new_from_pkey (NULL, m_Pkey, NULL);
-		if (ctx)
-		{
+		if (ctx) {
 			EVP_PKEY_encapsulate_init (ctx, NULL);
 			size_t len = m_CTLen, sharedLen = 32;
 			EVP_PKEY_encapsulate (ctx, ciphertext, &len, shared, &sharedLen);
@@ -178,31 +158,24 @@ namespace crypto
 		#else
 			auto pub_key = MLKEM_public_key_new(DEF_RANK); 
 			//  corresponds to |private_key|. It returns one on success and zero on
-			if (MLKEM_public_from_private(m_Pkey, pub_key) != 1)
-			{
+			if (MLKEM_public_from_private(m_Pkey, pub_key) != 1) {
 				LogPrint(eLogError, "MLKEM can't get public from private");
 				return;
 			}
-
 			uint8_t * out_ct = nullptr;
 			size_t out_ct_len = 0;
 			uint8_t * out_ss = nullptr;
 			size_t out_ss_len = 0;
-
-			if (MLKEM_encap(pub_key, &out_ct, &out_ct_len, &out_ss, &out_ss_len) == 1)
-			{
+			if (MLKEM_encap(pub_key, &out_ct, &out_ct_len, &out_ss, &out_ss_len) == 1) {
 				memcpy(ciphertext, out_ct, out_ct_len);
 				memcpy(shared, out_ss, out_ss_len);
-
 				OPENSSL_cleanse(out_ct, out_ct_len);
 				OPENSSL_cleanse(out_ss, out_ss_len);
-
 				OPENSSL_free(out_ct);
 				OPENSSL_free(out_ss);
 				LogPrint(eLogDebug, "MLKEM [libressl] succesfully encaps");
 			}
-			else
-			{
+			else {
 				LogPrint(eLogError, "MLKEM [libressl]: encapsulation failed");
 			}
 			MLKEM_public_key_free(pub_key);
@@ -212,10 +185,9 @@ namespace crypto
 	void MLKEMKeys::Decaps (const uint8_t * ciphertext, uint8_t * shared)
 	{
 		if (!m_Pkey) return;
-		#ifndef LIBRESSL_PQ
+		#if !LIBRESSL
 		auto ctx = EVP_PKEY_CTX_new_from_pkey (NULL, m_Pkey, NULL);
-		if (ctx)
-		{
+		if (ctx) {
 			EVP_PKEY_decapsulate_init (ctx, NULL);
 			size_t sharedLen = 32;
 			EVP_PKEY_decapsulate (ctx, shared, &sharedLen, ciphertext, m_CTLen);
@@ -229,8 +201,7 @@ namespace crypto
 			//uint8_t **out_shared_secret, size_t *out_shared_secret_len);
 			uint8_t * out_shared_secret = nullptr;
 			size_t out_shared_secret_len = 0;
-			if (MLKEM_decap(m_Pkey, ciphertext, m_CTLen, &out_shared_secret, &out_shared_secret_len) == 1)
-			{
+			if (MLKEM_decap(m_Pkey, ciphertext, m_CTLen, &out_shared_secret, &out_shared_secret_len) == 1) {
 				memcpy(shared, out_shared_secret, out_shared_secret_len);
 
 				OPENSSL_cleanse(out_shared_secret, out_shared_secret_len);
@@ -238,8 +209,7 @@ namespace crypto
 				OPENSSL_free(out_shared_secret);
 				LogPrint(eLogDebug, "MLKEM [libressl] succesfully decrypt");
 			}
-			else
-			{
+			else {
 				LogPrint(eLogError, "MLKEM [libressl]: decapsulation failed");
 			}
 		#endif

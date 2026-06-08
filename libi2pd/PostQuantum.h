@@ -15,11 +15,12 @@
 #include <tuple>
 #include "Crypto.h"
 #include "Identity.h"
-
-#if OPENSSL_PQ
-#if LIBRESSL_PQ
+#if LIBRESSL
 #	include <openssl/mlkem.h>
 #endif
+
+#if OPENSSL_PQ
+
 namespace i2p
 {
 namespace crypto
@@ -79,7 +80,7 @@ namespace crypto
 			void FreeKeys(void);
 			const std::string m_Name;
 			const size_t m_KeyLen, m_CTLen;
-#ifndef LIBRESSL_VERSION_NUMBER
+#ifndef LIBRESSL
 			EVP_PKEY * m_Pkey;
 #else
 			MLKEM_private_key * m_Pkey;
