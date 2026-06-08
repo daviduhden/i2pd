@@ -140,7 +140,7 @@ namespace util
 		auto init_unevil = []() {
 			unveil("/usr/lib", "r");
 			unveil("/usr/local/lib", "r"); 
-			unveil("/usr/libexec", "r"); 
+			unveil("/usr/libexec/ld.so", "r"); 
 			unveil("/dev/urandom", "r");
 			unveil("/tmp", "rw");
 			unveil("/etc/i2pd", "r"); // ваще не нужно вроде на весь прям каталог
