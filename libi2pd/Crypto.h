@@ -36,7 +36,7 @@
 #endif
 #ifdef LIBRESSL_VERSION_NUMBER
 	#if (defined(LIBRESSL_VERSION_NUMBER) && (LIBRESSL_VERSION_NUMBER >= 0x4030000fL)) 
-#		define OPENSSL_PQ 1
+#		define LIBRESSL_PQ 1
 	#endif
 #endif
 

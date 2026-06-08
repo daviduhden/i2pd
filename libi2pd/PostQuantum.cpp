@@ -9,16 +9,17 @@
 #include "Log.h"
 #include "PostQuantum.h"
 
-#if OPENSSL_PQ // is 1 by default
+#if OPENSSL_PQ || LIBRESSL_PQ // is 1 by default
 
-#include <openssl/param_build.h>
-#include <openssl/core_names.h>
+#ifndef LIBRESSL_PQ
+#	include <openssl/param_build.h>
+#	include <openssl/core_names.h>
+#endif
 
-#if defined(LIBRESSL_VERSION_NUMBER)
+#if LIBRESSL_PQ
 	#warning like you use libressl
 	#include<openssl/mlkem.h>
-	#define is_libre ""
-#error libressl
+	#warning like you use libressl 
 #else 
 	#warning like you use openssl
 #endif

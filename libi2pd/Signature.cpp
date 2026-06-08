@@ -20,6 +20,7 @@ namespace i2p
 namespace crypto
 {
 #if (OPENSSL_VERSION_NUMBER >= 0x030000000) // since 3.0.0
+#warning use DSA
 	DSAVerifier::DSAVerifier ():
 		m_PublicKey (nullptr)
 	{
@@ -81,7 +82,7 @@ namespace crypto
 		EVP_MD_CTX_destroy (ctx);
 		// decode r and s
 		const uint8_t * s1 = sign;
-    	DSA_SIG * sig = d2i_DSA_SIG (NULL, &s1, l);
+	    	DSA_SIG * sig = d2i_DSA_SIG (NULL, &s1, l);
 		const BIGNUM * r, * s;
 		DSA_SIG_get0 (sig, &r, &s);
 		bn2buf (r, signature, DSA_SIGNATURE_LENGTH/2);
@@ -456,8 +457,9 @@ namespace crypto
 	}		
 #endif	
 		
-#if OPENSSL_PQ
-		
+#if OPENSSL_PQ 
+#if !LIBRESSL
+#warning use MLSDA
 	MLDSA44Verifier::MLDSA44Verifier ():
 		m_Pkey (nullptr)
 	{
@@ -575,7 +577,7 @@ namespace crypto
 		else
 			LogPrint (eLogError, "MLDSA44 signing key is not set");
 	}	
-		
+#endif
 #endif		
 }
 }

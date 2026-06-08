@@ -611,7 +611,9 @@ namespace crypto
 	}
 	
 #if OPENSSL_PQ
+#ifndef LIBRESSL_VERSION_NUMBER
 #include <openssl/core_names.h>
+#endif
 	
 	// Post-Quantum
 	const size_t MLDSA44_PUBLIC_KEY_LENGTH = 1312;
