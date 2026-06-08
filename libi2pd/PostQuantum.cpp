@@ -39,7 +39,6 @@ namespace crypto
 #ifndef LIBRESSL_PQ
 		if (m_Pkey) EVP_PKEY_free (m_Pkey);
 #else
-		if (m_PublicKey) { MLKEM_public_key_free(m_PublicKey); m_PublicKey = nullptr; }
 	    if (m_Pkey) MLKEM_private_key_free (m_Pkey);
 #endif
 		if (m_Pkey) m_Pkey = nullptr;
@@ -125,7 +124,7 @@ namespace crypto
 			if (!MLKEM_parse_public_key(pub_key, pub, m_KeyLen))
 			{
 				LogPrint(eLogError, "MLKEM: failed to parse public key");
-				if(pub_key) MLKEM_public_key_free(m_PublicKey);
+				if(pub_key) MLKEM_public_key_free(pub_key);
 				pub_key = nullptr;
 			}
 			//LogPrint(eLogError, "MLKEM SetPublicKey [libressl] NOT IMPLEMENTED YET");
