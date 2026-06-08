@@ -140,12 +140,10 @@ namespace util
 		auto init_unevil = []() {
 			unveil("/usr/lib", "r");
 			unveil("/usr/local/lib", "r"); 
-			unveil("/lib", "r");
-			unveil("/lib", "r");
 			unveil("/usr/libexec", "r"); 
 			unveil("/dev/urandom", "r");
 			unveil("/tmp", "rw");
-			unveil("/etc/i2pd", "r");
+			unveil("/etc/i2pd", "r"); // ваще не нужно вроде на весь прям каталог
 			
 			#define UNVEIL_DIR(dir) unveil(dir.c_str(), "rwc")
 			
