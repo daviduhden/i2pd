@@ -9,8 +9,8 @@
 #include <memory>
 #include <openssl/evp.h>
 #if (OPENSSL_VERSION_NUMBER >= 0x030000000) // since 3.0.0
-#include <openssl/core_names.h>
-#include <openssl/param_build.h>
+#	include <openssl/core_names.h>
+#	include <openssl/param_build.h>
 #endif
 #include "Log.h"
 #include "Signature.h"
@@ -20,7 +20,7 @@ namespace i2p
 namespace crypto
 {
 #if (OPENSSL_VERSION_NUMBER >= 0x030000000) // since 3.0.0
-#warning use DSA
+#	warning use DSA
 	DSAVerifier::DSAVerifier ():
 		m_PublicKey (nullptr)
 	{
@@ -457,8 +457,7 @@ namespace crypto
 	}		
 #endif	
 		
-#if OPENSSL_PQ 
-#if !LIBRESSL
+#if OPENSSL_PQ && !LIBRESSL_PQ
 #warning use MLSDA
 	MLDSA44Verifier::MLDSA44Verifier ():
 		m_Pkey (nullptr)

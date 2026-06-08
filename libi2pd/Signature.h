@@ -610,7 +610,7 @@ namespace crypto
 		memcpy (signingPublicKey, signer.GetPublicKey (), EDDSA25519_PUBLIC_KEY_LENGTH);
 	}
 	
-#if OPENSSL_PQ
+#if OPENSSL_PQ && !LIBRESSL_PQ
 #ifndef LIBRESSL_VERSION_NUMBER
 #include <openssl/core_names.h>
 #endif
