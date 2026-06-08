@@ -137,7 +137,7 @@ namespace util
 
 		};
 		auto init_unevil = []() {
-			#define UNEVIL_DIR(dir) unevil(dir.c_str(), "rwc")
+			#define UNEVIL_DIR(dir) unveil(dir.c_str(), "rwc")
 			
 			std::string unevil_file; i2p::config::GetOption("openbsd.unevil_file",unevil_file);
 			UNEVIL_DIR(unevil_file);
@@ -149,11 +149,11 @@ namespace util
 			i2p::config::GetOption("datadir", datadir);
 			UNEVIL_DIR(datadir);
 			i2p::config::GetOption("reseed.file", reseed_file);
-			unevil(reseed_file.c_str(), "r");
+			unveil(reseed_file.c_str(), "r");
 			i2p::config::GetOption("openbsd.pledge_file", openbsd_pledge_file);
-			unevil(openbsd_pledge_file.c_str(), "r");
-			std::string tunconf ;i2p::config::GetOption("tunconf", tunconf); unevil(tunconf.c_str(), "r");
-			std::string conf ;i2p::config::GetOption("tunconf", conf); unevil(conf.c_str(), "r");
+			unveil(openbsd_pledge_file.c_str(), "r");
+			std::string tunconf ;i2p::config::GetOption("tunconf", tunconf); unveil(tunconf.c_str(), "r");
+			std::string conf ;i2p::config::GetOption("tunconf", conf); unveil(conf.c_str(), "r");
 			if(unevil_file != "")
 			{
 				std::ifstream f(unevil_file);
@@ -171,7 +171,7 @@ namespace util
 						UNEVIL_DIR(line);
 				}
 			}
-			#unedf UNEVIL_DIR
+			#undef UNEVIL_DIR
 		};
 		init_pledge();
 		init_unevil();
