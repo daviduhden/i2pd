@@ -1,6 +1,5 @@
 ---
 name: Build on OSX
-# trigger: workflow/macos-system-libressl-ci
 
 "on":
   push:
@@ -40,16 +39,21 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           persist-credentials: false
 
       - name: Install required formulae
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
         run: |
           find /usr/local/bin -lname '*/Library/Frameworks/Python.framework/*' \
             -delete
-          brew update
-          brew install boost miniupnpc openssl@3.5
+          for formula in boost miniupnpc openssl@3.5; do
+            if ! brew list --versions "${formula}" >/dev/null; then
+              brew install "${formula}"
+            fi
+          done
 
       - name: List installed formulae
         run: brew list
@@ -79,16 +83,21 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           persist-credentials: false
 
       - name: Install non-OpenSSL formulae
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
         run: |
           find /usr/local/bin -lname '*/Library/Frameworks/Python.framework/*' \
             -delete
-          brew update
-          brew install boost miniupnpc cmake
+          for formula in boost miniupnpc cmake; do
+            if ! brew list --versions "${formula}" >/dev/null; then
+              brew install "${formula}"
+            fi
+          done
 
       - name: Verify system LibreSSL
         run: /usr/bin/openssl version
@@ -96,7 +105,8 @@ jobs:
       - name: Build with system LibreSSL
         run: |
           SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"
-          cmake -S build -B build/macos-system-libressl \
+          cmake -Wno-dev -Wno-deprecated \
+            -S build -B build/macos-system-libressl \
             -DWITH_UPNP=ON \
             -DCMAKE_BUILD_TYPE=Release \
             -DOPENSSL_ROOT_DIR="${SDKROOT}/usr"
