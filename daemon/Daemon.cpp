@@ -109,7 +109,7 @@ namespace util
 
 #ifdef __OpenBSD__
 		auto init_pledge = []() {
-			std::string pledge_file; i2p::config::GetOption("openbsd.pledge_file");
+			std::string pledge_file; i2p::config::GetOption("openbsd.pledge_file", pledge_file);
 			if (pledge_file == "")
 			{
 				LogPrint(eLogDebug, "Use default pledge values");
@@ -131,14 +131,46 @@ namespace util
 				std::ostringstream out;
 				for(auto r : rules)
 					out << r << " ";
-				pledge(out.str().c_str());
+				pledge(out.str().c_str(), nullptr);
 			}		
 
 
 		};
 		auto init_unevil = []() {
-			std::string unevil_file; i2p::config::GetOption("openbsd.unevil_file");
-		}
+			#define UNEVIL_DIR(dir) unevil(dir.c_str(), "rwc")
+			
+			std::string unevil_file; i2p::config::GetOption("openbsd.unevil_file",unevil_file);
+			UNEVIL_DIR(unevil_file);
+			std::string tunnelsdir, certsdir, logfile, datadir, reseed_file, openbsd_pledge_file;
+			i2p::config::GetOption("tunnelsdir", tunnelsdir);
+			UNEVIL_DIR(tunnelsdir);
+			i2p::config::GetOption("certsdir", certsdir);
+			UNEVIL_DIR(certsdir);
+			i2p::config::GetOption("datadir", datadir);
+			UNEVIL_DIR(datadir);
+			i2p::config::GetOption("reseed.file", reseed_file);
+			UNEVIL_DIR(reseed_file);
+			i2p::config::GetOption("openbsd.pledge_file", openbsd_pledge_file);
+			UNEVIL_DIR(openbsd_pledge_file);
+			if(unevil_file != "")
+			{
+				std::ifstream f(unevil_file);
+				if (!f) {
+					std::cerr << "Can't open unevil file" << std::endl;
+					exit(1);
+				}
+				//using dir_pair = struct {
+				//		std::string path;
+				//		std::string perms;
+				//}; 
+				std::string line;
+				//std::vector<> dirs;
+				while(std::getline(f, line)){
+						UNEVIL_DIR(line);
+				}
+			}
+			#unedf UNEVIL_DIR
+		};
 		init_pledge();
 		init_unevil();
 #endif
