@@ -165,7 +165,7 @@ namespace util
 			std::string tunconf ;i2p::config::GetOption("tunconf", tunconf); unveil(tunconf.c_str(), "r");
 			std::string conf ;i2p::config::GetOption("tunconf", conf); unveil(conf.c_str(), "r");
 			std::string pidfile ;i2p::config::GetOption("pidfile", pidfile); unveil(pidfile.c_str(), "rwc");
-			i2p::config::GetOption("logfile", pidfile); unveil(logfile.c_str(), "rwc");
+			i2p::config::GetOption("logfile", logfile); unveil(logfile.c_str(), "rwc");
 			if(unevil_file != "")
 			{
 				std::ifstream f(unevil_file);
