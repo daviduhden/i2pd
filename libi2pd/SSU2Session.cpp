@@ -743,9 +743,17 @@ namespace transport
 		{
 			i2p::data::CryptoKeyType cryptoType = (i2p::data::CryptoKeyType)(m_Version + 2);
 			m_PQKeys = i2p::crypto::CreateMLKEMKeys (cryptoType);
-            m_PQKeys->GenerateKeys ();
-            offset = m_PQKeys->GetKeyLen () + 16;
-			payloadSize += offset;
+			if (m_PQKeys)
+			{
+				m_PQKeys->GenerateKeys ();
+				offset = m_PQKeys->GetKeyLen () + 16;
+				payloadSize += offset;
+			}
+			else
+			{
+				LogPrint (eLogWarning, "SSU2: ML-KEM type ", (int)cryptoType, " is not available, fallback to version 2");
+				m_Version = 2;
+			}
 		}
 #endif
 		payload[payloadSize] = eSSU2BlkDateTime;
@@ -915,6 +923,11 @@ namespace transport
 			m_NoiseState->MixHash (buf + offset, keyLen + 16);
 			offset += keyLen + 16;
 			m_PQKeys = i2p::crypto::CreateMLKEMKeys (cryptoType);
+			if (!m_PQKeys)
+			{
+				LogPrint (eLogWarning, "SSU2: ML-KEM type ", (int)cryptoType, " is not available");
+				return false;
+			}
 			m_PQKeys->SetPublicKey (encapsKey.data ());
         }
 #endif
@@ -3460,7 +3473,11 @@ namespace transport
 		switch (version)
 		{
 			case 3:
+#if defined(LIBRESSL_VERSION_NUMBER)
+				m_Version = 2; // ML-KEM-512 is not available on LibreSSL
+#else
 				m_Version = 3;
+#endif
 			break;
 			case 4:
 				m_Version = (m_MaxPayloadSize >= SSU2_MLKEM768_MIN_PAYLOAD_SIZE) ? 4: 2;

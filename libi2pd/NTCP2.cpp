@@ -70,7 +70,11 @@ namespace transport
         switch (version)
         {
             case 3:
+#if defined(LIBRESSL_VERSION_NUMBER)
+                 m_CryptoType = i2p::data::CRYPTO_KEY_TYPE_ECIES_X25519_AEAD; // ML-KEM-512 is not available on LibreSSL
+#else
                  m_CryptoType = i2p::data::CRYPTO_KEY_TYPE_ECIES_MLKEM512_X25519_AEAD;
+#endif
             break;
             case 4:
                  m_CryptoType = i2p::data::CRYPTO_KEY_TYPE_ECIES_MLKEM768_X25519_AEAD;
@@ -173,13 +177,22 @@ namespace transport
 #if OPENSSL_MLKEM
         if (m_CryptoType > i2p::data::CRYPTO_KEY_TYPE_ECIES_X25519_AEAD)
         {
-            uint8_t pub[32];
-            memcpy (pub, GetPub (), 32);
-            pub[31] |= 0x80; // set highest bit
-            encryption.Encrypt (pub, 32, m_IV, m_Buffer); // X
-            //  ML-KEM encap_key
             m_PQKeys = i2p::crypto::CreateMLKEMKeys (m_CryptoType);
-            m_PQKeys->GenerateKeys ();
+            if (m_PQKeys)
+            {
+                m_PQKeys->GenerateKeys ();
+                uint8_t pub[32];
+                memcpy (pub, GetPub (), 32);
+                pub[31] |= 0x80; // set highest bit
+                encryption.Encrypt (pub, 32, m_IV, m_Buffer); // X
+            }
+            else
+            {
+                LogPrint (eLogWarning, "NTCP2: ML-KEM type ", (int)m_CryptoType, " is not available, fallback to X25519");
+                m_CryptoType = i2p::data::CRYPTO_KEY_TYPE_ECIES_X25519_AEAD;
+                m_IsLongPadding = false;
+                encryption.Encrypt (GetPub (), 32, m_IV, m_Buffer); // X
+            }
         }
         else
             encryption.Encrypt (GetPub (), 32, m_IV, m_Buffer); // X
@@ -398,6 +411,11 @@ namespace transport
                 MixHash (m_Buffer + offset, keyLen + 16);
                 offset += keyLen + 16;
                 m_PQKeys = i2p::crypto::CreateMLKEMKeys (m_CryptoType);
+                if (!m_PQKeys)
+                {
+                    LogPrint (eLogWarning, "NTCP2: ML-KEM type ", (int)m_CryptoType, " is not available");
+                    return false;
+                }
                 m_PQKeys->SetPublicKey (encapsKey.data ());
             }
         }

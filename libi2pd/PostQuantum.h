@@ -45,6 +45,7 @@ namespace crypto
 #if defined(LIBRESSL_VERSION_NUMBER)
 	constexpr std::array MLKEMS =
 	{
+		std::make_tuple ("ML-KEM-512", MLKEM512_KEY_LENGTH, MLKEM512_CIPHER_TEXT_LENGTH),
 		std::make_tuple ("ML-KEM-768", MLKEM768_KEY_LENGTH, MLKEM768_CIPHER_TEXT_LENGTH),
 		std::make_tuple ("ML-KEM-1024", MLKEM1024_KEY_LENGTH, MLKEM1024_CIPHER_TEXT_LENGTH)
 	};
@@ -62,8 +63,8 @@ namespace crypto
 #if defined(LIBRESSL_VERSION_NUMBER)
 		switch (type)
 		{
-			case i2p::data::CRYPTO_KEY_TYPE_ECIES_MLKEM768_X25519_AEAD: return 0;
-			case i2p::data::CRYPTO_KEY_TYPE_ECIES_MLKEM1024_X25519_AEAD: return 1;
+			case i2p::data::CRYPTO_KEY_TYPE_ECIES_MLKEM768_X25519_AEAD: return 1;
+			case i2p::data::CRYPTO_KEY_TYPE_ECIES_MLKEM1024_X25519_AEAD: return 2;
 			default: return -1;
 		}
 #else
