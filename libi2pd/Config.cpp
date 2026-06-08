@@ -394,10 +394,13 @@ namespace config {
 #ifdef __OpenBSD__
 		options_description openbsd_specific("OpenBSD specific options");
 		openbsd_specific.add_options()
-			("openbsd.pledge_file", value<std::string>()->default_value(""), "OpenbSD file with pledge rules")
-			("openbsd.unevil_file", value<std::string>()->default_value(""), "OpenBSD file with unevil rules")
-			("openbsd.unevil_enabled", value<bool>()->default_value(true),     "use unevil rues")
-			("openbsd.pledge_enabled", value<bool>()->default_value(true),     "use pledge rules")
+			("openbsd.pledge_file", value<std::string>()->default_value(""), "OpenBSD file with custom pledge promises")
+			("openbsd.unveil_file", value<std::string>()->default_value(""),  "OpenBSD file with extra unveil paths")
+			("openbsd.unveil_enabled", value<bool>()->default_value(true),   "Enable unveil hardening (default: enabled)")
+			("openbsd.pledge_enabled", value<bool>()->default_value(true),   "Enable pledge hardening (default: enabled)")
+			// deprecated misspelled options kept for backward compatibility
+			("openbsd.unevil_file", value<std::string>()->default_value(""), "Deprecated alias for openbsd.unveil_file")
+			("openbsd.unevil_enabled", value<bool>()->default_value(true),   "Deprecated alias for openbsd.unveil_enabled")
 			;
 #endif
 
