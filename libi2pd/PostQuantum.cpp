@@ -158,7 +158,6 @@ namespace crypto
 			LogPrint (eLogError, "MLKEM can't create PKEY context");
 		#else
 			auto pub_key = MLKEM_public_key_new(DEF_RANK); 
-			//  corresponds to |private_key|. It returns one on success and zero on
 			if (MLKEM_public_from_private(m_Pkey, pub_key) != 1) {
 				LogPrint(eLogError, "MLKEM can't get public from private");
 				return;
@@ -197,9 +196,6 @@ namespace crypto
 		else
 			LogPrint (eLogError, "MLKEM can't create PKEY context");
 		#else
-		//int MLKEM_decap(const MLKEM_private_key *private_key,
-			//const uint8_t *ciphertext, size_t ciphertext_len,
-			//uint8_t **out_shared_secret, size_t *out_shared_secret_len);
 			uint8_t * out_shared_secret = nullptr;
 			size_t out_shared_secret_len = 0;
 			if (MLKEM_decap(m_Pkey, ciphertext, m_CTLen, &out_shared_secret, &out_shared_secret_len) == 1) {
@@ -366,5 +362,5 @@ namespace crypto
 }
 }
 #else
-	#warning You are compile without PQ support
+#	warning You are compile without PostQuant encryption support
 #endif
