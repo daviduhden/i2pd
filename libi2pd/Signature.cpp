@@ -9,8 +9,8 @@
 #include <memory>
 #include <openssl/evp.h>
 #if (OPENSSL_VERSION_NUMBER >= 0x030000000) // since 3.0.0
-#	include <openssl/core_names.h>
-#	include <openssl/param_build.h>
+#include <openssl/core_names.h>
+#include <openssl/param_build.h>
 #endif
 #include "Log.h"
 #include "Signature.h"
@@ -81,7 +81,7 @@ namespace crypto
 		EVP_MD_CTX_destroy (ctx);
 		// decode r and s
 		const uint8_t * s1 = sign;
-	    DSA_SIG * sig = d2i_DSA_SIG (NULL, &s1, l);
+    	DSA_SIG * sig = d2i_DSA_SIG (NULL, &s1, l);
 		const BIGNUM * r, * s;
 		DSA_SIG_get0 (sig, &r, &s);
 		bn2buf (r, signature, DSA_SIGNATURE_LENGTH/2);
