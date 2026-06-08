@@ -46,6 +46,7 @@ namespace crypto
 	MLKEMKeys::~MLKEMKeys ()
 	{
 		FreeKeys();
+		LogPrint(eLogDebug, "MLKEM: FreeKeys ");
 	}
 
 	void MLKEMKeys::GenerateKeys ()
@@ -53,8 +54,25 @@ namespace crypto
 		FreeKeys();
 #ifndef LIBRESSL_PQ
 		m_Pkey = EVP_PKEY_Q_keygen(NULL, NULL, m_Name.c_str ());
+		LogPrint(eLogDebug, "MLKEM: GenerateKeys [ openssl ]");
 #else
 		m_Pkey = MLKEM_private_key_new(DEF_RANK);
+		
+		uint8_t * pub_key = nullptr;
+		size_t pub_key_len = 0;
+		uint8_t * seed = nullptr;
+		size_t seed_len = 0;
+
+		if (MLKEM_generate_key(m_Pkey, &pub_key, &pub_key_len, &seed, &seed_len) == 1) {
+			LogPrint(eLogDebug, "MLKEM: GenerateKeys [ libressl ] success");
+			
+			OPENSSL_free(pub_key);
+			if (seed) OPENSSL_free(seed);
+		} else {
+			LogPrint(eLogError, "MLKEM: GenerateKeys [ libressl ] failed");
+			MLKEM_private_key_free(m_Pkey);
+			m_Pkey = nullptr;
+		}
 #endif
 	}
 
@@ -79,7 +97,7 @@ namespace crypto
 //				if(result != 0) {
 //					LogPrint (eLogError, "MLKEM [libressl]: can't generate public key");
 					if (!m_Pkey) return;
-
+					LogPrint(eLogDebug, "MLKEM: GetPublicKey [ libressl ]");
 					auto pub_key = MLKEM_public_key_new(DEF_RANK); 
 					
 					if (MLKEM_public_from_private(m_Pkey, pub_key) == 0)
@@ -128,6 +146,7 @@ namespace crypto
 				pub_key = nullptr;
 			}
 			//LogPrint(eLogError, "MLKEM SetPublicKey [libressl] NOT IMPLEMENTED YET");
+			LogPrint(eLogDebug, "MLKEM: SetPublicKey [ libressl ]");
 		#endif
 	}
 
@@ -169,6 +188,7 @@ namespace crypto
 
 				OPENSSL_free(out_ct);
 				OPENSSL_free(out_ss);
+				LogPrint(eLogDebug, "MLKEM [libressl] succesfully encaps");
 			}
 			else
 			{
@@ -205,6 +225,7 @@ namespace crypto
 				OPENSSL_cleanse(out_shared_secret, out_shared_secret_len);
 
 				OPENSSL_free(out_shared_secret);
+				LogPrint(eLogDebug, "MLKEM [libressl] succesfully decrypt");
 			}
 			else
 			{
