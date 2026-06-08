@@ -15,6 +15,9 @@
 #include <tuple>
 #include "Crypto.h"
 #include "Identity.h"
+#ifdef LIBRESSL_VERSION_NUMBER
+#	include <openssl/mlkem.h>
+#endif
 
 #if OPENSSL_PQ
 
@@ -71,12 +74,19 @@ namespace crypto
 			size_t GetCTLen () const { return m_CTLen; };
 			void Encaps (uint8_t * ciphertext, uint8_t * shared);
 			void Decaps (const uint8_t * ciphertext, uint8_t * shared);
+			
 
 		private:
-
+			void FreeKeys(void);
 			const std::string m_Name;
 			const size_t m_KeyLen, m_CTLen;
+#ifndef LIBRESSL_VERSION_NUMBER
 			EVP_PKEY * m_Pkey;
+#else
+			MLKEM_private_key * m_Pkey;
+			uint8_t m_CachedPub[MLKEM768_KEY_LENGTH];
+			bool m_IsPubCached = false;
+#endif
 	};
 
 	std::unique_ptr<MLKEMKeys> CreateMLKEMKeys (i2p::data::CryptoKeyType type);
