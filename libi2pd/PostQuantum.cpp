@@ -68,7 +68,9 @@ namespace crypto
 				memcpy(m_CachedPub, pub_key, pub_key_len);
 				m_IsPubCached = true;
 				LogPrint(eLogDebug, "MLKEM [libressl] cache the pub succes");
-			} else LogPrint(eLogError, "MLKEM: can't cache private key [libressl]");
+			} else {
+				 LogPrint(eLogError, "MLKEM: can't cache private key [libressl]");
+			}
 			OPENSSL_free(pub_key);
 			if (seed) OPENSSL_free(seed);
 		} else {
@@ -77,14 +79,13 @@ namespace crypto
 			m_Pkey = nullptr;
 		}
 #endif
-	}
+	} // end method
 
 	void MLKEMKeys::GetPublicKey (uint8_t * pub) const
 	{
-		if (m_Pkey)
-		{
-			size_t len = m_KeyLen;
+		if (m_Pkey) {
 			#if !LIBRESSL
+				size_t len = m_KeyLen;
 				EVP_PKEY_get_octet_string_param (m_Pkey, OSSL_PKEY_PARAM_PUB_KEY, pub, m_KeyLen, &len);
 		    #else
 				if (!m_Pkey) return;
