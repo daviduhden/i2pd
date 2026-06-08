@@ -65,7 +65,11 @@ namespace crypto
 
 		if (MLKEM_generate_key(m_Pkey, &pub_key, &pub_key_len, &seed, &seed_len) == 1) {
 			LogPrint(eLogDebug, "MLKEM: GenerateKeys [ libressl ] success");
-			
+			if (pub_key_len <= sizeof(m_CachedPub)) {
+				memcpy(m_CachedPub, pub_key, pub_key_len);
+				m_IsPubCached = true;
+				LogPrint(eLogDebug, "MLKEM [libressl] cache the pub succes");
+			} else LogPrint(eLogError, "MLKEM: can't cache private key [libressl]");
 			OPENSSL_free(pub_key);
 			if (seed) OPENSSL_free(seed);
 		} else {
@@ -88,42 +92,21 @@ namespace crypto
 
 				LogPrint(eLogDebug, "MLKEM: GetPublicKey [ libressl ]");
 				
-				auto pub_key = MLKEM_public_key_new(DEF_RANK); 
-				
-				if (MLKEM_public_from_private(m_Pkey, pub_key) == 0)
-				{
-					uint8_t * encoded_pub = nullptr;
-					size_t encoded_len = 0;
-
-					if (MLKEM_marshal_public_key(pub_key, &encoded_pub, &encoded_len) == 1)
-					{
-						if (encoded_len <= m_KeyLen) {
-							memcpy(pub, encoded_pub, encoded_len);
-						} else {
-							LogPrint(eLogError, "MLKEM [libressl]: Buffer too small");
-						}
-						OPENSSL_free(encoded_pub);
+				if (m_IsPubCached) {
+						memcpy(pub, m_CachedPub, MLKEM768_KEY_LENGTH);
+						LogPrint(eLogDebug,"MLKEM [libressl]: copy pubkey");
+					} else {
+						LogPrint(eLogError, "MLKEM: Public key not cached!");
 					}
-					else
-					{
-						LogPrint(eLogError, "MLKEM [libressl]: can't marshal public key");
-					}
-				}
-				else
-				{
-					LogPrint(eLogError, "MLKEM [libressl]: can't extract public key from private");
-				}
-				
-				MLKEM_public_key_free(pub_key);
-		    #endif
+    		#endif
 		}
 	}
 	
 
 	void MLKEMKeys::SetPublicKey (const uint8_t * pub)
 	{
-		#ifndef LIBRESSL_PQ
 		if(!m_Pkey) return LogPrint(eLogError, "We are don't have private key for set public key");
+		#ifndef LIBRESSL_PQ
 		/*FreeKeys(); /////// ?????????
 		OSSL_PARAM params[] =
 		{
@@ -156,17 +139,19 @@ namespace crypto
 			LogPrint(eLogError, "MLKEM: can't create PKEY context");
 		}
 		#else
-			MLKEM_public_key * pub_key; 
-			pub_key = MLKEM_public_key_new(DEF_RANK);
-			if (!MLKEM_parse_public_key(pub_key, pub, m_KeyLen))
-			{
+		MLKEM_public_key * pub_key = MLKEM_public_key_new(DEF_RANK); 
+		if (MLKEM_parse_public_key(pub_key, pub, m_KeyLen))
+		{
+				memcpy(m_CachedPub, pub, m_KeyLen);
+				m_IsPubCached = true;
+				LogPrint(eLogDebug, "MLKEM: SetPublicKey [ libressl ] success");
+		}
+		else
+		{
 				LogPrint(eLogError, "MLKEM: failed to parse public key");
-				if(pub_key) MLKEM_public_key_free(pub_key);
-				pub_key = nullptr;
-			}
-			//LogPrint(eLogError, "MLKEM SetPublicKey [libressl] NOT IMPLEMENTED YET");
-			LogPrint(eLogDebug, "MLKEM: SetPublicKey [ libressl ]");
-		#endif
+		}
+		if (pub_key) MLKEM_public_key_free(pub_key);
+    #endif
 	}
 
 	void MLKEMKeys::Encaps (uint8_t * ciphertext, uint8_t * shared)

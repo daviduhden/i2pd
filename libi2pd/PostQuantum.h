@@ -83,6 +83,8 @@ namespace crypto
 			EVP_PKEY * m_Pkey;
 #else
 			MLKEM_private_key * m_Pkey;
+			uint8_t m_CachedPub[MLKEM768_KEY_LENGTH];
+			bool m_IsPubCached = false;
 #endif
 	};
 
